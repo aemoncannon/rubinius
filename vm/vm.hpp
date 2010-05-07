@@ -92,6 +92,9 @@ namespace rubinius {
 
     bool check_local_interrupts;
 
+    bool tracing_enabled;
+    bool trace_recording_enabled;
+
     ThreadState thread_state_;
 
     // The Thread object for this VM state
@@ -144,6 +147,16 @@ namespace rubinius {
 
     GlobalCache* global_cache() {
       return shared.global_cache;
+    }
+
+    void enable_tracing() {
+		tracing_enabled = true;
+		std::cout << "TRACING ENABLED" << "\n";
+    }
+
+    void disable_tracing() {
+		tracing_enabled = false;
+		std::cout << "TRACING DISABLED" << "\n";
     }
 
     Globals& globals() {

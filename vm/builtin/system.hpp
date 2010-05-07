@@ -118,6 +118,12 @@ namespace rubinius {
     // Ruby.primitive :vm_backtrace
     static Array* vm_backtrace(STATE, Fixnum* skip, CallFrame* calling_environment);
 
+    // Ruby.primitive :vm_enable_tracing
+	static Object* vm_enable_tracing(STATE);
+
+    // Ruby.primitive :vm_disable_tracing
+	static Object* vm_disable_tracing(STATE);
+
     /** Return true if the profiler is available. */
     // Ruby.primitive :vm_profiler_instrumenter_available_p
     static Object* vm_profiler_instrumenter_available_p(STATE);

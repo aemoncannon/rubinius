@@ -333,6 +333,16 @@ namespace rubinius {
     return bt;
   }
 
+  Object* System::vm_enable_tracing(STATE) {
+	  state->enable_tracing();
+	  return Qnil;
+  }
+
+  Object* System::vm_disable_tracing(STATE) {
+	  state->disable_tracing();
+	  return Qnil;
+  }
+
   Object* System::vm_show_backtrace(STATE, CallFrame* calling_environment) {
     calling_environment->print_backtrace(state);
     return Qnil;

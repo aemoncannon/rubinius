@@ -98,6 +98,11 @@ namespace rubinius {
 
     opcodes = new opcode[total];
     addresses = new void*[total];
+    trace_counters = new size_t[total];
+
+    for(size_t index = 0; index < total; index++) {
+		trace_counters[index] = 0;
+	}
 
     fill_opcodes(state, meth);
     stack_size =    meth->stack_size()->to_native();
@@ -528,10 +533,12 @@ namespace rubinius {
       CompiledMethod* cm = as<CompiledMethod>(msg.method);
       VMMethod* vmm = cm->backend_method();
 
+	  bool trace = true;
+
 #ifdef ENABLE_LLVM
       // A negative call_count means we've disabled usage based JIT
       // for this method.
-      if(vmm->call_count >= 0) {
+      if(!trace && vmm->call_count >= 0) {
         if(vmm->call_count >= state->shared.config.jit_call_til_compile) {
           LLVMState* ls = LLVMState::get(state);
           ls->compile_callframe(state, cm, previous);

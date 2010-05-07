@@ -54,6 +54,7 @@ namespace rubinius {
 
     opcode* opcodes;
     void** addresses;
+    std::size_t* trace_counters;
 
     std::size_t total;
     TypeInfo* type;

@@ -18,6 +18,7 @@
 #include "builtin/thread.hpp"
 #include "builtin/system.hpp"
 #include "builtin/global_cache_entry.hpp"
+#include "builtin/iseq.hpp"
 
 #include "call_frame.hpp"
 
@@ -92,7 +93,9 @@ Object* VMMethod::interpreter(STATE,
                               InterpreterCallFrame* const call_frame)
 {
 
-#include "vm/gen/instruction_locations.hpp"
+  #include "vm/gen/instruction_locations.hpp"
+
+
 
   if(unlikely(state == 0)) {
     VMMethod::instructions = const_cast<void**>(insn_locations);
@@ -128,9 +131,28 @@ Object* VMMethod::interpreter(STATE,
 
 continue_to_run:
   try {
-
+	  opcode op;
+	  int cur_ip;
 #undef DISPATCH
-#define DISPATCH goto **ip_ptr++
+//#define DISPATCH goto **ip_ptr++;
+#define DISPATCH  cur_ip = ip_ptr - vmm->addresses;	\
+	  op = vmm->opcodes[cur_ip]; \
+	  if(state->tracing_enabled){ \
+	    if(state->trace_recording_enabled){ \
+	    	  std::cout << op << "\n"; \
+        } \
+        else if(op == InstructionSequence::insn_goto || \
+                op == InstructionSequence::insn_goto_if_false || \
+                op == InstructionSequence::insn_goto_if_false){ \
+	    	  intptr_t location = (opcode)(*(ip_ptr + 1)); \
+	    	  if(location < cur_ip){ \
+	    		  if(++(vmm->trace_counters[location]) > 10){ \
+	    			  state->trace_recording_enabled = true; \
+	    		  } \
+            } \
+	    } \
+      }\
+	  goto **ip_ptr++;
 
 #undef next_int
 #define next_int ((opcode)(*ip_ptr++))
