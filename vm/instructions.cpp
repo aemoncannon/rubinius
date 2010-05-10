@@ -138,16 +138,16 @@ continue_to_run:
 #define DISPATCH  cur_ip = ip_ptr - vmm->addresses;	\
 	  op = vmm->opcodes[cur_ip]; \
 	  if(state->tracing_enabled){ \
-	    if(state->trace_recording_enabled){ \
-	    	  std::cout << op << "\n"; \
+	    if(state->recording_trace != NULL){ \
+			state->recording_trace->add(op, ip_ptr, vmm, call_frame);	\
         } \
         else if(op == InstructionSequence::insn_goto || \
                 op == InstructionSequence::insn_goto_if_false || \
                 op == InstructionSequence::insn_goto_if_false){ \
-	    	  intptr_t location = (opcode)(*(ip_ptr + 1)); \
+	    	  intptr_t location = (intptr_t)(*(ip_ptr + 1)); \
 	    	  if(location < cur_ip){ \
 	    		  if(++(vmm->trace_counters[location]) > 10){ \
-	    			  state->trace_recording_enabled = true; \
+	    			  state->recording_trace = new Trace(op, ip_ptr, vmm, call_frame);	\
 	    		  } \
             } \
 	    } \

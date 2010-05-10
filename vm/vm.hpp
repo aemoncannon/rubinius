@@ -17,8 +17,10 @@
 #include "gc/variable_buffer.hpp"
 
 #include "shared_state.hpp"
+#include "trace.hpp"
 
 #include <vector>
+#include <map>
 #include <pthread.h>
 #include <setjmp.h>
 
@@ -77,7 +79,6 @@ namespace rubinius {
     int stack_size_;
     profiler::Profiler* profiler_;
     bool run_signals_;
-
     MethodMissingReason method_missing_reason_;
 
   public:
@@ -93,7 +94,7 @@ namespace rubinius {
     bool check_local_interrupts;
 
     bool tracing_enabled;
-    bool trace_recording_enabled;
+	Trace* recording_trace;
 
     ThreadState thread_state_;
 
@@ -156,6 +157,9 @@ namespace rubinius {
 
     void disable_tracing() {
 		tracing_enabled = false;
+		if(recording_trace != NULL){
+			recording_trace->pretty_print(std::cout);
+		}
 		std::cout << "TRACING DISABLED" << "\n";
     }
 
