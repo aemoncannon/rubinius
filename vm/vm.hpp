@@ -157,9 +157,6 @@ namespace rubinius {
 
     void disable_tracing() {
 		tracing_enabled = false;
-		if(recording_trace != NULL){
-			recording_trace->pretty_print(this, std::cout);
-		}
 		std::cout << "TRACING DISABLED" << "\n";
     }
 

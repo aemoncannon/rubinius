@@ -21,11 +21,12 @@ namespace rubinius {
 		opcode op;
 		int pc;
 		CompiledMethod* cm;
+		void** ip_ptr;
+		TraceNode* prev;
+		TraceNode* next;
 		int numargs;
 		intptr_t arg1;
 		intptr_t arg2;
-		TraceNode* prev;
-		TraceNode* next;
 
 
 		TraceNode(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
@@ -45,7 +46,7 @@ namespace rubinius {
 
 		Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
-		void add(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+		bool add(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		void pretty_print(STATE, std::ostream& out);
 

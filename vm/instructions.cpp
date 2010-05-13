@@ -139,7 +139,10 @@ continue_to_run:
 	  op = vmm->opcodes[cur_ip]; \
 	  if(state->tracing_enabled){ \
 	    if(state->recording_trace != NULL){ \
-			state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame); \
+			if(state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame)){ \
+				state->recording_trace->pretty_print(state, std::cout);	\
+				state->recording_trace = NULL; \
+			}\
         } \
         else if(op == InstructionSequence::insn_goto || \
                 op == InstructionSequence::insn_goto_if_false || \
