@@ -714,6 +714,25 @@ EOM
     end
   end
 
+  def generate_trace_record(filename)
+    File.open filename, "w" do |file|
+      file.puts "switch(op){"
+
+      objects.each do |obj|
+        if enum = obj.opcode_enum
+          file.puts "case #{obj.bytecode}:"
+          obj.arguments.each_with_index do |arg, i|
+            file.puts "this->arg#{i+1} = (intptr_t)(*(ip_ptr + #{i + 1}));"
+          end
+          file.puts "this->numargs = #{obj.arguments.length};"
+          file.puts "break;"
+        end
+      end
+
+      file.puts "}"
+    end
+  end
+
   def generate_prototypes(filename)
     File.open filename, "w" do |file|
       file.puts "extern \"C\" {"

@@ -67,6 +67,7 @@ INSN_GEN    = %w[ vm/gen/instruction_names.cpp
                   vm/gen/instruction_implementations.hpp
                   vm/gen/instruction_visitors.hpp
                   vm/gen/instruction_effects.hpp
+                  vm/gen/instruction_trace_record.hpp
                 ]
 TYPE_GEN    = %w[ vm/gen/includes.hpp
                   vm/gen/kind_of.hpp
@@ -538,6 +539,10 @@ end
 
 file "lib/compiler/generator_methods.rb" => insn_deps do |t|
   generate_instruction_file iparser, :generate_generator_methods, t.name
+end
+
+file "vm/gen/instruction_trace_record.hpp" => insn_deps do |t|
+  generate_instruction_file iparser, :generate_trace_record, t.name
 end
 
 file "vm/gen/instruction_names.hpp" => insn_deps do |t|

@@ -139,7 +139,7 @@ continue_to_run:
 	  op = vmm->opcodes[cur_ip]; \
 	  if(state->tracing_enabled){ \
 	    if(state->recording_trace != NULL){ \
-			state->recording_trace->add(op, ip_ptr, vmm, call_frame);	\
+			state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame); \
         } \
         else if(op == InstructionSequence::insn_goto || \
                 op == InstructionSequence::insn_goto_if_false || \
@@ -147,7 +147,7 @@ continue_to_run:
 	    	  intptr_t location = (intptr_t)(*(ip_ptr + 1)); \
 	    	  if(location < cur_ip){ \
 	    		  if(++(vmm->trace_counters[location]) > 10){ \
-	    			  state->recording_trace = new Trace(op, ip_ptr, vmm, call_frame);	\
+	    			  state->recording_trace = new Trace(op, cur_ip, ip_ptr, vmm, call_frame); \
 	    		  } \
             } \
 	    } \
