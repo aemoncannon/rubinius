@@ -36,6 +36,7 @@ namespace rubinius {
   class VMMethod;
   class InterpreterCallFrame;
   class InlineCache;
+  class Trace;
 
   typedef Object* (*Runner)(STATE, VMMethod* const vmm, CallFrame* const call_frame);
   typedef Object* (*InterpreterRunner)(STATE, VMMethod* const vmm,
@@ -55,6 +56,7 @@ namespace rubinius {
     opcode* opcodes;
     void** addresses;
     std::size_t* trace_counters;
+    Trace** traces;
 
     std::size_t total;
     TypeInfo* type;
@@ -70,6 +72,7 @@ namespace rubinius {
 
     size_t number_of_caches_;
     InlineCache* caches;
+
 
 #ifdef ENABLE_LLVM
   private:

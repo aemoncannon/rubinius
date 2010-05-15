@@ -4,6 +4,7 @@
 #include "objectmemory.hpp"
 #include "prelude.hpp"
 #include "vmmethod.hpp"
+#include "trace.hpp"
 
 #include "vm/object_utils.hpp"
 
@@ -99,9 +100,13 @@ namespace rubinius {
     opcodes = new opcode[total];
     addresses = new void*[total];
     trace_counters = new size_t[total];
-
     for(size_t index = 0; index < total; index++) {
 		trace_counters[index] = 0;
+	}
+
+    traces = new Trace*[total];
+    for(size_t index = 0; index < total; index++) {
+		traces[index] = NULL;
 	}
 
     fill_opcodes(state, meth);

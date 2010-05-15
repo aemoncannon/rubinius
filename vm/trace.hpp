@@ -40,9 +40,9 @@ namespace rubinius {
     public:
 		TraceNode* anchor;
 		TraceNode* head;
-		llvm::Function* llvm_function_;
-		size_t jitted_bytes_;
-		void*  jitted_impl_;
+		llvm::Function* llvm_function;
+		size_t jitted_bytes;
+		void*  jitted_impl;
 
 		Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
