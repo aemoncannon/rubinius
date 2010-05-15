@@ -504,6 +504,8 @@ namespace rubinius {
     void compile_callframe(STATE, CompiledMethod* start, CallFrame* call_frame,
                            int primitive = -1);
 
+    void compile_trace(STATE, Trace* trace, CallFrame* call_frame);
+
     Symbol* symbol(const char* sym);
     const char* symbol_cstr(const Symbol* sym);
 

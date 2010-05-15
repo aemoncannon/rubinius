@@ -9,6 +9,7 @@
 #include "builtin/module.hpp"
 #include "field_offset.hpp"
 
+#include "trace.hpp"
 #include "call_frame.hpp"
 #include "configuration.hpp"
 
@@ -108,6 +109,40 @@ namespace jit {
     work.setup();
 
     compile_builder(ctx, ls, info, work);
+  }
+
+	void Compiler::compile_trace(LLVMState* ls, Trace* trace) {
+
+    CompiledMethod* cm = trace->anchor_cm();
+    VMMethod* vmm = cm->backend_method();
+
+    jit::Context ctx(ls);
+    JITMethodInfo info(ctx, cm, vmm);
+    info.is_block = false;
+    ctx.set_root(&info);
+
+    jit::TraceBuilder work(ls, trace, info);
+    work.setup();
+
+    llvm::Function* func = info.function();
+
+    if(!work.generate_body()) {
+	  std::cout << "Oops! failed to generate body!" << "\n";
+      function_ = NULL;
+      // This is too noisy to report
+      // llvm::outs() << "not supported yet.\n";
+      return;
+    }
+
+    // Hook up the return pad and return phi.
+    work.generate_hard_return();
+
+	// See below for how to remove unused basic blocks! -Aemon
+
+	// Run optimization passes!
+    //ls->passes()->run(*func);
+
+    function_ = func;
   }
 
   void Compiler::compile_builder(jit::Context& ctx, LLVMState* ls, JITMethodInfo& info,

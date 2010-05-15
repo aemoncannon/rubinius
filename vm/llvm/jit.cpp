@@ -1,6 +1,7 @@
 #ifdef ENABLE_LLVM
 
 #include "vmmethod.hpp"
+#include "trace.hpp"
 #include "llvm/jit.hpp"
 #include "llvm/jit_context.hpp"
 #include "builtin/fixnum.hpp"
@@ -584,6 +585,31 @@ namespace rubinius {
                 << queued_methods() << "/"
                 << jitted_methods() << " ]]]\n";
     }
+  }
+
+  void LLVMState::compile_trace(STATE, Trace* trace, CallFrame* call_frame) {
+
+	  jit::Compiler jit;
+
+        void* func = 0;
+        {
+		  jit.compile_trace(this, trace, call_frame);
+          func = jit.generate_function(ls_);
+        }
+
+        // We were unable to compile this function, likely
+        // because it's got something we don't support.
+        if(!func) {
+			std::cout << "ACK! failed to compile trace!" << "\n";
+        }
+
+        if(show_machine_code_) {
+          jit.show_machine_code();
+        }
+
+        trace->set_jitted(jit.llvm_function(),
+						  jit.code_bytes(),
+						  func);
   }
 
   void LLVMState::remove(llvm::Function* func) {

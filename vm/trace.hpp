@@ -3,7 +3,7 @@
 
 
 namespace llvm {
-  class Function;
+	class Function;
 }
 
 namespace rubinius {
@@ -49,6 +49,20 @@ namespace rubinius {
 		bool add(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		void pretty_print(STATE, std::ostream& out);
+
+	    std:string trace_name();
+
+		void compile(STATE);
+
+		CompiledMethod* anchor_cm(){
+			return anchor->cm;
+		}
+
+		void set_jitted(llvm::Function* func, size_t bytes, void* impl) {
+			llvm_function = func;
+			jitted_impl = impl;
+			jitted_bytes = bytes;
+		}
 
 	};
 

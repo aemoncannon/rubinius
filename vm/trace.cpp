@@ -6,6 +6,10 @@
 #include "builtin/symbol.hpp"
 #include "vm/builtin/compiledmethod.hpp"
 
+#ifdef ENABLE_LLVM
+#include "llvm/jit.hpp"
+#endif
+
 
 namespace rubinius {
 
@@ -49,6 +53,16 @@ namespace rubinius {
 			return false;
 		}
 	}
+
+	void Trace::compile(STATE) {
+		LLVMState* ls = LLVMState::get(state);
+		ls->compile_trace(state, this);
+	}
+
+    std:string trace_name(){
+		TraceNode* tmp = anchor;
+		return std:string("_TRACE_") + tmp->pc;
+    }
 
 	void Trace::pretty_print(STATE, std::ostream& out) {
 		out << "[" << "\n";
