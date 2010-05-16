@@ -56,11 +56,11 @@ namespace rubinius {
                                            const Twine& name)
   {
     return new AllocaInst(type, size, name,
-        function_->getEntryBlock().getTerminator());
+													function_->getEntryBlock().getTerminator());
   }
 
   JITMethodInfo::JITMethodInfo(jit::Context& ctx, CompiledMethod* cm, VMMethod* v,
-                  JITMethodInfo* parent)
+															 JITMethodInfo* parent)
     : context_(ctx)
     , function_(0)
     , entry_(0)
@@ -96,22 +96,22 @@ namespace rubinius {
 
     return_pad_ = llvm::BasicBlock::Create(context_.state()->ctx(), "return_pad", func);
     return_phi_ = llvm::PHINode::Create(
-       context_.state()->ptr_type("Object"), "return_phi", return_pad_);
+																				context_.state()->ptr_type("Object"), "return_phi", return_pad_);
   }
 
   JITInlineBlock::JITInlineBlock(LLVMState* ls, llvm::PHINode* phi, llvm::BasicBlock* brk,
-                   CompiledMethod* cm, VMMethod* code,
-                   JITMethodInfo* scope, int which)
-      : block_break_result_(phi)
-      , block_break_loc_(brk)
-      , code_(code)
-      , method_(&ls->roots())
-      , scope_(scope)
-      , which_(which)
-      , created_object_(false)
-    {
-      method_.set(cm);
-    }
+																 CompiledMethod* cm, VMMethod* code,
+																 JITMethodInfo* scope, int which)
+		: block_break_result_(phi)
+		, block_break_loc_(brk)
+		, code_(code)
+		, method_(&ls->roots())
+		, scope_(scope)
+		, which_(which)
+		, created_object_(false)
+	{
+		method_.set(cm);
+	}
 
   LLVMState* LLVMState::get(STATE) {
     if(!state->shared.llvm_state) {
@@ -144,7 +144,7 @@ namespace rubinius {
   const llvm::Type* LLVMState::ptr_type(std::string name) {
     std::string full_name = std::string("struct.rubinius::") + name;
     return PointerType::getUnqual(
-        module_->getTypeByName(full_name.c_str()));
+																	module_->getTypeByName(full_name.c_str()));
   }
 
   const llvm::Type* LLVMState::type(std::string name) {
@@ -339,9 +339,9 @@ namespace rubinius {
         int which = ls_->add_jitted_method();
         if(ls_->config().jit_show_compiling) {
           llvm::outs() << "[[[ JIT finished background compiling "
-                    << which
-                    << (req->is_block() ? " (block)" : " (method)")
-                    << " ]]]\n";
+											 << which
+											 << (req->is_block() ? " (block)" : " (method)")
+											 << " ]]]\n";
         }
 
         delete req;
@@ -413,7 +413,7 @@ namespace rubinius {
       log_ = &std::cerr;
     } else {
       std::ofstream* s = new std::ofstream(
-          state->shared.config.jit_log.value.c_str(), std::ios::out);
+																					 state->shared.config.jit_log.value.c_str(), std::ios::out);
 
       if(s->fail()) {
         delete s;
@@ -498,12 +498,12 @@ namespace rubinius {
     object_ = ptr_type("Object");
 
     profiling_ = new GlobalVariable(
-        *module_, Int1Ty, false,
-        GlobalVariable::ExternalLinkage,
-        0, "profiling_flag");
+																		*module_, Int1Ty, false,
+																		GlobalVariable::ExternalLinkage,
+																		0, "profiling_flag");
 
     engine_->addGlobalMapping(profiling_,
-        reinterpret_cast<void*>(state->shared.profiling_address()));
+															reinterpret_cast<void*>(state->shared.profiling_address()));
 
     add_internal_functions();
 
@@ -553,14 +553,14 @@ namespace rubinius {
     if(cm->backend_method()->call_count < 0) {
       if(config().jit_inline_debug) {
         log() << "JIT: ignoring candidate! "
-          << symbol_cstr(cm->name()) << "\n";
+							<< symbol_cstr(cm->name()) << "\n";
       }
       return;
     }
 
     if(config().jit_inline_debug) {
       log() << "JIT: queueing method: "
-        << symbol_cstr(cm->name()) << "\n";
+						<< symbol_cstr(cm->name()) << "\n";
     }
 
     cm->backend_method()->call_count = -1;
@@ -581,9 +581,9 @@ namespace rubinius {
 
     if(state->shared.config.jit_show_compiling) {
       llvm::outs() << "[[[ JIT Queued"
-                << (block ? " block " : " method ")
-                << queued_methods() << "/"
-                << jitted_methods() << " ]]]\n";
+									 << (block ? " block " : " method ")
+									 << queued_methods() << "/"
+									 << jitted_methods() << " ]]]\n";
     }
   }
 
@@ -591,25 +591,25 @@ namespace rubinius {
 
 	  jit::Compiler jit;
 
-        void* func = 0;
-        {
+		void* func = 0; 
+		{
 		  jit.compile_trace(this, trace, call_frame);
-          func = jit.generate_function(ls_);
-        }
+			func = jit.generate_function(ls_);
+		}
 
-        // We were unable to compile this function, likely
-        // because it's got something we don't support.
-        if(!func) {
+		// We were unable to compile this function, likely
+		// because it's got something we don't support.
+		if(!func) {
 			std::cout << "ACK! failed to compile trace!" << "\n";
-        }
+		}
 
-        if(show_machine_code_) {
-          jit.show_machine_code();
-        }
+		if(show_machine_code_) {
+			jit.show_machine_code();
+		}
 
-        trace->set_jitted(jit.llvm_function(),
-						  jit.code_bytes(),
-						  func);
+		trace->set_jitted(jit.llvm_function(),
+											jit.code_bytes(),
+											func);
   }
 
   void LLVMState::remove(llvm::Function* func) {
@@ -626,30 +626,30 @@ namespace rubinius {
   const static int cInlineMaxDepth = 4;
 
   /*
-  static CallFrame* find_call_frame(CallFrame* frame, VMMethod* meth, int* dist) {
+		static CallFrame* find_call_frame(CallFrame* frame, VMMethod* meth, int* dist) {
     *dist = 0;
     while(frame) {
-      if(frame->cm->backend_method() == meth) return frame;
-      frame = frame->previous;
-      dist++;
+		if(frame->cm->backend_method() == meth) return frame;
+		frame = frame->previous;
+		dist++;
     }
 
     return 0;
-  }
+		}
   */
 
   /*
-  static void show_method(LLVMState* ls, VMMethod* vmm, const char* extra = "") {
+		static void show_method(LLVMState* ls, VMMethod* vmm, const char* extra = "") {
     CompiledMethod* cm = vmm->original.get();
 
     std::cerr << "  "
-              << ls->symbol_cstr(cm->scope()->module()->name())
-              << "#"
-              << ls->symbol_cstr(cm->name())
-              << " (" << vmm->call_count << ") "
-              << extra
-              << "\n";
-  }
+		<< ls->symbol_cstr(cm->scope()->module()->name())
+		<< "#"
+		<< ls->symbol_cstr(cm->name())
+		<< " (" << vmm->call_count << ") "
+		<< extra
+		<< "\n";
+		}
   */
 
   static CompiledMethod* find_first_non_block(CallFrame* cf) {
@@ -662,14 +662,14 @@ namespace rubinius {
   }
 
   /*
-  static CallFrame* validate_block_parent(CallFrame* cf, VMMethod* parent) {
+		static CallFrame* validate_block_parent(CallFrame* cf, VMMethod* parent) {
     if(cf->previous && cf->previous->previous) {
-      cf = cf->previous->previous;
-      if(cf->cm->backend_method() == parent) return cf;
+		cf = cf->previous->previous;
+		if(cf->cm->backend_method() == parent) return cf;
     }
 
     return 0;
-  }
+		}
   */
 
   void LLVMState::compile_callframe(STATE, CompiledMethod* start, CallFrame* call_frame,
@@ -677,7 +677,7 @@ namespace rubinius {
     if(config().jit_inline_debug) {
       if(start) {
         log() << "JIT: target search from "
-          << symbol_cstr(start->name()) << "\n";
+							<< symbol_cstr(start->name()) << "\n";
       } else {
         log() << "JIT: target search from primitive\n";
       }
@@ -728,11 +728,11 @@ namespace rubinius {
       VMMethod* vmm = cur->backend_method();
 
       if(call_frame->block_p()
-          || vmm->required_args != vmm->total_args // has a splat
-          || vmm->call_count < 200 // not called much
-          || vmm->jitted() // already jitted
-          || vmm->parent() // is a block
-        ) return caller;
+				 || vmm->required_args != vmm->total_args // has a splat
+				 || vmm->call_count < 200 // not called much
+				 || vmm->jitted() // already jitted
+				 || vmm->parent() // is a block
+				 ) return caller;
 
       CallFrame* next = call_frame->previous;
 
@@ -759,7 +759,7 @@ namespace rubinius {
 
     while(ud_disassemble(&ud)) {
       void* address = reinterpret_cast<void*>(
-          reinterpret_cast<uintptr_t>(buffer) + ud_insn_off(&ud));
+																							reinterpret_cast<uintptr_t>(buffer) + ud_insn_off(&ud));
 
       std::cout << std::setw(10) << std::right
                 << address

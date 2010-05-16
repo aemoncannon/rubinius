@@ -111,7 +111,7 @@ namespace jit {
     compile_builder(ctx, ls, info, work);
   }
 
-	void Compiler::compile_trace(LLVMState* ls, Trace* trace) {
+	void Compiler::compile_trace(LLVMState* ls, Trace* trace, CallFrame* call_frame) {
 
     CompiledMethod* cm = trace->anchor_cm();
     VMMethod* vmm = cm->backend_method();

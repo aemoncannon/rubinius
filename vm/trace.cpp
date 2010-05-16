@@ -59,10 +59,10 @@ namespace rubinius {
 		ls->compile_trace(state, this);
 	}
 
-    std:string trace_name(){
-		TraceNode* tmp = anchor;
-		return std:string("_TRACE_") + tmp->pc;
-    }
+   std:string trace_name(){
+		 TraceNode* tmp = anchor;
+		 return std:string("_TRACE_") + tmp->pc;
+	 }
 
 	void Trace::pretty_print(STATE, std::ostream& out) {
 		out << "[" << "\n";
