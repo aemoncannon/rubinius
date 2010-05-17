@@ -68,6 +68,7 @@ namespace rubinius {
   };
 
   class JITVisit : public VisitInstructions<JITVisit>, public JITOperations {
+	protected:
     JITFunctions f;
     BlockMap& block_map_;
 

@@ -5,7 +5,7 @@
 #include "vmmethod.hpp"
 #include "trace.hpp"
 
-#include "llvm/jit_visit.hpp"
+#include "llvm/jit_trace_visit.hpp"
 #include "llvm/control_flow.hpp"
 #include "llvm/cfg.hpp"
 
@@ -99,11 +99,11 @@ namespace rubinius {
 
 
 		class Walker {
-			JITVisit& v_;
+			JITTraceVisit& v_;
 			BlockMap& map_;
 
 		public:
-			Walker(JITVisit& v, BlockMap& map)
+			Walker(JITTraceVisit& v, BlockMap& map)
 				: v_(v)
 				, map_(map)
 			{}
@@ -111,12 +111,16 @@ namespace rubinius {
 			void call(Trace* trace, TraceNode* node){
 				trace->dispatch(v_, node);
 
-				// if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
-				// 	BlockMap::iterator i = map_.find(iter.next_ip());
-				// 	if(i != map_.end()) {
-				// 		v_.b().CreateBr(i->second.block);
-				// 	}
-				// }
+				if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
+					std::cout << "No terminator at: " << node->pc << "\n";
+					if(node->next != NULL) {
+						BlockMap::iterator i = map_.find(node->next->pc);
+						if(i != map_.end()) {
+							std::cout << "Making terminator: " << node->next->pc << "\n";
+							v_.b().CreateBr(i->second.block);
+						}
+					}
+				}
 			}
 		};
 
@@ -125,7 +129,7 @@ namespace rubinius {
 
 			std::cout << "4" << "\n";
 
-			JITVisit visitor(ls_, info_, block_map_, b().GetInsertBlock());
+			JITTraceVisit visitor(ls_, info_, block_map_, b().GetInsertBlock());
 			visitor.set_called_args(0);
 			visitor.set_valid_flag(valid_flag);
 			if(use_full_scope_) visitor.use_full_scope();
@@ -145,6 +149,8 @@ namespace rubinius {
 
 			info_.return_pad()->moveAfter(visitor.current_block());
 			info_.fin_block = visitor.current_block();
+
+			std::cout << "7" << "\n";
 			return true;
 		}
 
@@ -286,8 +292,10 @@ namespace rubinius {
 			}
 
 			JITBasicBlock* break_at(opcode ip) {
+				std::cout << "Breaking at " << ip << "\n";
 				BlockMap::iterator i = map_.find(ip);
 				if(i == map_.end()) {
+					std::cout << "New BB at " << ip << "\n";
 					std::ostringstream ss;
 					ss << "ip" << ip;
 					JITBasicBlock& jbb = map_[ip];

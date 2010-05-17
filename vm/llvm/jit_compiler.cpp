@@ -135,8 +135,12 @@ namespace jit {
       return;
     }
 
+		std::cout << "8" << "\n";
+
     // Hook up the return pad and return phi.
     work.generate_hard_return();
+
+		std::cout << "9" << "\n";
 
 	// See below for how to remove unused basic blocks! -Aemon
 
