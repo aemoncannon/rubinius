@@ -587,14 +587,14 @@ namespace rubinius {
     }
   }
 
-  void LLVMState::compile_trace(STATE, Trace* trace, CallFrame* call_frame) {
+  void LLVMState::compile_trace(STATE, Trace* trace) {
 
 	  jit::Compiler jit;
 
 		void* func = 0; 
 		{
-		  jit.compile_trace(this, trace, call_frame);
-			func = jit.generate_function(ls_);
+		  jit.compile_trace(this, trace);
+			func = jit.generate_function(this);
 		}
 
 		// We were unable to compile this function, likely
@@ -603,9 +603,9 @@ namespace rubinius {
 			std::cout << "ACK! failed to compile trace!" << "\n";
 		}
 
-		if(show_machine_code_) {
-			jit.show_machine_code();
-		}
+		// if(show_machine_code_) {
+		// 	jit.show_machine_code();
+		// }
 
 		trace->set_jitted(jit.llvm_function(),
 											jit.code_bytes(),

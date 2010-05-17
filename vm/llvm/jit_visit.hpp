@@ -197,6 +197,53 @@ namespace rubinius {
       init_out_args();
     }
 
+    void initialize_for_trace() {
+      BasicBlock* start = b().GetInsertBlock();
+
+      bail_out_ = new_block("bail_out");
+
+      Value* call_args[] = {
+        vm_,
+        call_frame_
+      };
+
+      set_block(bail_out_);
+
+      Value* isit = f.return_to_here.call(call_args, 2, "rth", b());
+
+      BasicBlock* ret_raise_val = new_block("ret_raise_val");
+      bail_out_fast_ = new_block("ret_null");
+
+      start->moveAfter(bail_out_fast_);
+
+      b().CreateCondBr(isit, ret_raise_val, bail_out_fast_);
+
+      set_block(bail_out_fast_);
+      if(use_full_scope_) {
+        flush_scope_to_heap(vars_);
+      }
+
+      info().add_return_value(Constant::getNullValue(ObjType), current_block());
+      b().CreateBr(info().return_pad());
+
+      set_block(ret_raise_val);
+      Value* crv = f.clear_raise_value.call(&vm_, 1, "crv", b());
+      if(use_full_scope_) flush_scope_to_heap(vars_);
+
+      info().add_return_value(crv, current_block());
+      b().CreateBr(info().return_pad());
+
+      set_block(start);
+
+      ip_pos_ = b().CreateConstGEP2_32(call_frame_, 0, offset::cf_ip, "ip_pos");
+
+      global_serial_pos = b().CreateIntToPtr(
+          ConstantInt::get(ls_->IntPtrTy, (intptr_t)ls_->shared().global_serial_address()),
+          PointerType::getUnqual(ls_->IntPtrTy), "cast_to_intptr");
+
+      //init_out_args();
+    }
+
     void set_has_side_effects() {
       has_side_effects_ = true;
     }
@@ -1139,9 +1186,7 @@ namespace rubinius {
         ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
         ConstantInt::get(ls_->Int32Ty, which)
       };
-
       Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
-
       stack_push(b().CreateLoad(pos, "local"));
     }
 

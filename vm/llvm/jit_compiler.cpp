@@ -32,6 +32,7 @@
 #include "llvm/jit.hpp"
 #include "llvm/jit_compiler.hpp"
 #include "llvm/jit_method.hpp"
+#include "llvm/jit_trace.hpp"
 #include "llvm/jit_block.hpp"
 #include "llvm/passes.hpp"
 #include "instructions_util.hpp"
@@ -111,7 +112,7 @@ namespace jit {
     compile_builder(ctx, ls, info, work);
   }
 
-	void Compiler::compile_trace(LLVMState* ls, Trace* trace, CallFrame* call_frame) {
+	void Compiler::compile_trace(LLVMState* ls, Trace* trace) {
 
     CompiledMethod* cm = trace->anchor_cm();
     VMMethod* vmm = cm->backend_method();

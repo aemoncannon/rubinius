@@ -9,85 +9,83 @@
 namespace rubinius {
   class InlinePolicy;
 
-namespace jit {
-  class TraceBuilder {
-  public:
-    LLVMState* ls_;
-    VMMethod* vmm_;
-    const llvm::Type* cf_type;
-    const llvm::Type* vars_type;
-    const llvm::Type* stack_vars_type;
-    const llvm::Type* obj_type;
-    const llvm::Type* obj_ary_type;
-    llvm::Function* func;
+	namespace jit {
 
-    llvm::Value* vm;
-    llvm::Value* prev;
-    llvm::Value* msg;
-    llvm::Value* args;
-    llvm::Value* block_env;
-    llvm::Value* block_inv;
-    llvm::Value* top_scope;
+		class TraceBuilder {
+		public:
+			LLVMState* ls_;
+			VMMethod* vmm_;
+			const llvm::Type* cf_type;
+			const llvm::Type* vars_type;
+			const llvm::Type* stack_vars_type;
+			const llvm::Type* obj_type;
+			const llvm::Type* obj_ary_type;
+			llvm::Function* func;
 
-    llvm::BasicBlock* block;
+			llvm::Value* vm;
+			llvm::Value* prev;
+			llvm::Value* msg;
+			llvm::Value* args;
+			llvm::Value* block_env;
+			llvm::Value* block_inv;
+			llvm::Value* top_scope;
 
-    llvm::Value* call_frame;
-    llvm::Value* stk;
-    llvm::Value* vars;
+			llvm::BasicBlock* block;
 
-    llvm::Value* stack_top;
-    llvm::Value* method_entry_;
-    llvm::Value* method;
+			llvm::Value* call_frame;
+			llvm::Value* stk;
+			llvm::Value* vars;
 
-    llvm::Value* arg_total;
-    llvm::Value* valid_flag;
+			llvm::Value* stack_top;
+			llvm::Value* method_entry_;
+			llvm::Value* method;
 
-    llvm::Value* counter;
+			llvm::Value* arg_total;
+			llvm::Value* valid_flag;
 
-    llvm::IRBuilder<> builder_;
+			llvm::Value* counter;
 
-    llvm::Value* call_frame_flags;
-    bool use_full_scope_;
-    bool number_of_sends_;
-    bool loops_;
+			llvm::IRBuilder<> builder_;
 
-    BlockMap block_map_;
+			llvm::Value* call_frame_flags;
+			bool use_full_scope_;
+			bool number_of_sends_;
+			bool loops_;
 
-    llvm::BasicBlock* import_args_;
-    llvm::BasicBlock* method_body_;
+			BlockMap block_map_;
 
-    Trace* trace;
+			llvm::BasicBlock* import_args_;
+			llvm::BasicBlock* method_body_;
 
-  public:
+			Trace* trace;
 
-    llvm::IRBuilder<>& b() { return builder_; }
+			JITMethodInfo& info_;
 
-    TraceBuilder(LLVMState* ls, Trace* trace);
+		public:
 
-		void setup();
+			llvm::IRBuilder<>& b() { return builder_; }
 
-    void pass_one(llvm::BasicBlock* body);
+			TraceBuilder(LLVMState* ls, Trace* trace, JITMethodInfo& info);
 
-    void nil_stack(int size, llvm::Value* nil);
+			void setup();
 
-    void nil_locals();
+			void pass_one(llvm::BasicBlock* body);
 
-    void check_self_type();
+			bool generate_body();
 
-    bool generate_body();
-    void generate_hard_return();
+			void generate_hard_return();
 
-    llvm::Value* get_field(llvm::Value* val, int which);
+			llvm::Value* get_field(llvm::Value* val, int which);
 
-    template <typename T>
-    llvm::Value* constant(T obj, const llvm::Type* obj_type) {
-      return b().CreateIntToPtr(
-        llvm::ConstantInt::get(ls_->Int64Ty, (intptr_t)obj),
-        obj_type, "constant");
-    }
+			template <typename T>
+			llvm::Value* constant(T obj, const llvm::Type* obj_type) {
+				return b().CreateIntToPtr(
+					llvm::ConstantInt::get(ls_->Int64Ty, (intptr_t)obj),
+					obj_type, "constant");
+			}
 
-  };
-}
+		};
+	}
 }
 
 #endif

@@ -5,8 +5,11 @@
 #include "builtin/iseq.hpp"
 #include "builtin/symbol.hpp"
 #include "vm/builtin/compiledmethod.hpp"
+#include "trace.hpp"
+
 
 #ifdef ENABLE_LLVM
+#include "llvm/jit_visit.hpp"
 #include "llvm/jit.hpp"
 #endif
 
@@ -59,10 +62,9 @@ namespace rubinius {
 		ls->compile_trace(state, this);
 	}
 
-   std:string trace_name(){
-		 TraceNode* tmp = anchor;
-		 return std:string("_TRACE_") + tmp->pc;
-	 }
+	string Trace::trace_name(){
+		return string("_TRACE_");
+	}
 
 	void Trace::pretty_print(STATE, std::ostream& out) {
 		out << "[" << "\n";
@@ -75,6 +77,62 @@ namespace rubinius {
 		}
 		out << "]" << "\n";
 	}
+
+
+
+	// class Walker {
+	// 		JITVisit& v_;
+	// 		BlockMap& map_;
+
+	// 	public:
+	// 		Walker(JITVisit& v, BlockMap& map)
+	// 			: v_(v)
+	// 			, map_(map)
+	// 		{}
+
+	// 		void call(OpcodeIterator& iter) {
+	// 			v_.dispatch(iter.stream(), iter.ip());
+
+	// 			if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
+	// 				BlockMap::iterator i = map_.find(iter.next_ip());
+	// 				if(i != map_.end()) {
+	// 					v_.b().CreateBr(i->second.block);
+	// 				}
+	// 			}
+	// 		}
+	// 	};
+
+
+	// while(!work_list_.empty()) {
+	// 	int ip = work_list_.back();
+	// 	work_list_.pop_back();
+
+	// 	iter.switch_to(ip);
+
+	// 	while(seen_[iter.ip()] == 0) {
+	// 		seen_[iter.ip()] = 1;
+
+	// 		each.call(iter);
+
+	// 		if(iter.goto_p()) {
+	// 			opcode target = iter.goto_target();
+	// 			assert(target >= 0 && target < vmm_->total);
+
+	// 			add_section(target);
+
+	// 			// Non-terminating goto's stop the current block and queue the code
+	// 			// right after them.
+	// 			if(!iter.terminator_p() && iter.next_p()) add_section(iter.next_ip());
+	// 			break;
+	// 		}
+
+	// 		if(iter.terminator_p()) break;
+
+	// 		if(!iter.next_p()) break;
+	// 		iter.advance();
+	// 	}
+	//		}
+
 
 
 

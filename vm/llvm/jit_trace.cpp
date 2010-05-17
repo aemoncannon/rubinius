@@ -1,6 +1,6 @@
 #ifdef ENABLE_LLVM
 
-#include "llvm/jit_builder.hpp"
+#include "llvm/jit_trace.hpp"
 #include "call_frame.hpp"
 #include "vmmethod.hpp"
 #include "trace.hpp"
@@ -15,7 +15,7 @@ namespace rubinius {
 
 	namespace jit {
 
-		TraceBuilder::TraceBuilder(LLVMState* ls, Trace* trace, JITMethodInfo& info)
+		TraceBuilder::TraceBuilder(LLVMState* ls, Trace* trace, JITMethodInfo& i)
 			: ls_(ls)
 			, vmm_(i.vmm)
 			, builder_(ls->ctx())
@@ -23,7 +23,7 @@ namespace rubinius {
 			, import_args_(0)
 			, method_body_(0)
 			, trace(trace)
-			, info_(info)  
+			, info_(i)  
 
 		{
 			llvm::Module* mod = ls->module();
@@ -38,8 +38,6 @@ namespace rubinius {
 			std::vector<const Type*> ftypes;
 			ftypes.push_back(ls_->ptr_type("VM"));
 			ftypes.push_back(ls_->ptr_type("CallFrame"));
-			ftypes.push_back(ls_->ptr_type("Dispatch"));
-			ftypes.push_back(ls_->ptr_type("Arguments"));
 
 			FunctionType* ft = FunctionType::get(ls_->ptr_type("Object"), ftypes, false);
 
@@ -49,224 +47,87 @@ namespace rubinius {
 															name.c_str(), ls_->module());
 
 			Function::arg_iterator ai = func->arg_begin();
-			vm =   ai++; vm->setName("state");
-			prev = ai++; prev->setName("previous");
-			msg =  ai++; msg->setName("msg");
-			args = ai++; args->setName("args");
+			vm =   ai++; 
+			vm->setName("state");
+
+			std::cout << "1" << "\n";
+
+			// For the trace, this is the current and active CallFrame
+			call_frame = ai++; 
+			call_frame->setName("call_frame");
 
 			BasicBlock* block = BasicBlock::Create(ls_->ctx(), "entry", func);
 			builder_.SetInsertPoint(block);
 
 			info_.set_function(func);
 			info_.set_vm(vm);
-			info_.set_args(args);
-			info_.set_previous(prev);
+			info_.set_call_frame(call_frame);
 			info_.set_entry(block);
+
+			std::cout << "2" << "\n";
 
 			BasicBlock* body = BasicBlock::Create(ls_->ctx(), "method_body", func);
 			method_body_ = body;
 
 			pass_one(body);
 
-
-			Value* cfstk = b().CreateAlloca(
-				obj_type,
-				ConstantInt::get(ls_->Int32Ty,
-												 (sizeof(CallFrame) / sizeof(Object*)) + vmm_->stack_size),
-				"cfstk");
-
-			Value* var_mem = b().CreateAlloca(
-				obj_type,
-				ConstantInt::get(ls_->Int32Ty,
-												 (sizeof(StackVariables) / sizeof(Object*)) + vmm_->number_of_locals),
-				"var_mem");
-
-
-			call_frame = b().CreateBitCast(
-				cfstk,
-				PointerType::getUnqual(cf_type), "call_frame");
-
-			info_.set_call_frame(call_frame);
-
-			stk = b().CreateConstGEP1_32(cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
-
+			// Not sure what this is for..
+			valid_flag = b().CreateAlloca(ls_->Int1Ty, 0, "valid_flag");
+			
+			Value* stk_mem = get_field(call_frame, offset::cf_stk);
+			stk = b().CreateBitCast(stk_mem, PointerType::getUnqual(obj_type), "stack");
 			info_.set_stack(stk);
 
-			vars = b().CreateBitCast(
-				var_mem,
-				PointerType::getUnqual(stack_vars_type), "vars");
-
+			Value* var_mem = get_field(call_frame, offset::cf_scope);
+			vars = b().CreateBitCast(var_mem, PointerType::getUnqual(stack_vars_type), "vars");
 			info_.set_variables(vars);
 
-			initialize_frame(vmm_->stack_size);
-
-			nil_stack(vmm_->stack_size, constant(Qnil, obj_type));
-
-			import_args();
-
-			import_args_ = b().GetInsertBlock();
+			// ip
+			b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), get_field(call_frame, offset::cf_ip));
 
 			b().CreateBr(body);
 			b().SetInsertPoint(body);
+
+			std::cout << "3" << "\n";
+
 		}
 
 		Value* TraceBuilder::get_field(Value* val, int which) {
 			return b().CreateConstGEP2_32(val, 0, which);
 		}
 
-		void TraceBuilder::nil_stack(int size, Value* nil) {
-			if(size == 0) return;
-			// Stack size 5 or less, do 5 stores in a row rather than
-			// the loop.
-			if(size <= 5) {
-				for(int i = 0; i < size; i++) {
-					b().CreateStore(nil, b().CreateConstGEP1_32(stk, i, "stack_pos"));
-				}
-				return;
+
+		bool TraceBuilder::generate_body() {
+
+			std::cout << "4" << "\n";
+
+
+			JITVisit visitor(ls_, info_, block_map_, b().GetInsertBlock());
+			visitor.set_called_args(0);
+			visitor.set_valid_flag(valid_flag);
+			if(use_full_scope_) visitor.use_full_scope();
+			visitor.initialize_for_trace();
+
+			std::cout << "5" << "\n";
+
+			try {
+				trace->walk(visitor, block_map_);
+			} catch(JITVisit::Unsupported &e) {
+				return false;
 			}
 
-			Value* max = ConstantInt::get(ls_->Int32Ty, size);
-			Value* one = ConstantInt::get(ls_->Int32Ty, 1);
+			std::cout << "6" << "\n";
 
-			BasicBlock* top = BasicBlock::Create(ls_->ctx(), "stack_nil", func);
-			BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "bottom", func);
-
-			b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), info_.counter());
-
-			b().CreateBr(top);
-
-			b().SetInsertPoint(top);
-
-			Value* cur = b().CreateLoad(info_.counter(), "counter");
-			b().CreateStore(nil, b().CreateGEP(stk, cur, "stack_pos"));
-
-			Value* added = b().CreateAdd(cur, one, "added");
-			b().CreateStore(added, info_.counter());
-
-			Value* cmp = b().CreateICmpEQ(added, max, "loop_check");
-			b().CreateCondBr(cmp, cont, top);
-
-			b().SetInsertPoint(cont);
+			info_.return_pad()->moveAfter(visitor.current_block());
+			info_.fin_block = visitor.current_block();
+			return true;
 		}
 
-		void TraceBuilder::nil_locals() {
-			Value* nil = constant(Qnil, obj_type);
-			int size = vmm_->number_of_locals;
-
-			if(size == 0) return;
-			// Stack size 5 or less, do 5 stores in a row rather than
-			// the loop.
-			if(size <= 5) {
-				for(int i = 0; i < size; i++) {
-					Value* idx[] = {
-						ConstantInt::get(ls_->Int32Ty, 0),
-						ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-						ConstantInt::get(ls_->Int32Ty, i)
-					};
-
-					Value* gep = b().CreateGEP(vars, idx, idx+3, "local_pos");
-					b().CreateStore(nil, gep);
-				}
-				return;
-			}
-
-			Value* max = ConstantInt::get(ls_->Int32Ty, size);
-			Value* one = ConstantInt::get(ls_->Int32Ty, 1);
-
-			BasicBlock* top = BasicBlock::Create(ls_->ctx(), "locals_nil", func);
-			BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "bottom", func);
-
-			b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), info_.counter());
-
-			b().CreateBr(top);
-
-			b().SetInsertPoint(top);
-
-			Value* cur = b().CreateLoad(info_.counter(), "counter");
-			Value* idx[] = {
-				ConstantInt::get(ls_->Int32Ty, 0),
-				ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-				cur
-			};
-
-			Value* gep = b().CreateGEP(vars, idx, idx+3, "local_pos");
-			b().CreateStore(nil, gep);
-
-			Value* added = b().CreateAdd(cur, one, "added");
-			b().CreateStore(added, info_.counter());
-
-			Value* cmp = b().CreateICmpEQ(added, max, "loop_check");
-			b().CreateCondBr(cmp, cont, top);
-
-			b().SetInsertPoint(cont);
+		void TraceBuilder::generate_hard_return() {
+			b().SetInsertPoint(info_.return_pad());
+			b().CreateRet(info_.return_phi());
 		}
 
-
-		void TraceBuilder::check_self_type() {
-			int klass_id = 0;
-			{
-				if(Class* cls = try_as<Class>(info_.method()->scope()->module())) {
-					klass_id = cls->class_id();
-				} else {
-					return;
-				}
-			}
-
-			// Now, validate class_id
-
-			Value* self = b().CreateLoad(
-				b().CreateConstGEP2_32(args, 0, offset::args_recv), "self");
-
-			BasicBlock* restart_interp = BasicBlock::Create(ls_->ctx(), "restart_interp", func);
-			BasicBlock* check_class = BasicBlock::Create(ls_->ctx(), "check_class", func);
-			BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "prologue_continue", func);
-
-			Value* mask = ConstantInt::get(ls_->Int32Ty, TAG_REF_MASK);
-			Value* zero = ConstantInt::get(ls_->Int32Ty, TAG_REF);
-
-			Value* lint = b().CreateAnd(
-				b().CreatePtrToInt(self, ls_->Int32Ty),
-				mask, "masked");
-
-			Value* is_ref = b().CreateICmpEQ(lint, zero, "is_reference");
-
-			b().CreateCondBr(is_ref, check_class, restart_interp);
-
-			b().SetInsertPoint(check_class);
-
-			Value* class_idx[] = {
-				ConstantInt::get(ls_->Int32Ty, 0),
-				ConstantInt::get(ls_->Int32Ty, 0),
-				ConstantInt::get(ls_->Int32Ty, 1)
-			};
-
-			Value* self_class = b().CreateLoad(
-				b().CreateGEP(self, class_idx, class_idx+3),
-				"class");
-
-			Value* runtime_id = b().CreateLoad(
-				b().CreateConstGEP2_32(self_class, 0, 3),
-				"class_id");
-
-			Value* equal = b().CreateICmpEQ(runtime_id,
-																			ConstantInt::get(ls_->Int32Ty, klass_id));
-
-			b().CreateCondBr(equal, cont, restart_interp);
-
-			b().SetInsertPoint(restart_interp);
-
-			Value* call_args[] = { vm, prev, msg, args };
-
-			Signature sig(ls_, "Object");
-			sig << "VM";
-			sig << "CallFrame";
-			sig << "Dispatch";
-			sig << "Arguments";
-
-			b().CreateRet(sig.call("rbx_restart_interp", call_args, 4, "ir", b()));
-
-			b().SetInsertPoint(cont);
-		}
 
 		class PassOne : public VisitInstructions<PassOne> {
 			LLVMState* ls_;
@@ -287,25 +148,24 @@ namespace rubinius {
 			Symbol* s_module_eval_;
 
 			std::list<JITBasicBlock*> exception_handlers_;
-			CFGCalculator& cfg_;
+//			CFGCalculator& cfg_;
 
 		public:
 
-			PassOne(LLVMState* ls, BlockMap& map, Function* func, BasicBlock* start,
-							CFGCalculator& cfg)
+			PassOne(LLVMState* ls, BlockMap& map, int init_ip, Function* func, BasicBlock* start)
 				: ls_(ls)
 				, map_(map)
 				, function_(func)
-				, current_ip_(0)
+				, current_ip_(init_ip)
 				, force_break_(false)
 				, creates_blocks_(false)
 				, number_of_sends_(0)
 				, loops_(false)
 				, sp_(-1)
 				, calls_evalish_(false)
-				, cfg_(cfg)
+//				, cfg_(cfg)  Aemon fix this!
 			{
-				JITBasicBlock& jbb = map_[0];
+				JITBasicBlock& jbb = map_[init_ip];
 				jbb.reachable = true;
 				jbb.block = start;
 
@@ -410,15 +270,18 @@ namespace rubinius {
 					jbb.start_ip = ip;
 					jbb.sp = sp_;
 
-					CFGBlock* cfg_block = cfg_.find_block(ip);
-					assert(cfg_block);
+					// Aemon fix this!
+					/*CFGBlock* cfg_block = cfg_.find_block(ip);
+						assert(cfg_block);
 
-					if(CFGBlock* handler = cfg_block->exception_handler()) {
+						if(CFGBlock* handler = cfg_block->exception_handler()) {
 						BlockMap::iterator hi = map_.find(handler->start_ip());
 						assert(hi != map_.end());
 
 						jbb.exception_handler = &hi->second;
-					}
+						}*/
+
+
 					// Assign the new block the current handler. This works
 					// because code creates now blocks always within the
 					// scope of the current handler and it's illegal for code
@@ -559,13 +422,14 @@ namespace rubinius {
 			}
 		};
 
+
+
 		void TraceBuilder::pass_one(BasicBlock* body) {
-			CFGCalculator cfg(vmm_);
-			cfg.build();
 
 			// Pass 1, detect BasicBlock boundaries
-			PassOne finder(ls_, block_map_, func, body, cfg);
-			finder.drive(vmm_);
+			PassOne finder(ls_, block_map_, trace->init_ip(), func, body);
+
+			trace->walk(finder, block_map_);
 
 			if(finder.creates_blocks() || finder.calls_evalish()) {
 				info_.set_use_full_scope();
@@ -576,106 +440,7 @@ namespace rubinius {
 			loops_ = finder.loops_p();
 		}
 
-		class Walker {
-			JITVisit& v_;
-			BlockMap& map_;
 
-		public:
-			Walker(JITVisit& v, BlockMap& map)
-				: v_(v)
-				, map_(map)
-			{}
-
-			void call(OpcodeIterator& iter) {
-				v_.dispatch(iter.stream(), iter.ip());
-
-				if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
-					BlockMap::iterator i = map_.find(iter.next_ip());
-					if(i != map_.end()) {
-						v_.b().CreateBr(i->second.block);
-					}
-				}
-			}
-		};
-
-		bool TraceBuilder::generate_body() {
-			JITVisit visitor(ls_, info_, block_map_, b().GetInsertBlock());
-
-			if(info_.inline_policy) {
-				visitor.set_policy(info_.inline_policy);
-			} else {
-				visitor.init_policy();
-			}
-
-			visitor.set_called_args(info_.called_args);
-
-			visitor.set_valid_flag(valid_flag);
-
-			if(use_full_scope_) visitor.use_full_scope();
-
-			visitor.initialize();
-
-			// Pass 2, compile!
-			// Drive by following the control flow.
-			jit::ControlFlowWalker walker(info_.vmm);
-			Walker cb(visitor, block_map_);
-
-			try {
-				walker.run<Walker>(cb);
-			} catch(JITVisit::Unsupported &e) {
-				return false;
-			}
-
-			// See if we should check interrupts now
-			if(method_body_ && (visitor.sends_done() > 2 || loops_)) {
-				BasicBlock* cur = b().GetInsertBlock();
-
-				// Remove the branch to method_body
-				import_args_->back().eraseFromParent();
-
-				b().SetInsertPoint(import_args_);
-				Signature sig(ls_, obj_type);
-				sig << "VM";
-				sig << "CallFrame";
-
-				Function* func_ci = sig.function("rbx_check_interrupts");
-				func_ci->setDoesNotCapture(1, true);
-				func_ci->setDoesNotCapture(2, true);
-
-				Value* call_args[] = { vm, call_frame };
-
-				BasicBlock* ret_null = BasicBlock::Create(ls_->ctx(), "ret_null", func);
-
-				Value* ret = sig.call("rbx_prologue_check", call_args, 2, "ci", b());
-				b().CreateCondBr(
-					b().CreateICmpEQ(ret, Constant::getNullValue(obj_type)),
-					ret_null, method_body_);
-
-				b().SetInsertPoint(ret_null);
-				b().CreateRet(Constant::getNullValue(obj_type));
-
-				b().SetInsertPoint(cur);
-			}
-
-			// debugging/optimization test code
-			/*
-				if(llvm::PointerMayBeCaptured(stk, true)) {
-				std::cout << "Stack is captured!\n";
-				} else {
-				std::cout << "Stack is NOT captured!\n";
-				}
-			*/
-
-			info_.return_pad()->moveAfter(visitor.current_block());
-
-			info_.fin_block = visitor.current_block();
-			return true;
-		}
-
-		void TraceBuilder::generate_hard_return() {
-			b().SetInsertPoint(info_.return_pad());
-			b().CreateRet(info_.return_phi());
-		}
 	}
 }
 

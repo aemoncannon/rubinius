@@ -1,0 +1,406 @@
+
+
+How do you compile a trace.
+
+When we run a simple trace, the following state must be translated:
+   The data stack. There will be only one for the entire trace.
+   The code body.
+   The PC is implicit (0 is the beginning of the trace)
+   The set of locals
+
+Things to consider:
+   At conditional branches, must emit code to restart the interpreter.
+   Eventually this will mean reifying the stack frames of the interpreter (see JIT inlining for guidance on this..)
+   For traces that stay within one method, we just have restore the PC..
+
+
+For each compiled method, compute the set of messages sent to each parameter.
+This gives you a rough 'type' for each parameter.
+
+
+
+Compute the callgraph.
+Depth first search over callgraph, looking at messages sent to params, and params passed to message ends. For each method m with params p1..pn, we want to compute the intersection of all message names passed to each param. This gives us the 'type' for each param.
+
+Then, look for all places where we know an object's type FOR SURE. Trace the messages sent to this object throughout its life, check those against it's actual type. Trace the messages to which the object is passed as an argument, checking the the param's 'type' against the object's actual type.
+
+
+What I want to compile!
+
+__script__ - 18: op_push_local 0
+__script__ - 20: op_push_int 20
+__script__ - 22: op_meta_send_op_lt 166330952
+__script__ - 24: op_goto_if_false 37
+__script__ - 26: op_push_local 0
+__script__ - 28: op_meta_push_1 
+__script__ - 29: op_meta_send_op_plus 166331012
+__script__ - 31: op_set_local 0
+__script__ - 33: op_pop 
+__script__ - 34: op_check_interrupts 
+__script__ - 35: op_goto 18
+
+
+
+
+    void stack_ptr_adjust(int amount) {
+      sp_ += amount;
+      assert(sp_ >= -1 && sp_ < vmmethod()->stack_size);
+    }
+
+    void stack_push(Value* val) {
+      stack_ptr_adjust(1);
+      Value* stack_pos = stack_ptr();
+
+      if(val->getType() == cast<PointerType>(stack_pos->getType())->getElementType()) {
+        b().CreateStore(val, stack_pos);
+      } else {
+        Value* cst = b().CreateBitCast(
+          val,
+          ObjType, "casted");
+        b().CreateStore(cst, stack_pos);
+      }
+    }
+
+    Value* stack_position(int amount) {
+      int pos = sp_ + amount;
+      assert(pos >= 0 && pos < vmmethod()->stack_size);
+
+      return b().CreateConstGEP1_32(stack_, pos, "stack_pos");
+    }
+
+    Value* stack_back_position(int back) {
+      return stack_position(-back);
+    }
+
+    llvm::Value* stack_back(int back) {
+      return b().CreateLoad(stack_back_position(back), "stack_load");
+    }
+
+    llvm::Value* stack_top() {
+      return stack_back(0);
+    }
+
+    void stack_remove(int count=1) {
+      sp_ -= count;
+      assert(sp_ >= -1 && sp_ < vmmethod()->stack_size);
+    }
+
+    void add_send_args(Signature& sig) {
+      sig << VMTy;
+      sig << CallFrameTy;
+      sig << ObjType;
+      sig << ls_->IntPtrTy;
+      sig << ObjArrayTy;
+    }
+
+    Function* rbx_simple_send() {
+      if(rbx_simple_send_) return rbx_simple_send_;
+
+      Signature sig(ls_, ObjType);
+      add_send_args(sig);
+
+      rbx_simple_send_ = sig.function("rbx_simple_send");
+
+      return rbx_simple_send_;
+    }
+
+
+    Value* simple_send(Symbol* name, int args, bool priv=false) {
+      sends_done_++;
+      Function* func;
+      if(priv) {
+        func = rbx_simple_send_private();
+      } else {
+        func = rbx_simple_send();
+      }
+
+      Value* call_args[] = {
+        vm_,
+        call_frame_,
+        constant(name),
+        ConstantInt::get(ls_->IntPtrTy, args),
+        stack_objects(args + 1)
+      };
+
+      flush_ip();
+
+      return b().CreateCall(func, call_args, call_args+5, "simple_send");
+    }
+
+    void visit_send_stack(opcode which, opcode args) {
+      InlineCache* cache = reinterpret_cast<InlineCache*>(which);
+
+      if(cache->method) {
+        BasicBlock* failure = new_block("fallback");
+        BasicBlock* cont = new_block("continue");
+
+        Inliner inl(context(), *this, cache, args, failure);
+        if(inl.consider()) {
+          // Uncommon doesn't yet know how to synthesize UnwindInfos, so
+          // don't do uncommon if there are handlers.
+          if(!in_inlined_block() && !has_exception_handler()) {
+            BasicBlock* cur = b().GetInsertBlock();
+
+            set_block(failure);
+            emit_uncommon();
+
+            set_block(cur);
+            stack_remove(args+1);
+            if(inl.check_for_exception()) {
+              check_for_exception(inl.result());
+            }
+            stack_push(inl.result());
+
+            b().CreateBr(cont);
+
+            set_block(cont);
+          } else {
+            // Emit both the inlined code and a send for it
+            BasicBlock* inline_block = b().GetInsertBlock();
+
+            b().CreateBr(cont);
+
+            set_block(failure);
+            Value* send_res = inline_cache_send(args, cache);
+            b().CreateBr(cont);
+
+            set_block(cont);
+            PHINode* phi = b().CreatePHI(ObjType, "send_result");
+            phi->addIncoming(inl.result(), inline_block);
+            phi->addIncoming(send_res, failure);
+
+            stack_remove(args + 1);
+            check_for_exception(phi);
+
+            stack_push(phi);
+          }
+
+          allow_private_ = false;
+          return;
+        }
+      }
+
+      set_has_side_effects();
+
+      Value* ret = inline_cache_send(args, cache);
+      stack_remove(args + 1);
+      check_for_exception(ret);
+      stack_push(ret);
+
+      allow_private_ = false;
+    }
+
+    Value* stack_objects(int count) {
+      return stack_position(-(count - 1));
+    }
+
+    void visit_push_local(opcode which) {
+      Value* idx2[] = {
+        ConstantInt::get(ls_->Int32Ty, 0),
+        ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+        ConstantInt::get(ls_->Int32Ty, which)
+      };
+
+      Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
+
+      stack_push(b().CreateLoad(pos, "local"));
+    }
+
+
+
+    void visit_push_int(opcode arg) {
+      stack_push(constant(Fixnum::from(arg)));
+    }
+
+
+    void visit_meta_send_op_lt(opcode name) {
+      InlineCache* cache = reinterpret_cast<InlineCache*>(name);
+      if(cache->classes_seen() == 0) {
+        if(state()->config().jit_inline_debug) {
+          ls_->log() << "inlining: primitive fixnum_lt"
+            << " into "
+            << state()->symbol_cstr(vmmethod()->name())
+            << ".\n";
+        }
+
+        set_has_side_effects();
+
+        Value* recv = stack_back(1);
+        Value* arg =  stack_top();
+
+        BasicBlock* fast = new_block("fast");
+        BasicBlock* dispatch = new_block("dispatch");
+        BasicBlock* cont = new_block("cont");
+
+        check_fixnums(recv, arg, fast, dispatch);
+
+        set_block(dispatch);
+
+        Value* called_value = simple_send(ls_->symbol("<"), 1);
+        check_for_exception_then(called_value, cont);
+
+        set_block(fast);
+
+        Value* cmp = b().CreateICmpSLT(recv, arg, "imm_cmp");
+        Value* imm_value = b().CreateSelect(cmp,
+            constant(Qtrue), constant(Qfalse), "select_bool");
+
+        b().CreateBr(cont);
+
+        set_block(cont);
+
+        PHINode* phi = b().CreatePHI(ObjType, "addition");
+        phi->addIncoming(called_value, dispatch);
+        phi->addIncoming(imm_value, fast);
+
+        stack_remove(2);
+        stack_push(phi);
+      } else {
+        visit_send_stack(name, 1);
+      }
+    }
+
+    void visit_goto_if_false(opcode ip) {
+      Value* cond = stack_pop();
+      Value* i = b().CreatePtrToInt(
+          cond, ls_->IntPtrTy, "as_int");
+
+      Value* anded = b().CreateAnd(i,
+          ConstantInt::get(ls_->IntPtrTy, FALSE_MASK), "and");
+
+      Value* cmp = b().CreateICmpEQ(anded,
+          ConstantInt::get(ls_->IntPtrTy, cFalse), "is_true");
+
+      BasicBlock* cont = new_block("continue");
+      BasicBlock* bb = block_map_[ip].block;
+      assert(bb);
+      b().CreateCondBr(cmp, bb, cont);
+
+      set_block(cont);
+    }
+
+    void visit_meta_push_1() {
+      stack_push(constant(Fixnum::from(1)));
+    }
+
+
+    void visit_meta_send_op_plus(opcode name) {
+      InlineCache* cache = reinterpret_cast<InlineCache*>(name);
+      if(cache->classes_seen() == 0) {
+        set_has_side_effects();
+        Value* recv = stack_back(1);
+        Value* arg =  stack_top();
+
+        BasicBlock* fast = new_block("fast");
+        BasicBlock* dispatch = new_block("dispatch");
+        BasicBlock* tagnow = new_block("tagnow");
+        BasicBlock* cont = new_block("cont");
+
+        check_fixnums(recv, arg, fast, dispatch);
+
+        set_block(dispatch);
+
+        Value* called_value = simple_send(ls_->symbol("+"), 1);
+        check_for_exception_then(called_value, cont);
+
+        set_block(fast);
+
+        std::vector<const Type*> types;
+        types.push_back(FixnumTy);
+        types.push_back(FixnumTy);
+
+        std::vector<const Type*> struct_types;
+        struct_types.push_back(FixnumTy);
+        struct_types.push_back(ls_->Int1Ty);
+
+        StructType* st = StructType::get(ls_->ctx(), struct_types);
+
+        FunctionType* ft = FunctionType::get(st, types, false);
+        Function* func = cast<Function>(
+            module_->getOrInsertFunction(ADD_WITH_OVERFLOW, ft));
+
+        Value* recv_int = tag_strip(recv);
+        Value* arg_int = tag_strip(arg);
+        Value* call_args[] = { recv_int, arg_int };
+        Value* res = b().CreateCall(func, call_args, call_args+2, "add.overflow");
+
+        Value* sum = b().CreateExtractValue(res, 0, "sum");
+        Value* dof = b().CreateExtractValue(res, 1, "did_overflow");
+
+        b().CreateCondBr(dof, dispatch, tagnow);
+
+        set_block(tagnow);
+
+        Value* imm_value = fixnum_tag(sum);
+
+        b().CreateBr(cont);
+
+        set_block(cont);
+
+        PHINode* phi = b().CreatePHI(ObjType, "addition");
+        phi->addIncoming(called_value, dispatch);
+        phi->addIncoming(imm_value, tagnow);
+
+        stack_remove(2);
+        stack_push(phi);
+      } else {
+        visit_send_stack(name, 1);
+      }
+    }
+
+
+    void visit_set_local(opcode which) {
+      Value* idx2[] = {
+        ConstantInt::get(ls_->Int32Ty, 0),
+        ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+        ConstantInt::get(ls_->Int32Ty, which)
+      };
+
+      Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
+
+      Value* val = stack_top();
+
+      b().CreateStore(val, pos);
+    }
+
+    void visit_pop() {
+      stack_remove(1);
+    }
+
+
+    void visit_check_interrupts() {
+      std::vector<const Type*> types;
+
+      types.push_back(VMTy);
+      types.push_back(CallFrameTy);
+
+      FunctionType* ft = FunctionType::get(ObjType, types, false);
+      Function* func = cast<Function>(
+          module_->getOrInsertFunction("rbx_check_interrupts", ft));
+
+      func->setDoesNotCapture(0, true);
+      func->setDoesNotCapture(1, true);
+      func->setDoesNotCapture(2, true);
+
+      flush();
+
+      Value* call_args[] = {
+        vm_,
+        call_frame_
+      };
+
+      Value* ret = b().CreateCall(func, call_args, call_args+2, "ci");
+      check_for_exception(ret);
+    }
+
+
+    void visit_goto(opcode ip) {
+      BasicBlock* bb = block_map_[ip].block;
+      assert(bb);
+      b().CreateBr(bb);
+      set_block(new_block("continue"));
+    }
+
+
+
+Note, 'initializeFrame is useful for generating exit stubs!'
