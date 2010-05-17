@@ -79,9 +79,13 @@ namespace rubinius {
 			jitted_bytes = bytes;
 		}
 
-
 		template <typename T>
-		void dispatch(T& v, int ip, opcode op, intptr_t arg1, intptr_t arg2){
+		void dispatch(T& v, TraceNode* node){
+			int ip = node->pc;
+			opcode op = node->op;
+			intptr_t arg1 = node->arg1;
+			intptr_t arg2 = node->arg2;
+
 			v.at_ip(ip);
 
 			switch(op) {
@@ -110,12 +114,35 @@ namespace rubinius {
 		}
 
 
+	// class Walker {
+	// 		JITVisit& v_;
+	// 		BlockMap& map_;
+
+	// 	public:
+	// 		Walker(JITVisit& v, BlockMap& map)
+	// 			: v_(v)
+	// 			, map_(map)
+	// 		{}
+
+	// 		void call(OpcodeIterator& iter) {
+	// 			v_.dispatch(iter.stream(), iter.ip());
+
+	// 			if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
+	// 				BlockMap::iterator i = map_.find(iter.next_ip());
+	// 				if(i != map_.end()) {
+	// 					v_.b().CreateBr(i->second.block);
+	// 				}
+	// 			}
+	// 		}
+	// 	};
+
+
 		template <typename T>
-		void walk(T& v, BlockMap& map) {
+		void walk(T& walker) {
 			TraceNode* tmp = anchor;
 			while(tmp != NULL){
 				std::cout << "Visiting " << tmp->pc << ": " << tmp->op << "\n";
-				dispatch(v, tmp->pc, tmp->op, tmp->arg1, tmp->arg2);
+				walker.call(this, tmp);
 				tmp = tmp->next;
 				if(tmp == anchor) break;
 			}

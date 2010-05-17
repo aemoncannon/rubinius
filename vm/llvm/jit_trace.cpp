@@ -97,10 +97,33 @@ namespace rubinius {
 		}
 
 
+
+		class Walker {
+			JITVisit& v_;
+			BlockMap& map_;
+
+		public:
+			Walker(JITVisit& v, BlockMap& map)
+				: v_(v)
+				, map_(map)
+			{}
+
+			void call(Trace* trace, TraceNode* node){
+				trace->dispatch(v_, node);
+
+				// if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
+				// 	BlockMap::iterator i = map_.find(iter.next_ip());
+				// 	if(i != map_.end()) {
+				// 		v_.b().CreateBr(i->second.block);
+				// 	}
+				// }
+			}
+		};
+
+
 		bool TraceBuilder::generate_body() {
 
 			std::cout << "4" << "\n";
-
 
 			JITVisit visitor(ls_, info_, block_map_, b().GetInsertBlock());
 			visitor.set_called_args(0);
@@ -108,10 +131,12 @@ namespace rubinius {
 			if(use_full_scope_) visitor.use_full_scope();
 			visitor.initialize_for_trace();
 
+			Walker walker(visitor, block_map_);
+
 			std::cout << "5" << "\n";
 
 			try {
-				trace->walk(visitor, block_map_);
+				trace->walk(walker);
 			} catch(JITVisit::Unsupported &e) {
 				return false;
 			}
@@ -424,12 +449,27 @@ namespace rubinius {
 
 
 
+		class PassOneWalker {
+			PassOne& v_;
+			BlockMap& map_;
+
+		public:
+			PassOneWalker(PassOne& v, BlockMap& map)
+				: v_(v)
+				, map_(map)
+			{}
+
+			void call(Trace* trace, TraceNode* node){
+				trace->dispatch(v_, node);
+			}
+		};
+
 		void TraceBuilder::pass_one(BasicBlock* body) {
 
 			// Pass 1, detect BasicBlock boundaries
 			PassOne finder(ls_, block_map_, trace->init_ip(), func, body);
-
-			trace->walk(finder, block_map_);
+			PassOneWalker walker(finder, block_map_);
+			trace->walk(walker);
 
 			if(finder.creates_blocks() || finder.calls_evalish()) {
 				info_.set_use_full_scope();

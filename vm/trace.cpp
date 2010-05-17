@@ -80,27 +80,6 @@ namespace rubinius {
 
 
 
-	// class Walker {
-	// 		JITVisit& v_;
-	// 		BlockMap& map_;
-
-	// 	public:
-	// 		Walker(JITVisit& v, BlockMap& map)
-	// 			: v_(v)
-	// 			, map_(map)
-	// 		{}
-
-	// 		void call(OpcodeIterator& iter) {
-	// 			v_.dispatch(iter.stream(), iter.ip());
-
-	// 			if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
-	// 				BlockMap::iterator i = map_.find(iter.next_ip());
-	// 				if(i != map_.end()) {
-	// 					v_.b().CreateBr(i->second.block);
-	// 				}
-	// 			}
-	// 		}
-	// 	};
 
 
 	// while(!work_list_.empty()) {
