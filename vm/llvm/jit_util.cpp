@@ -35,6 +35,60 @@
 using namespace rubinius;
 
 extern "C" {
+
+
+  void rbx_show_vars(STATE, CallFrame* call_frame, StackVariables* vars)
+  {
+		CompiledMethod* cm = call_frame->cm;
+		VMMethod* vmm = cm->backend_method();
+		int number_of_locals = vmm->number_of_locals;
+		for(int i = 0; i < number_of_locals; i++){
+			Object* obj = vars->get_local(i);
+			String* s = obj->to_s(state);
+			std::cout << "  " << i << ": " << s->c_str() << "\n";
+		}
+  }
+
+  void rbx_show_obj(STATE, Object* obj)
+  {
+		String* s = obj->to_s(state);
+		std::cout << s->c_str() << "\n";
+  }
+
+  void rbx_show_state(STATE, CallFrame* call_frame)
+  {
+		Object** stk = call_frame->stk;
+		StackVariables* vars = call_frame->scope;
+		CompiledMethod* cm = call_frame->cm;
+		VMMethod* vmm = cm->backend_method();
+		int stack_size = vmm->stack_size;
+		int number_of_locals = vmm->number_of_locals;
+		std::cout << "---------------------" << "\n";
+		std::cout << "stack size = " << stack_size << "\n";
+		std::cout << "number of locals = " << number_of_locals << "\n";
+		std::cout << "Stack: " << "\n";
+
+		for(int i = 0; i < stack_size; i++){
+			Object* obj = stk[i];
+			String* s = obj->to_s(state);
+			std::cout << "  " << i << ": " << s->c_str() << "\n";
+		}
+		std::cout << "Locals: " << "\n";
+
+		for(int i = 0; i < number_of_locals; i++){
+			Object* obj = vars->get_local(i);
+			String* s = obj->to_s(state);
+			std::cout << "  " << i << ": " << s->c_str() << "\n";
+		}
+		std::cout << "---------------------" << "\n";
+
+  }
+
+  void rbx_print_debug()
+  {
+		std::cout << "trace debug!" << "\n";
+  }
+
   Object* rbx_write_barrier(STATE, Object* obj, Object* val) {
     if(obj->zone() == UnspecifiedZone) return val;
     state->om->write_barrier(obj, val);
@@ -82,7 +136,7 @@ extern "C" {
   }
 
   Object* rbx_splat_send(STATE, CallFrame* call_frame, Symbol* name,
-                          int count, Object** args) {
+												 int count, Object** args) {
     Object* recv = args[0];
     Arguments out_args(recv, args[count+2], count, args+1);
     Dispatch dis(name);
@@ -95,7 +149,7 @@ extern "C" {
   }
 
   Object* rbx_splat_send_private(STATE, CallFrame* call_frame, Symbol* name,
-                                  int count, Object** args) {
+																 int count, Object** args) {
     Object* recv = args[0];
     Arguments out_args(recv, args[count+2], count, args+1);
     LookupData lookup(recv, recv->lookup_begin(state), true);
@@ -109,7 +163,7 @@ extern "C" {
   }
 
   Object* rbx_super_send(STATE, CallFrame* call_frame, Symbol* name,
-                          int count, Object** args) {
+												 int count, Object** args) {
     Object* recv = call_frame->self();
     Arguments out_args(recv, args[count], count, args);
     LookupData lookup(recv, call_frame->module()->superclass(), true);
@@ -119,7 +173,7 @@ extern "C" {
   }
 
   Object* rbx_super_splat_send(STATE, CallFrame* call_frame, Symbol* name,
-                          int count, Object** args) {
+															 int count, Object** args) {
     Object* recv = call_frame->self();
     Arguments out_args(recv, args[count+1], count, args);
     LookupData lookup(recv, call_frame->module()->superclass(), true);
@@ -177,7 +231,7 @@ extern "C" {
   Object* rbx_arg_error(STATE, CallFrame* call_frame, Dispatch& msg, Arguments& args,
                         int required) {
     Exception* exc =
-        Exception::make_argument_error(state, required, args.total(), msg.name);
+			Exception::make_argument_error(state, required, args.total(), msg.name);
     exc->locations(state, System::vm_backtrace(state, Fixnum::from(0), call_frame));
     state->thread_state()->raise_exception(exc);
 
@@ -361,7 +415,7 @@ extern "C" {
                            int serial, Object* recv)
   {
     if(cache->update_and_validate(state, call_frame, recv) &&
-         cache->method->serial()->to_native() == serial) {
+			 cache->method->serial()->to_native() == serial) {
       return Qtrue;
     }
 
@@ -369,10 +423,10 @@ extern "C" {
   }
 
   Object* rbx_check_serial_private(STATE, CallFrame* call_frame, InlineCache* cache,
-                           int serial, Object* recv)
+																	 int serial, Object* recv)
   {
     if(cache->update_and_validate(state, call_frame, recv) &&
-         cache->method->serial()->to_native() == serial) {
+			 cache->method->serial()->to_native() == serial) {
       return Qtrue;
     }
 
@@ -504,7 +558,7 @@ extern "C" {
 
     if(both_fixnum_p(left, right)) {
       return reinterpret_cast<Fixnum*>(left)->sub(state,
-          reinterpret_cast<Fixnum*>(right));
+																									reinterpret_cast<Fixnum*>(right));
 
     }
 
@@ -624,7 +678,7 @@ extern "C" {
   }
 
   Object* rbx_push_local_depth(STATE, CallFrame* call_frame,
-                              int depth, int index) {
+															 int depth, int index) {
     if(depth == 0) {
       return call_frame->scope->get_local(index);
     } else {
@@ -881,21 +935,21 @@ extern "C" {
     VMMethod* vmm = call_frame->cm->backend_method();
 
     /*
-    InlineCache* cache = 0;
+			InlineCache* cache = 0;
 
-    if(vmm->opcodes[call_frame->ip()] == InstructionSequence::insn_send_stack) {
+			if(vmm->opcodes[call_frame->ip()] == InstructionSequence::insn_send_stack) {
       cache = reinterpret_cast<InlineCache*>(vmm->opcodes[call_frame->ip() + 1]);
-    } else if(vmm->opcodes[call_frame->ip()] == InstructionSequence::insn_send_method) {
+			} else if(vmm->opcodes[call_frame->ip()] == InstructionSequence::insn_send_method) {
       cache = reinterpret_cast<InlineCache*>(vmm->opcodes[call_frame->ip() + 1]);
-    } else if(vmm->opcodes[call_frame->ip()] == InstructionSequence::insn_send_stack_with_block) {
+			} else if(vmm->opcodes[call_frame->ip()] == InstructionSequence::insn_send_stack_with_block) {
       cache = reinterpret_cast<InlineCache*>(vmm->opcodes[call_frame->ip() + 1]);
-    }
+			}
 
-    if(cache) {
+			if(cache) {
       if(cache->name->symbol_p()) {
-        std::cout << "Uncommon trap for send: " << cache->name->c_str(state) << "\n";
+			std::cout << "Uncommon trap for send: " << cache->name->c_str(state) << "\n";
       }
-    }
+			}
     */
 
     if(call_frame->is_inline_frame()) {

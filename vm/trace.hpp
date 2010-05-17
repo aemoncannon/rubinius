@@ -2,10 +2,6 @@
 #define RBX_TRACE_HPP
 
 
-
-
-
-
 using namespace std;
 
 namespace llvm {
@@ -16,15 +12,20 @@ namespace rubinius {
 
 	struct JITBasicBlock;
 
-	typedef uintptr_t opcode;
-  typedef map<int, JITBasicBlock> BlockMap;
 
 	class VM;
 	class VMMethod;
 	class CallFrame;
 	class CompiledMethod;
+	class Object;
+	class StackVariables;
 	class Symbol;
 	class JITVisit;
+
+	typedef uintptr_t opcode;
+  typedef map<int, JITBasicBlock> BlockMap;
+  typedef Object* (*trace_executor)(VM*, CallFrame*, Object**, StackVariables*);
+
 
 	class TraceNode {
 	public:
@@ -54,6 +55,7 @@ namespace rubinius {
 		llvm::Function* llvm_function;
 		size_t jitted_bytes;
 		void*  jitted_impl;
+		trace_executor  executor;
 
 		Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
@@ -77,6 +79,7 @@ namespace rubinius {
 			llvm_function = func;
 			jitted_impl = impl;
 			jitted_bytes = bytes;
+			executor = reinterpret_cast<trace_executor>(jitted_impl);
 		}
 
 		template <typename T>

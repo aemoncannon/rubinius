@@ -13,7 +13,6 @@ namespace rubinius {
                          MethodMissingReason reason)
   {
     LookupData lookup(args.recv(), args.recv()->lookup_begin(state));
-
     return send(state, call_frame, lookup, args, reason);
   }
 
@@ -38,6 +37,7 @@ namespace rubinius {
     if(method_missing) {
       args.unshift(state, original_name);
     }
+
 
     return method->execute(state, call_frame, *this, args);
   }

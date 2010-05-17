@@ -38,6 +38,8 @@ namespace rubinius {
 			std::vector<const Type*> ftypes;
 			ftypes.push_back(ls_->ptr_type("VM"));
 			ftypes.push_back(ls_->ptr_type("CallFrame"));
+			ftypes.push_back(obj_ary_type);
+			ftypes.push_back(ls_->ptr_type("StackVariables"));
 
 			FunctionType* ft = FunctionType::get(ls_->ptr_type("Object"), ftypes, false);
 
@@ -55,6 +57,14 @@ namespace rubinius {
 			// For the trace, this is the current and active CallFrame
 			call_frame = ai++; 
 			call_frame->setName("call_frame");
+
+			// Get the stack pointer
+			Value* stk_ptr = ai++; 
+			stk_ptr->setName("stk_ptr");
+
+			// Get the vars pointer
+			Value* vars = ai++; 
+			vars->setName("vars");
 
 			BasicBlock* block = BasicBlock::Create(ls_->ctx(), "entry", func);
 			builder_.SetInsertPoint(block);
@@ -75,18 +85,20 @@ namespace rubinius {
 			valid_flag = b().CreateAlloca(ls_->Int1Ty, 0, "valid_flag");
 			
 			//stack
-			Value* stk_mem = get_field(call_frame, offset::cf_stk);
-			stk = b().CreateBitCast(stk_mem, PointerType::getUnqual(obj_type), "stack");
-			info_.set_stack(stk);
+//			stk = b().CreateAlloca(obj_ary_type, ConstantInt::get(ls_->Int32Ty, sizeof(Object**)), "valid_flag");
+//			b().CreateStore(stk_ptr, stk);
+			info_.set_stack(stk_ptr);
 
 			//vars
-			Value* var_mem = get_field(call_frame, offset::cf_scope);
-			vars = b().CreateBitCast(var_mem, PointerType::getUnqual(stack_vars_type), "vars");
+			// Value* var_mem = get_field(call_frame, offset::cf_scope);
+			// vars = b().CreateBitCast(var_mem, PointerType::getUnqual(stack_vars_type), "vars");
 			info_.set_variables(vars);
 
 			// ip
 			Value* ip_mem = get_field(call_frame, offset::cf_ip);
 			b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), ip_mem);
+
+
 
 			b().CreateBr(body);
 			b().SetInsertPoint(body);

@@ -93,7 +93,7 @@ Object* VMMethod::interpreter(STATE,
                               InterpreterCallFrame* const call_frame)
 {
 
-  #include "vm/gen/instruction_locations.hpp"
+#include "vm/gen/instruction_locations.hpp"
 
 
 
@@ -129,40 +129,42 @@ Object* VMMethod::interpreter(STATE,
     if(!state->process_async(call_frame)) return NULL;
   }
 
-continue_to_run:
+ continue_to_run:
   try {
 	  opcode op;
 	  int cur_ip;
 #undef DISPATCH
 //#define DISPATCH goto **ip_ptr++;
-#define DISPATCH  cur_ip = ip_ptr - vmm->addresses;	\
-	  op = vmm->opcodes[cur_ip]; \
-	  if(state->tracing_enabled){ \
-		if(vmm->traces[cur_ip] != NULL){ \
-			std::cout << "Calling trace!" << "\n"; \
-        } \
-	    else if(state->recording_trace != NULL){ \
-			if(state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame)){ \
-				std::cout << "Compiling trace..." << "\n"; \
-				state->recording_trace->compile(state);		  \
-				vmm->traces[cur_ip] = state->recording_trace; \
-				state->recording_trace = NULL; \
-			} \
-        } \
-        else if(op == InstructionSequence::insn_goto || \
-                op == InstructionSequence::insn_goto_if_false || \
-                op == InstructionSequence::insn_goto_if_false){ \
-	    	  intptr_t location = (intptr_t)(*(ip_ptr + 1)); \
-	    	  if(location < cur_ip){ \
-	    		  vmm->trace_counters[location]++; \
-              } \
-	    } \
-		else{ \
-			if(vmm->trace_counters[cur_ip] > 10){ \
-			  state->recording_trace = new Trace(op, cur_ip, ip_ptr, vmm, call_frame); \
-            } \
-        } \
-      }\
+#define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
+	  op = vmm->opcodes[cur_ip];																					\
+	  if(state->tracing_enabled){																					\
+		  if(vmm->traces[cur_ip] != NULL){																	\
+			  std::cout << "Calling trace!" << "\n";													\
+				std::cout << "Var is" << call_frame->scope->get_local(0)->to_s(state)->c_str() << "\n"; \
+			  vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope);		\
+      }																																	\
+	    else if(state->recording_trace != NULL){													\
+				if(state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame)){ \
+					std::cout << "Compiling trace..." << "\n";										\
+					state->recording_trace->compile(state);												\
+					vmm->traces[cur_ip] = state->recording_trace;									\
+					state->recording_trace = NULL;																\
+				}																																\
+			}																																	\
+			else if(op == InstructionSequence::insn_goto ||										\
+							op == InstructionSequence::insn_goto_if_false ||					\
+							op == InstructionSequence::insn_goto_if_false){						\
+				intptr_t location = (intptr_t)(*(ip_ptr + 1));									\
+				if(location < cur_ip){																					\
+					vmm->trace_counters[location]++;															\
+				}																																\
+	    }																																	\
+			else{																															\
+				if(vmm->trace_counters[cur_ip] > 10){														\
+					state->recording_trace = new Trace(op, cur_ip, ip_ptr, vmm, call_frame); \
+				}																																\
+			}																																	\
+		}																																		\
 	  goto **ip_ptr++;
 
 #undef next_int
@@ -184,7 +186,7 @@ continue_to_run:
     return NULL;
   } catch(const RubyException& exc) {
     exc.exception->locations(state,
-          System::vm_backtrace(state, Fixnum::from(0), call_frame));
+														 System::vm_backtrace(state, Fixnum::from(0), call_frame));
     state->thread_state()->raise_exception(exc.exception);
     return NULL;
   }
@@ -194,7 +196,7 @@ continue_to_run:
   abort();
 
   // If control finds it's way down here, there is an exception.
-exception:
+ exception:
   ThreadState* th = state->thread_state();
   //
   switch(th->raise_reason()) {
@@ -301,7 +303,7 @@ Object* VMMethod::uncommon_interpreter(STATE,
     if(!state->process_async(call_frame)) return NULL;
   }
 
-continue_to_run:
+ continue_to_run:
   try {
 
 #undef DISPATCH
@@ -328,7 +330,7 @@ continue_to_run:
     return NULL;
   } catch(const RubyException& exc) {
     exc.exception->locations(state,
-          System::vm_backtrace(state, Fixnum::from(0), call_frame));
+														 System::vm_backtrace(state, Fixnum::from(0), call_frame));
     state->thread_state()->raise_exception(exc.exception);
     return NULL;
   }
@@ -336,7 +338,7 @@ continue_to_run:
   // No reason to be here!
   abort();
 
-exception:
+ exception:
   ThreadState* th = state->thread_state();
   //
   switch(th->raise_reason()) {
@@ -455,17 +457,17 @@ Object* VMMethod::debugger_interpreter(STATE,
     if(!state->process_async(call_frame)) return NULL;
   }
 
-continue_to_run:
+ continue_to_run:
   try {
 
 #undef DISPATCH
 #define DISPATCH op = stream[call_frame->inc_ip()]; \
-    if(unlikely(op & cBreakpoint)) { \
-      call_frame->dec_ip(); \
-      Helpers::yield_debugger(state, call_frame); \
-      call_frame->inc_ip(); \
-      op &= 0x00ffffff; \
-    } \
+    if(unlikely(op & cBreakpoint)) {								\
+      call_frame->dec_ip();													\
+      Helpers::yield_debugger(state, call_frame);		\
+      call_frame->inc_ip();													\
+      op &= 0x00ffffff;															\
+    }																								\
     goto *insn_locations[op];
 
 #undef next_int
@@ -489,7 +491,7 @@ continue_to_run:
     return NULL;
   } catch(const RubyException& exc) {
     exc.exception->locations(state,
-          System::vm_backtrace(state, Fixnum::from(0), call_frame));
+														 System::vm_backtrace(state, Fixnum::from(0), call_frame));
     state->thread_state()->raise_exception(exc.exception);
     return NULL;
   }
@@ -498,7 +500,7 @@ continue_to_run:
   abort();
 
   // If control finds it's way down here, there is an exception.
-exception:
+ exception:
   ThreadState* th = state->thread_state();
   //
   switch(th->raise_reason()) {
