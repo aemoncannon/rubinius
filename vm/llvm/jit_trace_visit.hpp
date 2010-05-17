@@ -147,8 +147,6 @@ namespace rubinius {
         ConstantInt::get(ls_->Int32Ty, which)
       };
       Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
-			dump_vars(vars_);
-			dump_vm_state();
 			Value* tmp = b().CreateLoad(pos, "local");
 
       stack_push(tmp);

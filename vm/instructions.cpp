@@ -140,7 +140,6 @@ Object* VMMethod::interpreter(STATE,
 	  if(state->tracing_enabled){																					\
 		  if(vmm->traces[cur_ip] != NULL){																	\
 			  std::cout << "Calling trace!" << "\n";													\
-				std::cout << "Var is" << call_frame->scope->get_local(0)->to_s(state)->c_str() << "\n"; \
 			  vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope);		\
       }																																	\
 	    else if(state->recording_trace != NULL){													\
