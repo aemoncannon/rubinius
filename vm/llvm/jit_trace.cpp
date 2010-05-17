@@ -74,16 +74,19 @@ namespace rubinius {
 			// Not sure what this is for..
 			valid_flag = b().CreateAlloca(ls_->Int1Ty, 0, "valid_flag");
 			
+			//stack
 			Value* stk_mem = get_field(call_frame, offset::cf_stk);
 			stk = b().CreateBitCast(stk_mem, PointerType::getUnqual(obj_type), "stack");
 			info_.set_stack(stk);
 
+			//vars
 			Value* var_mem = get_field(call_frame, offset::cf_scope);
 			vars = b().CreateBitCast(var_mem, PointerType::getUnqual(stack_vars_type), "vars");
 			info_.set_variables(vars);
 
 			// ip
-			b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), get_field(call_frame, offset::cf_ip));
+			Value* ip_mem = get_field(call_frame, offset::cf_ip);
+			b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), ip_mem);
 
 			b().CreateBr(body);
 			b().SetInsertPoint(body);
@@ -111,16 +114,18 @@ namespace rubinius {
 			void call(Trace* trace, TraceNode* node){
 				trace->dispatch(v_, node);
 
-				if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
-					std::cout << "No terminator at: " << node->pc << "\n";
-					if(node->next != NULL) {
-						BlockMap::iterator i = map_.find(node->next->pc);
-						if(i != map_.end()) {
-							std::cout << "Making terminator: " << node->next->pc << "\n";
-							v_.b().CreateBr(i->second.block);
-						}
-					}
-				}
+				// if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
+				// 	std::cout << "No terminator at: " << node->pc << "\n";
+				// 	if(node->next != NULL) {
+				// 		BlockMap::iterator i = map_.find(node->next->pc);
+				// 		if(i != map_.end()) {
+				// 			std::cout << "Making terminator: " << node->next->pc << "\n";
+				// 			v_.b().CreateBr(i->second.block);
+				// 		}
+				// 	}
+				//}
+
+
 			}
 		};
 
@@ -133,7 +138,7 @@ namespace rubinius {
 			visitor.set_called_args(0);
 			visitor.set_valid_flag(valid_flag);
 			if(use_full_scope_) visitor.use_full_scope();
-			visitor.initialize_for_trace();
+			visitor.initialize();
 
 			Walker walker(visitor, block_map_);
 

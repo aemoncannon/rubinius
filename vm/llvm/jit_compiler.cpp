@@ -40,189 +40,223 @@
 using namespace llvm;
 
 namespace rubinius {
-namespace jit {
-  void* Compiler::function_pointer() {
-    if(!mci_) return NULL;
-    return mci_->address();
-  }
+	namespace jit {
+		void* Compiler::function_pointer() {
+			if(!mci_) return NULL;
+			return mci_->address();
+		}
 
-  void Compiler::show_machine_code() {
-    llvm::outs() << "[[[ JIT Machine Code: " << function_->getName() << " ]]]\n";
-    LLVMState::show_machine_code(mci_->address(), mci_->size());
-  }
+		void Compiler::show_machine_code() {
+			llvm::outs() << "[[[ JIT Machine Code: " << function_->getName() << " ]]]\n";
+			LLVMState::show_machine_code(mci_->address(), mci_->size());
+		}
 
-  void* Compiler::generate_function(LLVMState* ls) {
-    if(!mci_) {
-      if(!function_) return NULL;
-      mci_ = new llvm::MachineCodeInfo();
-      ls->engine()->runJITOnFunction(function_, mci_);
-      ls->add_code_bytes(mci_->size());
+		void* Compiler::generate_function(LLVMState* ls) {
+			if(!mci_) {
+				if(!function_) return NULL;
+				mci_ = new llvm::MachineCodeInfo();
+				ls->engine()->runJITOnFunction(function_, mci_);
+				ls->add_code_bytes(mci_->size());
 
-      // If we're not in JIT debug mode, delete the body IR, now that we're
-      // done with it.
-      // This saves us 100M+ of memory in a full spec run.
-      if(!ls->debug_p()) {
-        function_->dropAllReferences();
-      }
-    }
+				// If we're not in JIT debug mode, delete the body IR, now that we're
+				// done with it.
+				// This saves us 100M+ of memory in a full spec run.
+				if(!ls->debug_p()) {
+					function_->dropAllReferences();
+				}
+			}
 
-    return mci_->address();
-  }
+			return mci_->address();
+		}
 
-  void Compiler::compile_block(LLVMState* ls, CompiledMethod* cm, VMMethod* vmm) {
-    if(ls->config().jit_inline_debug) {
-      assert(vmm->parent());
+		void Compiler::compile_block(LLVMState* ls, CompiledMethod* cm, VMMethod* vmm) {
+			if(ls->config().jit_inline_debug) {
+				assert(vmm->parent());
 
-      ls->log() << "JIT: compiling block in "
-        << ls->symbol_cstr(cm->name())
-        << " near "
-        << ls->symbol_cstr(cm->file()) << ":"
-        << cm->start_line() << "\n";
-    }
+				ls->log() << "JIT: compiling block in "
+									<< ls->symbol_cstr(cm->name())
+									<< " near "
+									<< ls->symbol_cstr(cm->file()) << ":"
+									<< cm->start_line() << "\n";
+			}
 
-    jit::Context ctx(ls);
-    JITMethodInfo info(ctx, cm, vmm);
-    info.is_block = true;
+			jit::Context ctx(ls);
+			JITMethodInfo info(ctx, cm, vmm);
+			info.is_block = true;
 
-    ctx.set_root(&info);
+			ctx.set_root(&info);
 
-    jit::BlockBuilder work(ls, info);
-    work.setup();
+			jit::BlockBuilder work(ls, info);
+			work.setup();
 
-    compile_builder(ctx, ls, info, work);
-  }
+			compile_builder(ctx, ls, info, work);
+		}
 
-  void Compiler::compile_method(LLVMState* ls, CompiledMethod* cm, VMMethod* vmm) {
-    if(ls->config().jit_inline_debug) {
-      ls->log() << "JIT: compiling "
-        << ls->symbol_cstr(cm->scope()->module()->name())
-        << "#"
-        << ls->symbol_cstr(cm->name()) << "\n";
-    }
+		void Compiler::compile_method(LLVMState* ls, CompiledMethod* cm, VMMethod* vmm) {
+			if(ls->config().jit_inline_debug) {
+				ls->log() << "JIT: compiling "
+									<< ls->symbol_cstr(cm->scope()->module()->name())
+									<< "#"
+									<< ls->symbol_cstr(cm->name()) << "\n";
+			}
 
-    jit::Context ctx(ls);
-    JITMethodInfo info(ctx, cm, vmm);
-    info.is_block = false;
+			jit::Context ctx(ls);
+			JITMethodInfo info(ctx, cm, vmm);
+			info.is_block = false;
 
-    ctx.set_root(&info);
+			ctx.set_root(&info);
 
-    jit::MethodBuilder work(ls, info);
-    work.setup();
+			jit::MethodBuilder work(ls, info);
+			work.setup();
 
-    compile_builder(ctx, ls, info, work);
-  }
+			compile_builder(ctx, ls, info, work);
+		}
 
-	void Compiler::compile_trace(LLVMState* ls, Trace* trace) {
+		void Compiler::compile_trace(LLVMState* ls, Trace* trace) {
 
-    CompiledMethod* cm = trace->anchor_cm();
-    VMMethod* vmm = cm->backend_method();
+			CompiledMethod* cm = trace->anchor_cm();
+			VMMethod* vmm = cm->backend_method();
 
-    jit::Context ctx(ls);
-    JITMethodInfo info(ctx, cm, vmm);
-    info.is_block = false;
-    ctx.set_root(&info);
+			jit::Context ctx(ls);
+			JITMethodInfo info(ctx, cm, vmm);
+			info.is_block = false;
+			ctx.set_root(&info);
 
-    jit::TraceBuilder work(ls, trace, info);
-    work.setup();
+			jit::TraceBuilder work(ls, trace, info);
+			work.setup();
 
-    llvm::Function* func = info.function();
+			llvm::Function* func = info.function();
 
-    if(!work.generate_body()) {
-	  std::cout << "Oops! failed to generate body!" << "\n";
-      function_ = NULL;
-      // This is too noisy to report
-      // llvm::outs() << "not supported yet.\n";
-      return;
-    }
+			if(!work.generate_body()) {
+				std::cout << "Oops! failed to generate body!" << "\n";
+				function_ = NULL;
+				// This is too noisy to report
+				// llvm::outs() << "not supported yet.\n";
+				return;
+			}
 
-		std::cout << "8" << "\n";
+			std::cout << "8" << "\n";
 
-    // Hook up the return pad and return phi.
-    work.generate_hard_return();
+			// Hook up the return pad and return phi.
+			work.generate_hard_return();
 
-		std::cout << "9" << "\n";
+			std::cout << "9" << "\n";
 
-	// See below for how to remove unused basic blocks! -Aemon
+			std::vector<BasicBlock*> to_remove;
+			bool Broken = false;
+			for(Function::iterator I = func->begin(), E = func->end(); I != E; ++I) {
+				if(I->empty()) {
+					BasicBlock& bb = *I;
+					// No one jumps to it....
+					if(llvm::pred_begin(&bb) == llvm::pred_end(&bb)) {
+						to_remove.push_back(&bb);
+					} else {
+						llvm::outs() << "Basic Block is empty and used!\n";
+					}
+				} else if(!I->back().isTerminator()) {
+					llvm::errs() << "Basic Block does not have terminator!\n";
+					llvm::errs() << *I << "\n";
+					llvm::errs() << "\n";
+					Broken = true;
+				}
+			}
 
-	// Run optimization passes!
-    //ls->passes()->run(*func);
+			for(std::vector<BasicBlock*>::iterator i = to_remove.begin();
+					i != to_remove.end();
+					i++) {
+				(*i)->eraseFromParent();
+			}
 
-    function_ = func;
-  }
+			if(Broken or llvm::verifyFunction(*func, PrintMessageAction)) {
+				llvm::outs() << "ERROR: complication error detected.\n";
+				llvm::outs() << "ERROR: Please report the above message and the\n";
+				llvm::outs() << "       code below to http://github.com/evanphx/rubinius/issues\n";
+				llvm::outs() << *func << "\n";
+				function_ = NULL;
+				return;
+			}
 
-  void Compiler::compile_builder(jit::Context& ctx, LLVMState* ls, JITMethodInfo& info,
-                                     jit::Builder& work)
-  {
-    llvm::Function* func = info.function();
 
-    if(!work.generate_body()) {
-      function_ = NULL;
-      // This is too noisy to report
-      // llvm::outs() << "not supported yet.\n";
-      return;
-    }
 
-    // Hook up the return pad and return phi.
-    work.generate_hard_return();
+			// Run optimization passes!
+			//ls->passes()->run(*func);
 
-    if(ls->jit_dump_code() & cSimple) {
-      llvm::outs() << "[[[ LLVM Simple IR ]]]\n";
-      llvm::outs() << *func << "\n";
-    }
+			function_ = func;
+		}
 
-    std::vector<BasicBlock*> to_remove;
-    bool Broken = false;
-    for(Function::iterator I = func->begin(), E = func->end(); I != E; ++I) {
-      if(I->empty()) {
-        BasicBlock& bb = *I;
-        // No one jumps to it....
-        if(llvm::pred_begin(&bb) == llvm::pred_end(&bb)) {
-          to_remove.push_back(&bb);
-        } else {
-          llvm::outs() << "Basic Block is empty and used!\n";
-        }
-      } else if(!I->back().isTerminator()) {
-        llvm::errs() << "Basic Block does not have terminator!\n";
-        llvm::errs() << *I << "\n";
-        llvm::errs() << "\n";
-        Broken = true;
-      }
-    }
+		void Compiler::compile_builder(jit::Context& ctx, LLVMState* ls, JITMethodInfo& info,
+																	 jit::Builder& work)
+		{
+			llvm::Function* func = info.function();
 
-    for(std::vector<BasicBlock*>::iterator i = to_remove.begin();
-        i != to_remove.end();
-        i++) {
-      (*i)->eraseFromParent();
-    }
+			if(!work.generate_body()) {
+				function_ = NULL;
+				// This is too noisy to report
+				// llvm::outs() << "not supported yet.\n";
+				return;
+			}
 
-    if(Broken or llvm::verifyFunction(*func, PrintMessageAction)) {
-      llvm::outs() << "ERROR: complication error detected.\n";
-      llvm::outs() << "ERROR: Please report the above message and the\n";
-      llvm::outs() << "       code below to http://github.com/evanphx/rubinius/issues\n";
-      llvm::outs() << *func << "\n";
-      function_ = NULL;
-      return;
-    }
+			// Hook up the return pad and return phi.
+			work.generate_hard_return();
 
-    ls->passes()->run(*func);
+			if(ls->jit_dump_code() & cSimple) {
+				llvm::outs() << "[[[ LLVM Simple IR ]]]\n";
+				llvm::outs() << *func << "\n";
+			}
 
-    if(ls->jit_dump_code() & cOptimized) {
-      llvm::outs() << "[[[ LLVM Optimized IR: "
-        << ls->symbol_cstr(info.method()->name()) << " ]]]\n";
-      llvm::outs() << *func << "\n";
-    }
+			std::vector<BasicBlock*> to_remove;
+			bool Broken = false;
+			for(Function::iterator I = func->begin(), E = func->end(); I != E; ++I) {
+				if(I->empty()) {
+					BasicBlock& bb = *I;
+					// No one jumps to it....
+					if(llvm::pred_begin(&bb) == llvm::pred_end(&bb)) {
+						to_remove.push_back(&bb);
+					} else {
+						llvm::outs() << "Basic Block is empty and used!\n";
+					}
+				} else if(!I->back().isTerminator()) {
+					llvm::errs() << "Basic Block does not have terminator!\n";
+					llvm::errs() << *I << "\n";
+					llvm::errs() << "\n";
+					Broken = true;
+				}
+			}
 
-    // Inject the RuntimeData objects used into the original CompiledMethod
-    // Do this way after we've validated the IR so things are consistent.
-    ctx.runtime_data_holder()->set_function(func);
+			for(std::vector<BasicBlock*>::iterator i = to_remove.begin();
+					i != to_remove.end();
+					i++) {
+				(*i)->eraseFromParent();
+			}
 
-    info.method()->set_jit_data(ctx.runtime_data_holder());
-    ls->shared().om->add_code_resource(ctx.runtime_data_holder());
+			if(Broken or llvm::verifyFunction(*func, PrintMessageAction)) {
+				llvm::outs() << "ERROR: complication error detected.\n";
+				llvm::outs() << "ERROR: Please report the above message and the\n";
+				llvm::outs() << "       code below to http://github.com/evanphx/rubinius/issues\n";
+				llvm::outs() << *func << "\n";
+				function_ = NULL;
+				return;
+			}
 
-    function_ = func;
+			ls->passes()->run(*func);
 
-  }
-}
+			if(ls->jit_dump_code() & cOptimized) {
+				llvm::outs() << "[[[ LLVM Optimized IR: "
+										 << ls->symbol_cstr(info.method()->name()) << " ]]]\n";
+				llvm::outs() << *func << "\n";
+			}
+
+			// Inject the RuntimeData objects used into the original CompiledMethod
+			// Do this way after we've validated the IR so things are consistent.
+			ctx.runtime_data_holder()->set_function(func);
+
+			info.method()->set_jit_data(ctx.runtime_data_holder());
+			ls->shared().om->add_code_resource(ctx.runtime_data_holder());
+
+			function_ = func;
+
+		}
+	}
 }
 
 #endif
