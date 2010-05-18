@@ -1271,62 +1271,67 @@ namespace rubinius {
     void visit_send_stack(opcode which, opcode args) {
       InlineCache* cache = reinterpret_cast<InlineCache*>(which);
 
-      if(cache->method) {
-        BasicBlock* failure = new_block("fallback");
-        BasicBlock* cont = new_block("continue");
+      // if(cache->method) {
+      //   BasicBlock* failure = new_block("fallback");
+      //   BasicBlock* cont = new_block("continue");
 
-        Inliner inl(context(), *this, cache, args, failure);
-        if(inl.consider()) {
-          // Uncommon doesn't yet know how to synthesize UnwindInfos, so
-          // don't do uncommon if there are handlers.
-          if(!in_inlined_block() && !has_exception_handler()) {
-            BasicBlock* cur = b().GetInsertBlock();
+      //   Inliner inl(context(), *this, cache, args, failure);
+      //   if(inl.consider()) {
+      //     // Uncommon doesn't yet know how to synthesize UnwindInfos, so
+      //     // don't do uncommon if there are handlers.
+      //     if(!in_inlined_block() && !has_exception_handler()) {
+      //       BasicBlock* cur = b().GetInsertBlock();
 
-            set_block(failure);
-            emit_uncommon();
+      //       set_block(failure);
+      //       emit_uncommon();
 
-            set_block(cur);
-            stack_remove(args+1);
-            if(inl.check_for_exception()) {
-              check_for_exception(inl.result());
-            }
-            stack_push(inl.result());
+      //       set_block(cur);
+      //       stack_remove(args+1);
+      //       if(inl.check_for_exception()) {
+      //         check_for_exception(inl.result());
+      //       }
+      //       stack_push(inl.result());
 
-            b().CreateBr(cont);
+      //       b().CreateBr(cont);
 
-            set_block(cont);
-          } else {
-            // Emit both the inlined code and a send for it
-            BasicBlock* inline_block = b().GetInsertBlock();
+      //       set_block(cont);
+      //     } else {
+      //       // Emit both the inlined code and a send for it
+      //       BasicBlock* inline_block = b().GetInsertBlock();
 
-            b().CreateBr(cont);
+      //       b().CreateBr(cont);
 
-            set_block(failure);
-            Value* send_res = inline_cache_send(args, cache);
-            b().CreateBr(cont);
+      //       set_block(failure);
+      //       Value* send_res = inline_cache_send(args, cache);
+      //       b().CreateBr(cont);
 
-            set_block(cont);
-            PHINode* phi = b().CreatePHI(ObjType, "send_result");
-            phi->addIncoming(inl.result(), inline_block);
-            phi->addIncoming(send_res, failure);
+      //       set_block(cont);
+      //       PHINode* phi = b().CreatePHI(ObjType, "send_result");
+      //       phi->addIncoming(inl.result(), inline_block);
+      //       phi->addIncoming(send_res, failure);
 
-            stack_remove(args + 1);
-            check_for_exception(phi);
+      //       stack_remove(args + 1);
+      //       check_for_exception(phi);
 
-            stack_push(phi);
-          }
+      //       stack_push(phi);
+      //     }
 
-          allow_private_ = false;
-          return;
-        }
-      }
+      //     allow_private_ = false;
+      //     return;
+      //   }
+      // }
 
+			std::cout << "1\n";
       set_has_side_effects();
-
+			std::cout << "2\n";
       Value* ret = inline_cache_send(args, cache);
+			std::cout << "3\n";
       stack_remove(args + 1);
+			std::cout << "4\n";
       check_for_exception(ret);
+			std::cout << "5\n";
       stack_push(ret);
+			std::cout << "6\n";
 
       allow_private_ = false;
     }

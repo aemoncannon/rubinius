@@ -61,7 +61,7 @@ namespace rubinius {
 				ConstantInt::get(ls_->IntPtrTy, (intptr_t)ls_->shared().global_serial_address()),
 				PointerType::getUnqual(ls_->IntPtrTy), "cast_to_intptr");
 
-      //init_out_args();
+      init_out_args();
     }
 
     void visit_goto_if_false(opcode ip) {

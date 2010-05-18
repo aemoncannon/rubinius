@@ -1,9 +1,6 @@
 require 'helpers'
 
-ITERATIONS = 50000
-
-
-
+ITERATIONS = 130000
 
 
 t = Time.now.to_f
@@ -12,7 +9,7 @@ enable_tracing
 
 i = 0
 while i < ITERATIONS
-  i += 1
+  i = i * 2
 end
 
 disable_tracing
@@ -27,7 +24,7 @@ t = Time.now.to_f
 
 i = 0
 while i < ITERATIONS
-  i += 1
+  i = i * 2
 end
 
 non_trace_time = Time.now.to_f - t

@@ -404,3 +404,51 @@ __script__ - 35: op_goto 18
 
 
 Note, 'initializeFrame is useful for generating exit stubs!'
+
+
+
+
+0032:  pop                        
+0033:  meta_push_0                
+0034:  set_local                  1    # i
+0036:  pop                        
+0037:  push_local                 1    # i
+0039:  push_const_fast            :ITERATIONS, 10
+0042:  meta_send_op_lt            :<
+0044:  goto_if_false              58
+0046:  push_local                 1    # i
+0048:  meta_push_2                
+0049:  send_stack                 :*, 1
+0052:  set_local                  1    # i
+0054:  pop                        
+0055:  check_interrupts           
+0056:  goto                       37
+0058:  push_nil                   
+0059:  pop                        
+0060:  push_self                  
+0061:  allow_private              
+
+
+
+
+
+
+0032:  pop                        
+0033:  meta_push_0                
+0034:  set_local                  1    # i
+0036:  pop                        
+0037:  push_local                 1    # i
+0039:  push_const_fast            :ITERATIONS, 10
+0042:  meta_send_op_lt            :<
+0044:  goto_if_false              57
+0046:  push_local                 1    # i
+0048:  meta_push_1                
+0049:  meta_send_op_plus          :+
+0051:  set_local                  1    # i
+0053:  pop                        
+0054:  check_interrupts           
+0055:  goto                       37
+0057:  push_nil                   
+0058:  pop                        
+0059:  push_self                  
+0060:  allow_private              

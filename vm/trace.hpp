@@ -99,12 +99,12 @@ namespace rubinius {
 
 #define HANDLE_INST1(code, name)												\
 				case code:																			\
-					if(v.before(op)) { v.visit_ ## name(arg1);}	\
+					if(v.before(op, arg1)) { v.visit_ ## name(arg1);}	\
 					break;
 
 #define HANDLE_INST2(code, name)															\
 				case code:																						\
-					if(v.before(op)) { v.visit_ ## name(arg1, arg2);}	\
+					if(v.before(op, arg1, arg2)) { v.visit_ ## name(arg1, arg2);}	\
 					break;
 			
 

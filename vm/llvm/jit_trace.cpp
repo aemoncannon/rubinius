@@ -94,6 +94,8 @@ namespace rubinius {
 			// vars = b().CreateBitCast(var_mem, PointerType::getUnqual(stack_vars_type), "vars");
 			info_.set_variables(vars);
 
+			info_.set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
+
 			// ip
 			Value* ip_mem = get_field(call_frame, offset::cf_ip);
 			b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), ip_mem);
