@@ -35,6 +35,7 @@ namespace rubinius {
 		void** ip_ptr;
 		TraceNode* prev;
 		TraceNode* next;
+		bool traced_send;
 		int total_size;
 		int numargs;
 		intptr_t arg1;
@@ -88,7 +89,7 @@ namespace rubinius {
 			opcode op = node->op;
 			intptr_t arg1 = node->arg1;
 			intptr_t arg2 = node->arg2;
-
+			v.at_trace_node(node);
 			v.at_ip(ip);
 
 			switch(op) {

@@ -179,7 +179,7 @@ namespace rubinius {
 			//			llvm::outs() << *func << "\n";
 
 			// Run optimization passes!
-			ls->passes()->run(*func);
+			//ls->passes()->run(*func);
 
 			function_ = func;
 		}

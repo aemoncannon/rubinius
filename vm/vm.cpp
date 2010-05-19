@@ -288,6 +288,11 @@ namespace rubinius {
   }
 
   void VM::collect_maybe(CallFrame* call_frame) {
+
+		// ACK!
+
+		return;
+
     this->set_call_frame(call_frame);
 
     // Don't go any further unless we're allowed to GC.

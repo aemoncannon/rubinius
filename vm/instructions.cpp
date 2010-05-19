@@ -140,19 +140,18 @@ Object* VMMethod::interpreter(STATE,
 	  if(state->tracing_enabled){																					\
 		  if(vmm->traces[cur_ip] != NULL){																	\
 			  std::cout << "Calling trace!" << "\n";													\
-			  vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope);		\
+			  vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope);	\
       }																																	\
 	    else if(state->recording_trace != NULL){													\
 				if(state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame)){ \
-					std::cout << "Compiling trace..." << "\n";										\
+					std::cout << "Compiling trace:" << "\n";											\
+					state->recording_trace->pretty_print(state, std::cout);				\
 					state->recording_trace->compile(state);												\
 					vmm->traces[cur_ip] = state->recording_trace;									\
 					state->recording_trace = NULL;																\
 				}																																\
 			}																																	\
-			else if(op == InstructionSequence::insn_goto ||										\
-							op == InstructionSequence::insn_goto_if_false ||					\
-							op == InstructionSequence::insn_goto_if_false){						\
+			else if(op == InstructionSequence::insn_goto){										\
 				intptr_t location = (intptr_t)(*(ip_ptr + 1));									\
 				if(location < cur_ip){																					\
 					vmm->trace_counters[location]++;															\

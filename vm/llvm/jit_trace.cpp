@@ -148,7 +148,7 @@ namespace rubinius {
 
 			std::cout << "4" << "\n";
 
-			JITTraceVisit visitor(ls_, info_, block_map_, b().GetInsertBlock());
+			JITTraceVisit visitor(ls_, trace, info_, block_map_, b().GetInsertBlock());
 			visitor.set_called_args(0);
 			visitor.set_valid_flag(valid_flag);
 			if(use_full_scope_) visitor.use_full_scope();
@@ -229,6 +229,8 @@ namespace rubinius {
 				// By default, there is no handler.
 				exception_handlers_.push_back(0);
 			}
+
+			void at_trace_node(TraceNode* node){}
 
 			bool calls_evalish() {
 				return calls_evalish_;

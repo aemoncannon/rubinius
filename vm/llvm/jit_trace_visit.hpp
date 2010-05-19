@@ -6,16 +6,26 @@
 #include "inline_cache.hpp"
 
 #include "llvm/jit_visit.hpp"
+#include "trace.hpp"
 
 namespace rubinius {
 
   class JITTraceVisit : public JITVisit {
 
+		Trace* trace_;
+		TraceNode* cur_trace_node_;
+
   public:
 
-    JITTraceVisit(LLVMState* ls, JITMethodInfo& info, BlockMap& bm, llvm::BasicBlock* start)
+    JITTraceVisit(LLVMState* ls, Trace* trace, JITMethodInfo& info, BlockMap& bm, llvm::BasicBlock* start)
       : JITVisit(ls, info, bm, start)
+      , trace_(trace)
     {}
+
+
+		void at_trace_node(TraceNode* node){
+			cur_trace_node_ = node;
+		}
 
     void initialize() {
       BasicBlock* start = b().GetInsertBlock();
@@ -98,72 +108,24 @@ namespace rubinius {
 
       set_block(cont);
 
-
     }
 
-
-    void visit_meta_send_op_lt(opcode name) {
-      InlineCache* cache = reinterpret_cast<InlineCache*>(name);
-      if(cache->classes_seen() == 0) {
-
-        set_has_side_effects();
-
-        Value* recv = stack_back(1);
-        Value* arg =  stack_top();
-
-        BasicBlock* fast = new_block("fast");
-        BasicBlock* dispatch = new_block("dispatch");
-        BasicBlock* cont = new_block("cont");
-
-        check_fixnums(recv, arg, fast, dispatch);
-
-        set_block(dispatch);
-        Value* called_value = simple_send(ls_->symbol("<"), 1);
-        check_for_exception_then(called_value, cont);
-
-        set_block(fast);
-        Value* cmp = b().CreateICmpSLT(recv, arg, "imm_cmp");
-        Value* imm_value = b().CreateSelect(cmp,
-																						constant(Qtrue), constant(Qfalse), "select_bool");
-
-        b().CreateBr(cont);
-
-        set_block(cont);
-        PHINode* phi = b().CreatePHI(ObjType, "addition");
-        phi->addIncoming(called_value, dispatch);
-        phi->addIncoming(imm_value, fast);
-        stack_remove(2);
-        stack_push(phi);
-
-      } else {
-        visit_send_stack(name, 1);
-      }
+    void visit_send_method(opcode which) {
+      visit_send_stack(which, 0);
     }
 
-    void visit_push_local(opcode which) {
-      Value* idx2[] = {
-        ConstantInt::get(ls_->Int32Ty, 0),
-        ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-        ConstantInt::get(ls_->Int32Ty, which)
-      };
-      Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
-			Value* tmp = b().CreateLoad(pos, "local");
-
-      stack_push(tmp);
-    }
-
-    void visit_set_local(opcode which) {
-      Value* idx2[] = {
-        ConstantInt::get(ls_->Int32Ty, 0),
-        ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-        ConstantInt::get(ls_->Int32Ty, which)
-      };
-
-      Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
-
-      Value* val = stack_top();
-
-      b().CreateStore(val, pos);
+    void visit_send_stack(opcode which, opcode args) {
+			if(cur_trace_node_->traced_send){
+			}
+			else{
+				InlineCache* cache = reinterpret_cast<InlineCache*>(which);
+				set_has_side_effects();
+				Value* ret = inline_cache_send(args, cache);
+				stack_remove(args + 1);
+				check_for_exception(ret);
+				stack_push(ret);
+				allow_private_ = false;
+			}
     }
 
 		void print_debug(){
@@ -211,5 +173,5 @@ namespace rubinius {
 		}
 
 
-  };
+	};
 }

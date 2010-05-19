@@ -23,7 +23,8 @@ namespace rubinius {
 		  cm(call_frame->cm),
 		  ip_ptr(ip_ptr),
 		  prev(NULL),
-		  next(NULL)
+		  next(NULL),
+			traced_send(false)
 	{
 #include "vm/gen/instruction_trace_record.hpp"
 	}
