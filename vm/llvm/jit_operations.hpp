@@ -377,6 +377,10 @@ namespace rubinius {
       return last_sp_;
     }
 
+    int sp() {
+      return sp_;
+    }
+
     Value* last_sp_as_int() {
       return ConstantInt::get(NativeIntTy, last_sp_);
     }
@@ -385,6 +389,9 @@ namespace rubinius {
 
     Value* stack_position(int amount) {
       int pos = sp_ + amount;
+			std::cout << "amount: " << amount << "\n";
+			std::cout << "pos: " << pos << "\n";
+			std::cout << "stack_size: " << vmmethod()->stack_size << "\n";
       assert(pos >= 0 && pos < vmmethod()->stack_size);
 
       return b().CreateConstGEP1_32(stack_, pos, "stack_pos");
@@ -399,6 +406,9 @@ namespace rubinius {
     }
 
     void stack_ptr_adjust(int amount) {
+			std::cout << "amount: " << amount << "\n";
+			std::cout << "sp_: " << sp_ << "\n";
+			std::cout << "stack_size: " << vmmethod()->stack_size << "\n";
       sp_ += amount;
       assert(sp_ >= -1 && sp_ < vmmethod()->stack_size);
     }

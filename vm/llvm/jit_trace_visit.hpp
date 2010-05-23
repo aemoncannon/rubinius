@@ -116,36 +116,39 @@ namespace rubinius {
 		}
 
 		void do_traced_send(opcode which, opcode args){
-			CompiledMethod* cm = cur_trace_node_->send_cm;
-			VMMethod* vmm = cm->backend_method();
-			jit::Context ctx(ls_);
-			JITMethodInfo* new_info = new JITMethodInfo(ctx, cm, vmm);
-			JITMethodInfo* parent_info = info();
-			new_info->is_block = false;
-			new_info->set_parent_info(parent_info);
-			method_info_ = new_info;
-
-			llvm::Module* mod = ls_->module();
-			const llvm::Type* cf_type = mod->getTypeByName("struct.rubinius::CallFrame");
-			const llvm::Type* stack_vars_type = mod->getTypeByName("struct.rubinius::StackVariables");
-			const llvm::Type* obj_type = ls_->ptr_type("Object");
-
-
-			info()->set_function(parent_info->function());
-
-
-			// Info has changed, so we switch to 
-			// new out_args
-			init_out_args();
 
 			// Emit setup code for new call.
 			// Stores into args Values.
 			setup_out_args(args);
 
+			std::cout << "A" << "\n";
+			CompiledMethod* cm = cur_trace_node_->send_cm;
+			VMMethod* vmm = cm->backend_method();
+			jit::Context ctx(ls_);
+			JITMethodInfo* new_info = new JITMethodInfo(ctx, cm, vmm);
+			JITMethodInfo* parent_info = info();
+			parent_info->set_saved_sp(sp());
+			new_info->is_block = false;
+			new_info->set_parent_info(parent_info);
+			method_info_ = new_info;
+			set_sp(-1);
+
+			std::cout << "B" << "\n";
+			llvm::Module* mod = ls_->module();
+			const llvm::Type* cf_type = mod->getTypeByName("struct.rubinius::CallFrame");
+			const llvm::Type* stack_vars_type = mod->getTypeByName("struct.rubinius::StackVariables");
+			const llvm::Type* obj_type = ls_->ptr_type("Object");
+
+			info()->set_function(parent_info->function());
+			std::cout << "C" << "\n";
+
+
+			std::cout << "C.2" << "\n";
+
       InlineCache* cache = reinterpret_cast<InlineCache*>(which);
       Value* msg = b().CreateIntToPtr(
 				ConstantInt::get(ls_->IntPtrTy, reinterpret_cast<uintptr_t>(cache)),
-				ptr_type("InlineCache"), "cast_to_ptr");
+				ls_->ptr_type("Dispatch"), "cast_to_ptr");
 
 			info()->set_msg(msg);
 
@@ -153,13 +156,19 @@ namespace rubinius {
 			vm_->setName("vm");
 			info()->set_vm(vm_);
 
-			Value* prev_call_frame = info()->call_frame();
+			std::cout << "C.3" << "\n";
+
+			Value* prev_call_frame = parent_info->call_frame();
 			prev_call_frame->setName("prev_call_frame");
 			info()->set_previous(prev_call_frame);
 
 			info()->set_args(out_args_);
 
 			info()->set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
+			init_out_args();
+
+			std::cout << "D" << "\n";
+
 
 			Value* cfstk = b().CreateAlloca(obj_type,
 																			ConstantInt::get(ls_->Int32Ty,
@@ -171,6 +180,7 @@ namespace rubinius {
 																												 (sizeof(StackVariables) / sizeof(Object*)) + info()->vmm->number_of_locals),
 																				"var_mem");
 
+			std::cout << "E" << "\n";
 
 			check_arity();
 
@@ -181,7 +191,7 @@ namespace rubinius {
 			info()->set_call_frame(call_frame_);
 
 			Value* stk = b().CreateConstGEP1_32(cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
-
+			std::cout << "F" << "\n";
 			info()->set_stack(stk);
 
 			Value* vars = b().CreateBitCast(
@@ -189,7 +199,7 @@ namespace rubinius {
         PointerType::getUnqual(stack_vars_type), "vars");
 
 			info()->set_variables(vars);
-
+			std::cout << "G" << "\n";
 
       // Pasting code from initialize_frame
 
@@ -212,26 +222,36 @@ namespace rubinius {
 			// cm
 			b().CreateStore(method, cm_gep);
 
+			std::cout << "H" << "\n";
+
 			// flags
 			int flags = CallFrame::cJITed;
 			if(!use_full_scope_) flags |= CallFrame::cClosedScope;
 
+			std::cout << "H.1" << "\n";
 			b().CreateStore(
         ConstantInt::get(ls_->Int32Ty, flags),
         get_field(call_frame_, offset::cf_flags));
 
+			std::cout << "H.2" << "\n";
 			// ip
 			b().CreateStore(
         ConstantInt::get(ls_->Int32Ty, 0),
         get_field(call_frame_, offset::cf_ip));
 
+			std::cout << "H.3" << "\n";
 			// scope
 			b().CreateStore(vars, get_field(call_frame_, offset::cf_scope));
 
+			std::cout << "H.4" << "\n";
+
 			nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
+
+			std::cout << "H.5" << "\n";
 
 			import_args();
 
+			std::cout << "I" << "\n";
 
 			// b().CreateBr(body);
 			// b().SetInsertPoint(body);
@@ -240,7 +260,7 @@ namespace rubinius {
 		void do_traced_return(){
 			method_info_ = info()->parent_info();
 
-			// restore all the local instance vars
+			set_sp(info()->saved_sp());
 			vm_ = info()->vm();
 			call_frame_ = info()->call_frame();
 
@@ -252,7 +272,7 @@ namespace rubinius {
 		void import_args() {
 			Value* vm_obj = info()->vm();
 			Value* arg_obj = info()->args();
-
+			std::cout << "H.6" << "\n";
 			setup_scope();
 
 			// Import the arguments
@@ -260,6 +280,7 @@ namespace rubinius {
 
 			Value* arg_ary = b().CreateLoad(offset, "arg_ary");
 
+			std::cout << "H.7" << "\n";
 			// If there are a precise number of args, easy.
 			if(info()->vmm->required_args == info()->vmm->total_args) {
 				for(int i = 0; i < info()->vmm->required_args; i++) {
@@ -279,6 +300,8 @@ namespace rubinius {
 
 					b().CreateStore(arg_val, pos);
 				}
+
+			std::cout << "H.8" << "\n";
 
 				// Otherwise, we must loop in the generate code because we don't know
 				// how many they've actually passed in.
@@ -435,6 +458,7 @@ namespace rubinius {
 			sig << "Arguments";
 			sig << ls_->Int32Ty;
 
+
 			Value* call_args[] = {
 				vm_obj,
 				info()->previous(),
@@ -442,6 +466,8 @@ namespace rubinius {
 				arg_obj,
 				ConstantInt::get(ls_->Int32Ty, info()->vmm->required_args)
 			};
+
+			std::cout << "E.1" << "\n";
 
 			Value* val = sig.call("rbx_arg_error", call_args, 5, "ret", b());
 			return_value(val);
@@ -487,23 +513,25 @@ namespace rubinius {
 			const llvm::Type* obj_type = ls_->ptr_type("Object");
 			Value* heap_null = ConstantExpr::getNullValue(PointerType::getUnqual(vars_type));
 			Value* heap_pos = get_field(info()->variables(), offset::vars_on_heap);
-
+			std::cout << "H.6.1" << "\n";
 			b().CreateStore(heap_null, heap_pos);
-
+			std::cout << "H.6.2" << "\n";
 			Value* self = b().CreateLoad(get_field(info()->args(), offset::args_recv),
 																	 "args.recv");
 			b().CreateStore(self, get_field(info()->variables(), offset::vars_self));
+			std::cout << "H.6.2.1" << "\n";
 			Value* module = b().CreateLoad(get_field(info()->msg(), offset::msg_module),
 																	"msg.module");
+			std::cout << "H.6.2.2" << "\n";
 			b().CreateStore(module, get_field(info()->variables(), offset::vars_module));
-
+			std::cout << "H.6.3" << "\n";
 			Value* blk = b().CreateLoad(get_field(info()->args(), offset::args_block),
 																	"args.block");
 			b().CreateStore(blk, get_field(info()->variables(), offset::vars_block));
 
 			b().CreateStore(Constant::getNullValue(ls_->ptr_type("VariableScope")),
 											get_field(info()->variables(), offset::vars_parent));
-
+			std::cout << "H.6.4" << "\n";
 			b().CreateStore(constant(Qnil, obj_type), get_field(info()->variables(), offset::vars_last_match));
 
 			nil_locals();
@@ -606,7 +634,7 @@ namespace rubinius {
 
     void visit_send_stack(opcode which, opcode args) {
 			if(cur_trace_node_->traced_send){
-				do_traced_send(which, args);
+				do_traced_send(which, args);  
 			}
 			else{
 				InlineCache* cache = reinterpret_cast<InlineCache*>(which);

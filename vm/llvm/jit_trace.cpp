@@ -197,6 +197,8 @@ namespace rubinius {
 			Symbol* s_class_eval_;
 			Symbol* s_module_eval_;
 
+			TraceNode* cur_trace_node_;
+
 			std::list<JITBasicBlock*> exception_handlers_;
 //			CFGCalculator& cfg_;
 
@@ -230,7 +232,9 @@ namespace rubinius {
 				exception_handlers_.push_back(0);
 			}
 
-			void at_trace_node(TraceNode* node){}
+			void at_trace_node(TraceNode* node){
+				cur_trace_node_ = node;
+			}
 
 			bool calls_evalish() {
 				return calls_evalish_;
@@ -261,7 +265,7 @@ namespace rubinius {
 			}
 
 			const static int cUnknown = -10;
-			const static bool cDebugStack = false;
+			const static bool cDebugStack = true;
 
 #include "gen/instruction_effects.hpp"
 
@@ -306,6 +310,13 @@ namespace rubinius {
 				force_break_ = false;
 				if(sp_ != cUnknown) {
 					sp_ += stack_difference(op, arg1, arg2);
+
+					if(op == InstructionSequence::insn_ret && 
+						 cur_trace_node_->active_send) {
+						std::cout << "Decrementing at traced ret, to pop off self.\n";
+							sp_--;
+					}
+
 					assert(sp_ >= -1);
 				}
 
@@ -313,7 +324,6 @@ namespace rubinius {
 			}
 
 			JITBasicBlock* break_at(opcode ip) {
-				std::cout << "Breaking at " << ip << "\n";
 				BlockMap::iterator i = map_.find(ip);
 				if(i == map_.end()) {
 					std::cout << "New BB at " << ip << "\n";

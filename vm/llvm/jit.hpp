@@ -102,6 +102,7 @@ namespace rubinius {
     llvm::Value* counter_;
     llvm::Value* msg_;
     llvm::Value* arg_total_;
+    int saved_sp_;;
 
     JITMethodInfo* parent_info_;
     JITMethodInfo* creator_info_;
@@ -164,6 +165,14 @@ namespace rubinius {
 
     llvm::Value* arg_total() {
       return arg_total_;
+    }
+
+    void set_saved_sp(int sp) {
+      saved_sp_ = sp;
+    }
+
+    int saved_sp() {
+      return saved_sp_;
     }
 
     void set_previous(llvm::Value* prev) {

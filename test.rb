@@ -3,6 +3,10 @@ require 'helpers'
 ITERATIONS = 5000000
 
 
+def foo()
+  1
+end
+
 
 t = Time.now.to_f
 
@@ -10,7 +14,7 @@ enable_tracing
 
 i = 0
 while i < ITERATIONS
-  i = i + 1
+  i = i + foo()
 end
 
 disable_tracing
@@ -25,7 +29,7 @@ t = Time.now.to_f
 
 i = 0
 while i < ITERATIONS
-  i = i + 1
+  i = i + foo()
 end
 
 non_trace_time = Time.now.to_f - t

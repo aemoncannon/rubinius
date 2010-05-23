@@ -612,12 +612,15 @@ namespace rubinius {
     }
 
     void setup_out_args(int args) {
+			std::cout << "C.1.1" << "\n";
+			std::cout << "args = " << args << "\n";
       b().CreateStore(stack_back(args), out_args_recv_);
       b().CreateStore(constant(Qnil), out_args_block_);
       b().CreateStore(ConstantInt::get(ls_->Int32Ty, args),
 											out_args_total_);
       b().CreateStore(Constant::getNullValue(ptr_type("Tuple")),
                       out_args_container_);
+			std::cout << "C.1.2" << "\n";
       if(args > 0) {
         b().CreateStore(stack_objects(args), out_args_arguments_);
       }
