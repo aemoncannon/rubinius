@@ -71,7 +71,6 @@ namespace rubinius {
 				ConstantInt::get(ls_->IntPtrTy, (intptr_t)ls_->shared().global_serial_address()),
 				PointerType::getUnqual(ls_->IntPtrTy), "cast_to_intptr");
 
-
       init_out_args();
     }
 
@@ -131,6 +130,15 @@ namespace rubinius {
 			new_info->is_block = false;
 			new_info->set_parent_info(parent_info);
 			method_info_ = new_info;
+
+			BasicBlock* cur = current_block();
+
+			// Generate hard return
+			set_block(info()->return_pad());
+			b().CreateRet(info()->return_phi());
+			set_block(cur);
+
+			// Method starts with stack at -1
 			set_sp(-1);
 
 			std::cout << "B" << "\n";
@@ -139,7 +147,6 @@ namespace rubinius {
 			const llvm::Type* stack_vars_type = mod->getTypeByName("struct.rubinius::StackVariables");
 			const llvm::Type* obj_type = ls_->ptr_type("Object");
 
-			info()->set_function(parent_info->function());
 			std::cout << "C" << "\n";
 
 
@@ -181,6 +188,7 @@ namespace rubinius {
 																				"var_mem");
 
 			std::cout << "E" << "\n";
+
 
 			check_arity();
 
@@ -301,7 +309,7 @@ namespace rubinius {
 					b().CreateStore(arg_val, pos);
 				}
 
-			std::cout << "H.8" << "\n";
+				std::cout << "H.8" << "\n";
 
 				// Otherwise, we must loop in the generate code because we don't know
 				// how many they've actually passed in.
@@ -412,6 +420,7 @@ namespace rubinius {
 			// For others to use.
 			info()->set_arg_total(total);
 
+
 			BasicBlock* arg_error = BasicBlock::Create(ls_->ctx(), "arg_error", info()->function());
 			BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "import_args", info()->function());
 
@@ -477,31 +486,6 @@ namespace rubinius {
 		}
 
 		void return_value(Value* ret, BasicBlock* cont = 0) {
-			if(ls_->include_profiling()) {
-				Value* test = b().CreateLoad(ls_->profiling(), "profiling");
-				BasicBlock* end_profiling = BasicBlock::Create(ls_->ctx(), "end_profiling", info()->function());
-				if(!cont) {
-					cont = BasicBlock::Create(ls_->ctx(), "continue", info()->function());
-				}
-
-				b().CreateCondBr(test, end_profiling, cont);
-
-				b().SetInsertPoint(end_profiling);
-
-				Signature sig(ls_, ls_->VoidTy);
-				sig << PointerType::getUnqual(ls_->Int8Ty);
-
-				Value* call_args[] = {
-					method_entry_
-				};
-
-				sig.call("rbx_end_profiling", call_args, 1, "", b());
-
-				b().CreateBr(cont);
-
-				b().SetInsertPoint(cont);
-			}
-
 			info()->add_return_value(ret, b().GetInsertBlock());
 			b().CreateBr(info()->return_pad());
 		}
@@ -521,7 +505,7 @@ namespace rubinius {
 			b().CreateStore(self, get_field(info()->variables(), offset::vars_self));
 			std::cout << "H.6.2.1" << "\n";
 			Value* module = b().CreateLoad(get_field(info()->msg(), offset::msg_module),
-																	"msg.module");
+																		 "msg.module");
 			std::cout << "H.6.2.2" << "\n";
 			b().CreateStore(module, get_field(info()->variables(), offset::vars_module));
 			std::cout << "H.6.3" << "\n";
