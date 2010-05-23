@@ -12,7 +12,7 @@ namespace jit {
     jit::RuntimeData* runtime_data_;
 
   public:
-    InlineMethodBuilder(LLVMState* ls, JITMethodInfo& info, jit::RuntimeData* rd)
+    InlineMethodBuilder(LLVMState* ls, JITMethodInfo* info, jit::RuntimeData* rd)
       : MethodBuilder(ls, info)
       , runtime_data_(rd)
     {}

@@ -81,10 +81,10 @@ namespace rubinius {
 			}
 
 			jit::Context ctx(ls);
-			JITMethodInfo info(ctx, cm, vmm);
-			info.is_block = true;
+			JITMethodInfo* info = new JITMethodInfo(ctx, cm, vmm);
+			info->is_block = true;
 
-			ctx.set_root(&info);
+			ctx.set_root(info);
 
 			jit::BlockBuilder work(ls, info);
 			work.setup();
@@ -101,10 +101,10 @@ namespace rubinius {
 			}
 
 			jit::Context ctx(ls);
-			JITMethodInfo info(ctx, cm, vmm);
-			info.is_block = false;
+			JITMethodInfo* info = new JITMethodInfo(ctx, cm, vmm);
+			info->is_block = false;
 
-			ctx.set_root(&info);
+			ctx.set_root(info);
 
 			jit::MethodBuilder work(ls, info);
 			work.setup();
@@ -118,14 +118,14 @@ namespace rubinius {
 			VMMethod* vmm = cm->backend_method();
 
 			jit::Context ctx(ls);
-			JITMethodInfo info(ctx, cm, vmm);
-			info.is_block = false;
-			ctx.set_root(&info);
+			JITMethodInfo* info = new JITMethodInfo(ctx, cm, vmm);
+			info->is_block = false;
+			ctx.set_root(info);
 
 			jit::TraceBuilder work(ls, trace, info);
 			work.setup();
 
-			llvm::Function* func = info.function();
+			llvm::Function* func = info->function();
 
 			if(!work.generate_body()) {
 				std::cout << "Oops! failed to generate body!" << "\n";
@@ -184,10 +184,10 @@ namespace rubinius {
 			function_ = func;
 		}
 
-		void Compiler::compile_builder(jit::Context& ctx, LLVMState* ls, JITMethodInfo& info,
+		void Compiler::compile_builder(jit::Context& ctx, LLVMState* ls, JITMethodInfo* info,
 																	 jit::Builder& work)
 		{
-			llvm::Function* func = info.function();
+			llvm::Function* func = info->function();
 
 			if(!work.generate_body()) {
 				function_ = NULL;
@@ -242,7 +242,7 @@ namespace rubinius {
 
 			if(ls->jit_dump_code() & cOptimized) {
 				llvm::outs() << "[[[ LLVM Optimized IR: "
-										 << ls->symbol_cstr(info.method()->name()) << " ]]]\n";
+										 << ls->symbol_cstr(info->method()->name()) << " ]]]\n";
 				llvm::outs() << *func << "\n";
 			}
 
@@ -250,7 +250,7 @@ namespace rubinius {
 			// Do this way after we've validated the IR so things are consistent.
 			ctx.runtime_data_holder()->set_function(func);
 
-			info.method()->set_jit_data(ctx.runtime_data_holder());
+			info->method()->set_jit_data(ctx.runtime_data_holder());
 			ls->shared().om->add_code_resource(ctx.runtime_data_holder());
 
 			function_ = func;

@@ -59,13 +59,13 @@ namespace rubinius {
 
 			Trace* trace;
 
-			JITMethodInfo& info_;
+			JITMethodInfo* info_;
 
 		public:
 
 			llvm::IRBuilder<>& b() { return builder_; }
 
-			TraceBuilder(LLVMState* ls, Trace* trace, JITMethodInfo& info);
+			TraceBuilder(LLVMState* ls, Trace* trace, JITMethodInfo* info);
 
 			void setup();
 

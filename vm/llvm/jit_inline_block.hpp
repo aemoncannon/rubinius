@@ -4,7 +4,7 @@ namespace rubinius {
 namespace jit {
   class InlineBlockBuilder : public InlineMethodBuilder {
   public:
-    InlineBlockBuilder(LLVMState* ls, JITMethodInfo& info, jit::RuntimeData* rd)
+    InlineBlockBuilder(LLVMState* ls, JITMethodInfo* info, jit::RuntimeData* rd)
       : InlineMethodBuilder(ls, info, rd)
     {}
 

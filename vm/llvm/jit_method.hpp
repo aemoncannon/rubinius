@@ -7,7 +7,7 @@ namespace rubinius {
 namespace jit {
   class MethodBuilder : public Builder {
   public:
-    MethodBuilder(LLVMState* ls, JITMethodInfo& info)
+    MethodBuilder(LLVMState* ls, JITMethodInfo* info)
       : Builder(ls, info)
     {}
 

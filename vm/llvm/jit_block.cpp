@@ -33,17 +33,17 @@ namespace jit {
     BasicBlock* block = BasicBlock::Create(ls_->ctx(), "entry", func);
     b().SetInsertPoint(block);
 
-    info_.set_function(func);
-    info_.set_vm(vm);
-    info_.set_args(args);
-    info_.set_previous(prev);
-    info_.set_entry(block);
+    info_->set_function(func);
+    info_->set_vm(vm);
+    info_->set_args(args);
+    info_->set_previous(prev);
+    info_->set_entry(block);
 
     BasicBlock* body = BasicBlock::Create(ls_->ctx(), "block_body", func);
 
     pass_one(body);
 
-    info_.set_counter(b().CreateAlloca(ls_->Int32Ty, 0, "counter_alloca"));
+    info_->set_counter(b().CreateAlloca(ls_->Int32Ty, 0, "counter_alloca"));
 
     valid_flag = b().CreateAlloca(ls_->Int1Ty, 0, "valid_flag");
 
@@ -56,7 +56,7 @@ namespace jit {
         cfstk,
         PointerType::getUnqual(cf_type), "call_frame");
 
-    info_.set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
+    info_->set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
 
     if(ls_->include_profiling()) {
       method_entry_ = b().CreateAlloca(ls_->Int8Ty,
@@ -64,11 +64,11 @@ namespace jit {
           "method_entry");
     }
 
-    info_.set_call_frame(call_frame);
+    info_->set_call_frame(call_frame);
 
     stk = b().CreateConstGEP1_32(cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
 
-    info_.set_stack(stk);
+    info_->set_stack(stk);
 
     Value* var_mem = b().CreateAlloca(obj_type,
         ConstantInt::get(ls_->Int32Ty,
@@ -79,7 +79,7 @@ namespace jit {
         var_mem,
         PointerType::getUnqual(stack_vars_type), "vars");
 
-    info_.set_variables(vars);
+    info_->set_variables(vars);
 
     initialize_frame(vmm_->stack_size);
 
@@ -189,7 +189,7 @@ namespace jit {
 
     // jit_data
     b().CreateStore(
-        constant(info_.context().runtime_data_holder(), ls_->Int8PtrTy),
+        constant(info_->context().runtime_data_holder(), ls_->Int8PtrTy),
         get_field(call_frame, offset::cf_jit_data));
 
     if(ls_->include_profiling()) {

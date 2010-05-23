@@ -32,10 +32,14 @@ namespace rubinius {
 		opcode op;
 		int pc;
 		CompiledMethod* cm;
+		CompiledMethod* send_cm;
 		void** ip_ptr;
 		TraceNode* prev;
 		TraceNode* next;
 		bool traced_send;
+		TraceNode* active_send;
+		TraceNode* parent_send;
+
 		int total_size;
 		int numargs;
 		intptr_t arg1;

@@ -100,6 +100,8 @@ namespace rubinius {
     llvm::Value* profiling_entry_;
     llvm::Value* out_args_;
     llvm::Value* counter_;
+    llvm::Value* msg_;
+    llvm::Value* arg_total_;
 
     JITMethodInfo* parent_info_;
     JITMethodInfo* creator_info_;
@@ -156,12 +158,28 @@ namespace rubinius {
       return args_;
     }
 
+    void set_arg_total(llvm::Value* arg_total) {
+      arg_total_ = arg_total;
+    }
+
+    llvm::Value* arg_total() {
+      return arg_total_;
+    }
+
     void set_previous(llvm::Value* prev) {
       previous_ = prev;
     }
 
     llvm::Value* previous() {
       return previous_;
+    }
+
+    void set_msg(llvm::Value* msg) {
+      msg_ = msg;
+    }
+
+    llvm::Value* msg() {
+      return msg_;
     }
 
     void set_profiling_entry(llvm::Value* val) {
@@ -220,13 +238,13 @@ namespace rubinius {
       return_phi_->addIncoming(val, block);
     }
 
-    void set_parent_info(JITMethodInfo& info) {
-      parent_info_ = &info;
-      vm_ = info.vm();
-      out_args_ = info.out_args();
-      counter_ = info.counter();
+    void set_parent_info(JITMethodInfo* info) {
+      parent_info_ = info;
+      vm_ = info->vm();
+      out_args_ = info->out_args();
+      counter_ = info->counter();
 
-      set_function(info.function());
+      set_function(info->function());
     }
 
     llvm::Value* parent_call_frame() {

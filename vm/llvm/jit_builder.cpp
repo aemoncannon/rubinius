@@ -13,9 +13,9 @@
 namespace rubinius {
 namespace jit {
 
-  Builder::Builder(LLVMState* ls, JITMethodInfo& i)
+  Builder::Builder(LLVMState* ls, JITMethodInfo* i)
     : ls_(ls)
-    , vmm_(i.vmm)
+    , vmm_(i->vmm)
     , builder_(ls->ctx())
     , use_full_scope_(false)
     , import_args_(0)
@@ -51,17 +51,17 @@ namespace jit {
     BasicBlock* top = BasicBlock::Create(ls_->ctx(), "stack_nil", func);
     BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "bottom", func);
 
-    b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), info_.counter());
+    b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), info_->counter());
 
     b().CreateBr(top);
 
     b().SetInsertPoint(top);
 
-    Value* cur = b().CreateLoad(info_.counter(), "counter");
+    Value* cur = b().CreateLoad(info_->counter(), "counter");
     b().CreateStore(nil, b().CreateGEP(stk, cur, "stack_pos"));
 
     Value* added = b().CreateAdd(cur, one, "added");
-    b().CreateStore(added, info_.counter());
+    b().CreateStore(added, info_->counter());
 
     Value* cmp = b().CreateICmpEQ(added, max, "loop_check");
     b().CreateCondBr(cmp, cont, top);
@@ -96,13 +96,13 @@ namespace jit {
     BasicBlock* top = BasicBlock::Create(ls_->ctx(), "locals_nil", func);
     BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "bottom", func);
 
-    b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), info_.counter());
+    b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), info_->counter());
 
     b().CreateBr(top);
 
     b().SetInsertPoint(top);
 
-    Value* cur = b().CreateLoad(info_.counter(), "counter");
+    Value* cur = b().CreateLoad(info_->counter(), "counter");
     Value* idx[] = {
       ConstantInt::get(ls_->Int32Ty, 0),
       ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
@@ -113,7 +113,7 @@ namespace jit {
     b().CreateStore(nil, gep);
 
     Value* added = b().CreateAdd(cur, one, "added");
-    b().CreateStore(added, info_.counter());
+    b().CreateStore(added, info_->counter());
 
     Value* cmp = b().CreateICmpEQ(added, max, "loop_check");
     b().CreateCondBr(cmp, cont, top);
@@ -125,7 +125,7 @@ namespace jit {
   void Builder::check_self_type() {
     int klass_id = 0;
     {
-      if(Class* cls = try_as<Class>(info_.method()->scope()->module())) {
+      if(Class* cls = try_as<Class>(info_->method()->scope()->module())) {
         klass_id = cls->class_id();
       } else {
         return;
@@ -488,7 +488,7 @@ namespace jit {
     finder.drive(vmm_);
 
     if(finder.creates_blocks() || finder.calls_evalish()) {
-      info_.set_use_full_scope();
+      info_->set_use_full_scope();
       use_full_scope_ = true;
     }
 
@@ -521,13 +521,13 @@ namespace jit {
   bool Builder::generate_body() {
     JITVisit visitor(ls_, info_, block_map_, b().GetInsertBlock());
 
-    if(info_.inline_policy) {
-      visitor.set_policy(info_.inline_policy);
+    if(info_->inline_policy) {
+      visitor.set_policy(info_->inline_policy);
     } else {
       visitor.init_policy();
     }
 
-    visitor.set_called_args(info_.called_args);
+    visitor.set_called_args(info_->called_args);
 
     visitor.set_valid_flag(valid_flag);
 
@@ -537,7 +537,7 @@ namespace jit {
 
     // Pass 2, compile!
     // Drive by following the control flow.
-    jit::ControlFlowWalker walker(info_.vmm);
+    jit::ControlFlowWalker walker(info_->vmm);
     Walker cb(visitor, block_map_);
 
     try {
@@ -586,15 +586,15 @@ namespace jit {
     }
     */
 
-    info_.return_pad()->moveAfter(visitor.current_block());
+    info_->return_pad()->moveAfter(visitor.current_block());
 
-    info_.fin_block = visitor.current_block();
+    info_->fin_block = visitor.current_block();
     return true;
   }
 
   void Builder::generate_hard_return() {
-    b().SetInsertPoint(info_.return_pad());
-    b().CreateRet(info_.return_phi());
+    b().SetInsertPoint(info_->return_pad());
+    b().CreateRet(info_->return_phi());
   }
 }
 }

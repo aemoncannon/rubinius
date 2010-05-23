@@ -4,7 +4,7 @@ namespace rubinius {
 namespace jit {
   class BlockBuilder : public Builder {
   public:
-    BlockBuilder(LLVMState* ls, JITMethodInfo& info)
+    BlockBuilder(LLVMState* ls, JITMethodInfo* info)
       : Builder(ls, info)
     {}
 

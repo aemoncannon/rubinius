@@ -373,13 +373,13 @@ remember:
     Value* self = recv();
     ops_.check_class(self, klass, failure());
 
-    JITMethodInfo info(context_, cm, vmm);
-    info.set_parent_info(ops_.info());
+    JITMethodInfo* info = new JITMethodInfo(context_, cm, vmm);
+    info->set_parent_info(ops_.info());
 
-    info.inline_policy = ops_.inline_policy();
-    info.called_args = count_;
-    info.root = ops_.root_method_info();
-    info.set_inline_block(inline_block_);
+    info->inline_policy = ops_.inline_policy();
+    info->called_args = count_;
+    info->root = ops_.root_method_info();
+    info->set_inline_block(inline_block_);
 
     jit::RuntimeData* rd = new jit::RuntimeData(cm, cache_->name, defined_in);
     context_.add_runtime_data(rd);
@@ -412,25 +412,25 @@ remember:
     ops_.create_branch(entry);
 
     // Set the basic block to continue with being the return_pad!
-    ops_.set_block(info.return_pad());
+    ops_.set_block(info->return_pad());
 
     // Make the value available to the code that called inliner to
     // check and use.
-    set_result(info.return_phi());
+    set_result(info->return_phi());
   }
 
   void Inliner::emit_inline_block(JITInlineBlock* ib, Value* self) {
-    JITMethodInfo info(context_, ib->method(), ib->code());
-    info.set_parent_info(ops_.info());
+    JITMethodInfo* info = new JITMethodInfo(context_, ib->method(), ib->code());
+    info->set_parent_info(ops_.info());
 
-    info.inline_policy = ops_.inline_policy();
-    info.called_args = count_;
-    info.root = ops_.root_method_info();
-    info.is_block = true;
+    info->inline_policy = ops_.inline_policy();
+    info->called_args = count_;
+    info->root = ops_.root_method_info();
+    info->is_block = true;
 
-    info.set_creator_info(creator_info_);
-    info.set_inline_block(inline_block_);
-    info.set_block_info(block_info_);
+    info->set_creator_info(creator_info_);
+    info->set_inline_block(inline_block_);
+    info->set_block_info(block_info_);
 
     jit::RuntimeData* rd = new jit::RuntimeData(ib->method(), cache_->name, (Module*)Qnil);
     context_.add_runtime_data(rd);
@@ -443,7 +443,7 @@ remember:
       args.push_back(ops_.stack_back(i));
     }
 
-    info.stack_args = &args;
+    info->stack_args = &args;
 
     if(ib->code()->call_count >= 0) ib->code()->call_count /= 2;
 
@@ -456,11 +456,11 @@ remember:
     ops_.create_branch(entry);
 
     // Set the basic block to continue with being the return_pad!
-    ops_.set_block(info.return_pad());
+    ops_.set_block(info->return_pad());
 
     // Make the value available to the code that called inliner to
     // check and use.
-    set_result(info.return_phi());
+    set_result(info->return_phi());
   }
 
   const Type* find_type(JITOperations& ops_, size_t type) {

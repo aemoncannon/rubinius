@@ -10,17 +10,17 @@ namespace jit {
   BasicBlock* InlineMethodBuilder::setup_inline(Value* self, Value* blk,
       std::vector<Value*>& stack_args)
   {
-    func = info_.function();
-    vm = info_.vm();
-    prev = info_.parent_call_frame();
+    func = info_->function();
+    vm = info_->vm();
+    prev = info_->parent_call_frame();
     args = ConstantExpr::getNullValue(ls_->ptr_type("Arguments"));
 
     BasicBlock* entry = BasicBlock::Create(ls_->ctx(), "inline_entry", func);
     b().SetInsertPoint(entry);
 
-    info_.set_args(args);
-    info_.set_previous(prev);
-    info_.set_entry(entry);
+    info_->set_args(args);
+    info_->set_previous(prev);
+    info_->set_entry(entry);
 
     BasicBlock* body = BasicBlock::Create(ls_->ctx(), "method_body", func);
     pass_one(body);
@@ -38,8 +38,8 @@ namespace jit {
 
     stk = b().CreateConstGEP1_32(cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
 
-    info_.set_call_frame(call_frame);
-    info_.set_stack(stk);
+    info_->set_call_frame(call_frame);
+    info_->set_stack(stk);
 
     Value* var_mem = new AllocaInst(obj_type,
         ConstantInt::get(ls_->Int32Ty,
@@ -50,7 +50,7 @@ namespace jit {
         var_mem,
         PointerType::getUnqual(stack_vars_type), "vars");
 
-    info_.set_variables(vars);
+    info_->set_variables(vars);
 
     Value* rd = constant(runtime_data_, ls_->ptr_type("jit::RuntimeData"));
 

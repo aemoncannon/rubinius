@@ -116,7 +116,7 @@ namespace rubinius {
     class Unsupported {};
 
     void init_out_args() {
-      out_args_ = info().out_args();
+      out_args_ = info()->out_args();
 
       out_args_recv_ = ptr_gep(out_args_, 0, "out_args_recv");
       out_args_block_= ptr_gep(out_args_, 1, "out_args_block");
@@ -126,7 +126,7 @@ namespace rubinius {
                                     "out_args_container");
     }
 
-    JITVisit(LLVMState* ls, JITMethodInfo& info, BlockMap& bm,
+    JITVisit(LLVMState* ls, JITMethodInfo* info, BlockMap& bm,
              llvm::BasicBlock* start)
       : JITOperations(ls, info, start)
       , f(ls)
@@ -135,9 +135,9 @@ namespace rubinius {
       , call_flags_(0)
       , rbx_simple_send_(0)
       , rbx_simple_send_private_(0)
-      , method_entry_(info.profiling_entry())
-      , args_(info.args())
-      , vars_(info.variables())
+      , method_entry_(info->profiling_entry())
+      , args_(info->args())
+      , vars_(info->variables())
       , use_full_scope_(false)
       , called_args_(-1)
       , sends_done_(0)
@@ -148,7 +148,7 @@ namespace rubinius {
     {}
 
     bool for_inlined_method() {
-      return info().for_inlined_method();
+      return info()->for_inlined_method();
     }
 
     void initialize() {
@@ -177,15 +177,15 @@ namespace rubinius {
         flush_scope_to_heap(vars_);
       }
 
-      info().add_return_value(Constant::getNullValue(ObjType), current_block());
-      b().CreateBr(info().return_pad());
+      info()->add_return_value(Constant::getNullValue(ObjType), current_block());
+      b().CreateBr(info()->return_pad());
 
       set_block(ret_raise_val);
       Value* crv = f.clear_raise_value.call(&vm_, 1, "crv", b());
       if(use_full_scope_) flush_scope_to_heap(vars_);
 
-      info().add_return_value(crv, current_block());
-      b().CreateBr(info().return_pad());
+      info()->add_return_value(crv, current_block());
+      b().CreateBr(info()->return_pad());
 
       set_block(start);
 
@@ -452,8 +452,8 @@ namespace rubinius {
 
       if(use_full_scope_) flush_scope_to_heap(vars_);
 
-      info().add_return_value(stack_top(), current_block());
-      b().CreateBr(info().return_pad());
+      info()->add_return_value(stack_top(), current_block());
+      b().CreateBr(info()->return_pad());
     }
 
     void visit_swap_stack() {
@@ -1055,7 +1055,7 @@ namespace rubinius {
     }
 
     Object* literal(opcode which) {
-      return info().method()->literals()->at(which);
+      return info()->method()->literals()->at(which);
     }
 
     Value* get_literal(opcode which) {
@@ -1239,8 +1239,8 @@ namespace rubinius {
 
         Value* call = sig.call("rbx_continue_uncommon", call_args, 4, "", b());
 
-        info().add_return_value(call, current_block());
-        b().CreateBr(info().return_pad());
+        info()->add_return_value(call, current_block());
+        b().CreateBr(info()->return_pad());
       }
     }
 
@@ -1344,12 +1344,12 @@ namespace rubinius {
     }
 
     bool in_inlined_block() {
-      return for_inlined_method() && info().is_block;
+      return for_inlined_method() && info()->is_block;
     }
 
     void emit_delayed_create_block(bool always=false) {
       std::list<JITMethodInfo*> in_scope;
-      JITMethodInfo* nfo = &info();
+      JITMethodInfo* nfo = info();
 
       while(nfo) {
         in_scope.push_front(nfo);
@@ -1427,7 +1427,7 @@ namespace rubinius {
 
         std::vector<JITMethodInfo*> mis;
 
-        JITMethodInfo* nfo = &info();
+        JITMethodInfo* nfo = info();
         while(nfo) {
           mis.push_back(nfo);
           nfo = nfo->creator_info();
@@ -1496,7 +1496,7 @@ namespace rubinius {
 
         VMMethod* code = 0;
         if(block_code) code = block_code->backend_method();
-        JITInlineBlock block_info(ls_, send_result, cleanup, block_code, code, &info(),
+        JITInlineBlock block_info(ls_, send_result, cleanup, block_code, code, info(),
                                   current_block_);
 
         inl.set_inline_block(&block_info);
@@ -1659,11 +1659,11 @@ namespace rubinius {
 
     void visit_push_has_block() {
       // We're in an inlined method, we know if there is a block staticly.
-      if(info().for_inlined_method()) {
+      if(info()->for_inlined_method()) {
         // Check for an inlined block being present, if so, this is a
         // constant!
         //
-        JITInlineBlock* ib = info().inline_block();
+        JITInlineBlock* ib = info()->inline_block();
 
         if(ib && ib->code()) {
           stack_push(constant(Qtrue));
@@ -1779,7 +1779,7 @@ namespace rubinius {
     }
 
     Object* current_literal(opcode which) {
-      return info().method()->literals()->at(which);
+      return info()->method()->literals()->at(which);
     }
 
     void visit_push_const_fast(opcode name, opcode cache) {
@@ -2130,7 +2130,7 @@ namespace rubinius {
           Value* local_pos = local_location(nfo->variables(), index);
           b().CreateStore(stack_top(), local_pos);
         } else {
-          JITMethodInfo* nfo = &info();
+          JITMethodInfo* nfo = info();
 
           while(nfo->creator_info()) {
             nfo = nfo->creator_info();
@@ -2218,7 +2218,7 @@ namespace rubinius {
     }
 
     JITMethodInfo* upscope_info(int which) {
-      JITMethodInfo* nfo = &info();
+      JITMethodInfo* nfo = info();
 
       for(int i = 0; i < which; i++) {
         nfo = nfo->creator_info();
@@ -2240,7 +2240,7 @@ namespace rubinius {
           Value* local_pos = local_location(nfo->variables(), index);
           stack_push(b().CreateLoad(local_pos, "upscope_local"));
         } else {
-          JITMethodInfo* nfo = &info();
+          JITMethodInfo* nfo = info();
 
           while(nfo->creator_info()) {
             nfo = nfo->creator_info();
@@ -2372,7 +2372,7 @@ namespace rubinius {
     void visit_yield_stack(opcode count) {
       set_has_side_effects();
 
-      JITInlineBlock* ib = info().inline_block();
+      JITInlineBlock* ib = info()->inline_block();
 
       // Hey! Look at that! We know the block we'd be yielding to
       // staticly! woo! ok, lets just emit the code for it here!
@@ -2380,9 +2380,9 @@ namespace rubinius {
         context().set_inlined_block(true);
         if(state()->config().jit_inline_debug) {
           std::cout << "inlining block: "
-                    << ls_->symbol_cstr(info().method()->scope()->module()->name())
+                    << ls_->symbol_cstr(info()->method()->scope()->module()->name())
                     << "#"
-                    << ls_->symbol_cstr(info().method()->name())
+                    << ls_->symbol_cstr(info()->method()->name())
                     << "\n";
         }
 
@@ -2415,7 +2415,7 @@ namespace rubinius {
 
       Value* vars = vars_;
 
-      if(JITMethodInfo* home = info().home_info()) {
+      if(JITMethodInfo* home = info()->home_info()) {
         vars = home->variables();
       }
 
@@ -2640,7 +2640,7 @@ namespace rubinius {
       // Inlining a block!
       if(for_inlined_method()) {
         // We have to flush scopes before we return.
-        JITMethodInfo* nfo = &info();
+        JITMethodInfo* nfo = info();
         while(nfo) {
           if(nfo->use_full_scope()) {
             flush_scope_to_heap(nfo->variables());
@@ -2649,7 +2649,7 @@ namespace rubinius {
           nfo = nfo->parent_info();
         }
 
-        JITMethodInfo* creator = info().creator_info();
+        JITMethodInfo* creator = info()->creator_info();
         assert(creator);
 
         creator->add_return_value(stack_pop(), b().GetInsertBlock());
@@ -2692,14 +2692,14 @@ namespace rubinius {
 
     void visit_raise_break() {
       // inlining a block!
-      if(info().block_info()) {
+      if(info()->block_info()) {
         // TODO this won't work if we can inline methods with exception
         // handling, because we'll skip an ensures.
 
-        BasicBlock* blk = info().block_break_loc();
+        BasicBlock* blk = info()->block_break_loc();
         assert(blk);
 
-        PHINode* phi = info().block_break_result();
+        PHINode* phi = info()->block_break_result();
         phi->addIncoming(stack_pop(), b().GetInsertBlock());
 
         b().CreateBr(blk);

@@ -34,7 +34,7 @@ namespace rubinius {
     llvm::IRBuilder<> builder_;
 
   protected:
-    JITMethodInfo& method_info_;
+    JITMethodInfo* method_info_;
     LLVMState* ls_;
 
     llvm::Module* module_;
@@ -66,16 +66,16 @@ namespace rubinius {
     llvm::Value* One;
 
   public:
-    JITOperations(LLVMState* ls, JITMethodInfo& info, llvm::BasicBlock* start)
-      : stack_(info.stack())
+    JITOperations(LLVMState* ls, JITMethodInfo* info, llvm::BasicBlock* start)
+      : stack_(info->stack())
       , sp_(-1)
       , last_sp_(-1)
       , builder_(ls->ctx())
       , method_info_(info)
       , ls_(ls)
       , module_(ls->module())
-      , function_(info.function())
-      , call_frame_(info.call_frame())
+      , function_(info->function())
+      , call_frame_(info->call_frame())
       , inline_policy_(0)
       , own_policy_(false)
     {
@@ -107,6 +107,7 @@ namespace rubinius {
 
     virtual ~JITOperations() {
       if(inline_policy_ and own_policy_) delete inline_policy_;
+			delete method_info_;
     }
 
     IRBuilder<>& b() { return builder_; }
@@ -133,15 +134,15 @@ namespace rubinius {
     }
 
     jit::Context& context() {
-      return method_info_.context();
+      return method_info_->context();
     }
 
-    JITMethodInfo& info() {
+    JITMethodInfo* info() {
       return method_info_;
     }
 
     VMMethod* vmmethod() {
-      return method_info_.vmm;
+      return method_info_->vmm;
     }
 
     Symbol* method_name() {
@@ -149,23 +150,22 @@ namespace rubinius {
     }
 
     VMMethod* root_vmmethod() {
-      if(method_info_.root) {
-        return method_info_.root->vmm;
+      if(method_info_->root) {
+        return method_info_->root->vmm;
       } else {
         return vmmethod();
       }
     }
 
     std::vector<Value*>* incoming_args() {
-      return method_info_.stack_args;
+      return method_info_->stack_args;
     }
 
     JITMethodInfo* root_method_info() {
-      if(method_info_.root) {
-        return method_info_.root;
+      if(method_info_->root) {
+        return method_info_->root;
       }
-
-      return &method_info_;
+      return method_info_;
     }
 
     LLVMState* state() {

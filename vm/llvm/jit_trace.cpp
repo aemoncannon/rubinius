@@ -15,9 +15,9 @@ namespace rubinius {
 
 	namespace jit {
 
-		TraceBuilder::TraceBuilder(LLVMState* ls, Trace* trace, JITMethodInfo& i)
+		TraceBuilder::TraceBuilder(LLVMState* ls, Trace* trace, JITMethodInfo* i)
 			: ls_(ls)
-			, vmm_(i.vmm)
+			, vmm_(i->vmm)
 			, builder_(ls->ctx())
 			, use_full_scope_(false)
 			, import_args_(0)
@@ -69,10 +69,10 @@ namespace rubinius {
 			BasicBlock* block = BasicBlock::Create(ls_->ctx(), "entry", func);
 			builder_.SetInsertPoint(block);
 
-			info_.set_function(func);
-			info_.set_vm(vm);
-			info_.set_call_frame(call_frame);
-			info_.set_entry(block);
+			info_->set_function(func);
+			info_->set_vm(vm);
+			info_->set_call_frame(call_frame);
+			info_->set_entry(block);
 
 			std::cout << "2" << "\n";
 
@@ -87,14 +87,14 @@ namespace rubinius {
 			//stack
 //			stk = b().CreateAlloca(obj_ary_type, ConstantInt::get(ls_->Int32Ty, sizeof(Object**)), "valid_flag");
 //			b().CreateStore(stk_ptr, stk);
-			info_.set_stack(stk_ptr);
+			info_->set_stack(stk_ptr);
 
 			//vars
 			// Value* var_mem = get_field(call_frame, offset::cf_scope);
 			// vars = b().CreateBitCast(var_mem, PointerType::getUnqual(stack_vars_type), "vars");
-			info_.set_variables(vars);
+			info_->set_variables(vars);
 
-			info_.set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
+			info_->set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
 
 			// ip
 			Value* ip_mem = get_field(call_frame, offset::cf_ip);
@@ -166,16 +166,16 @@ namespace rubinius {
 
 			std::cout << "6" << "\n";
 
-			info_.return_pad()->moveAfter(visitor.current_block());
-			info_.fin_block = visitor.current_block();
+			info_->return_pad()->moveAfter(visitor.current_block());
+			info_->fin_block = visitor.current_block();
 
 			std::cout << "7" << "\n";
 			return true;
 		}
 
 		void TraceBuilder::generate_hard_return() {
-			b().SetInsertPoint(info_.return_pad());
-			b().CreateRet(info_.return_phi());
+			b().SetInsertPoint(info_->return_pad());
+			b().CreateRet(info_->return_phi());
 		}
 
 
@@ -406,7 +406,8 @@ namespace rubinius {
 			}
 
 			void visit_ret() {
-				next_ip_too();
+				// Ignore ret, since we're tracing and it won't be emitted anyhow
+//				next_ip_too();
 			}
 
 			void visit_raise_return() {
@@ -501,7 +502,7 @@ namespace rubinius {
 			trace->walk(walker);
 
 			if(finder.creates_blocks() || finder.calls_evalish()) {
-				info_.set_use_full_scope();
+				info_->set_use_full_scope();
 				use_full_scope_ = true;
 			}
 

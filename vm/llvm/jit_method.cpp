@@ -25,9 +25,9 @@ namespace jit {
     FunctionType* ft = FunctionType::get(ls_->ptr_type("Object"), ftypes, false);
 
     std::string name = std::string("_X_") +
-                         ls_->symbol_cstr(info_.method()->scope()->module()->name()) +
+                         ls_->symbol_cstr(info_->method()->scope()->module()->name()) +
                          "#" +
-                         ls_->symbol_cstr(info_.method()->name());
+                         ls_->symbol_cstr(info_->method()->name());
 
     func = Function::Create(ft, GlobalValue::ExternalLinkage,
                             name.c_str(), ls_->module());
@@ -41,11 +41,11 @@ namespace jit {
     BasicBlock* block = BasicBlock::Create(ls_->ctx(), "entry", func);
     builder_.SetInsertPoint(block);
 
-    info_.set_function(func);
-    info_.set_vm(vm);
-    info_.set_args(args);
-    info_.set_previous(prev);
-    info_.set_entry(block);
+    info_->set_function(func);
+    info_->set_vm(vm);
+    info_->set_args(args);
+    info_->set_previous(prev);
+    info_->set_entry(block);
 
     BasicBlock* body = BasicBlock::Create(ls_->ctx(), "method_body", func);
     method_body_ = body;
@@ -53,7 +53,7 @@ namespace jit {
     pass_one(body);
 
     valid_flag = b().CreateAlloca(ls_->Int1Ty, 0, "valid_flag");
-    info_.set_counter(b().CreateAlloca(ls_->Int32Ty, 0, "counter_alloca"));
+    info_->set_counter(b().CreateAlloca(ls_->Int32Ty, 0, "counter_alloca"));
 
     Value* cfstk = b().CreateAlloca(obj_type,
         ConstantInt::get(ls_->Int32Ty,
@@ -65,7 +65,7 @@ namespace jit {
           (sizeof(StackVariables) / sizeof(Object*)) + vmm_->number_of_locals),
         "var_mem");
 
-    info_.set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
+    info_->set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
 
     if(ls_->include_profiling()) {
       method_entry_ = b().CreateAlloca(ls_->Int8Ty,
@@ -81,17 +81,17 @@ namespace jit {
         cfstk,
         PointerType::getUnqual(cf_type), "call_frame");
 
-    info_.set_call_frame(call_frame);
+    info_->set_call_frame(call_frame);
 
     stk = b().CreateConstGEP1_32(cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
 
-    info_.set_stack(stk);
+    info_->set_stack(stk);
 
     vars = b().CreateBitCast(
         var_mem,
         PointerType::getUnqual(stack_vars_type), "vars");
 
-    info_.set_variables(vars);
+    info_->set_variables(vars);
 
     initialize_frame(vmm_->stack_size);
 
@@ -139,7 +139,7 @@ namespace jit {
       // Otherwise, we must loop in the generate code because we don't know
       // how many they've actually passed in.
     } else {
-      Value* loop_i = info_.counter();
+      Value* loop_i = info_->counter();
 
       BasicBlock* top = BasicBlock::Create(ls_->ctx(), "arg_loop_top", func);
       BasicBlock* body = BasicBlock::Create(ls_->ctx(), "arg_loop_body", func);
@@ -332,8 +332,8 @@ namespace jit {
       b().SetInsertPoint(cont);
     }
 
-    info_.add_return_value(ret, b().GetInsertBlock());
-    b().CreateBr(info_.return_pad());
+    info_->add_return_value(ret, b().GetInsertBlock());
+    b().CreateBr(info_->return_pad());
   }
 
 
@@ -402,7 +402,7 @@ namespace jit {
 
     // jit_data
     b().CreateStore(
-        constant(info_.context().runtime_data_holder(), ls_->Int8PtrTy),
+        constant(info_->context().runtime_data_holder(), ls_->Int8PtrTy),
         get_field(call_frame, offset::cf_jit_data));
 
     if(ls_->include_profiling()) {

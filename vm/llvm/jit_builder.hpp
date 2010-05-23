@@ -56,13 +56,13 @@ namespace jit {
     llvm::BasicBlock* import_args_;
     llvm::BasicBlock* method_body_;
 
-    JITMethodInfo& info_;
+    JITMethodInfo* info_;
 
   public:
 
     llvm::IRBuilder<>& b() { return builder_; }
 
-    Builder(LLVMState* ls, JITMethodInfo& info);
+    Builder(LLVMState* ls, JITMethodInfo* info);
 
     void pass_one(llvm::BasicBlock* body);
 

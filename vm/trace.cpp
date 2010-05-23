@@ -21,10 +21,13 @@ namespace rubinius {
 		: op(op),
 		  pc(pc),
 		  cm(call_frame->cm),
+		  send_cm(NULL),
 		  ip_ptr(ip_ptr),
 		  prev(NULL),
 		  next(NULL),
-			traced_send(false)
+			traced_send(false),
+			active_send(NULL),
+			parent_send(NULL)
 	{
 #include "vm/gen/instruction_trace_record.hpp"
 	}
@@ -35,6 +38,16 @@ namespace rubinius {
 		out << " ";
 		if(numargs > 0) out << arg1;
 		if(numargs > 1) out << ", " << arg2;
+		if(active_send){
+			out << " : active(";
+			active_send->pretty_print(state, out);
+			out << ")";
+		}
+		if(parent_send){
+			out << " : parent(";
+			parent_send->pretty_print(state, out);
+			out << ")";
+		}
 	}
 
 	Trace::Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
@@ -54,6 +67,38 @@ namespace rubinius {
 			tmp->prev = head;
 			head->next = tmp;
 			head = tmp;
+
+			opcode prev_op = head->prev->op;
+
+			if(head->prev){
+				head->active_send = head->prev->active_send;
+				head->parent_send = head->prev->parent_send;				
+			}
+
+			if(head->prev && head->cm != head->prev->cm){
+				if(prev_op == InstructionSequence::insn_ret){
+					if(head->prev->parent_send){
+						head->active_send = head->prev->parent_send;
+						head->parent_send = head->active_send->parent_send;
+					}
+					else{
+						head->active_send = NULL;
+						head->parent_send = NULL;
+					}
+				}
+				else if(prev_op == InstructionSequence::insn_send_stack ||
+								prev_op == InstructionSequence::insn_send_method){
+					// The cm has changed and the previous
+					// op was a send. We must be tracing into a call.
+					head->prev->traced_send = true;
+					head->prev->send_cm = head->cm;
+					head->parent_send = head->prev->active_send;
+					head->active_send = head->prev;
+				}
+
+			}
+
+
 			return false;
 		}
 	}
