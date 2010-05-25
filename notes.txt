@@ -1,0 +1,23 @@
+
+In normal operation:
+Before send instruction, self and all args pushed onto the operand stack.
+Note that the stack is not modified by the call, so when execute is finished, self and args still sitting on stack.
+After execute is finished, self and args popped off, ret pushed onto stack.
+
+
+
+In trace:
+Before send instruction, self and all args pushed onto the operand stack.
+Call will modify the stack, finally pushing it's own result onto the stack.
+At return instruction, TOS is value we want to return. Values below are arguments and self.
+Maybe we should pop the args and self off the stack after we install them in the locals (in import_args).
+Yes.
+
+
+
+
+vm/instructions.cpp defines the DISPATCH macro. vm/gen/instruction_implementations.hpp includes the actual genearted instruction implementations.
+
+
+1. trace start and end
+2. generate instructions?
