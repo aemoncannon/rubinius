@@ -193,7 +193,7 @@ namespace rubinius {
     const llvm::Type* ptr_type(std::string name) {
       std::string full_name = std::string("struct.rubinius::") + name;
       return PointerType::getUnqual(
-          module_->getTypeByName(full_name.c_str()));
+				module_->getTypeByName(full_name.c_str()));
     }
 
     const llvm::Type* type(std::string name) {
@@ -352,7 +352,8 @@ namespace rubinius {
     // Stack manipulations
     //
     Value* stack_slot_position(int which) {
-      assert(which >= 0 && which < vmmethod()->stack_size);
+//      assert(which >= 0 && which < vmmethod()->stack_size);
+      assert(which >= 0);
       return b().CreateConstGEP1_32(stack_, which, "stack_pos");
     }
 
@@ -362,7 +363,8 @@ namespace rubinius {
 
     void set_sp(int sp) {
       sp_ = sp;
-      assert(sp_ >= -1 && sp_ < vmmethod()->stack_size);
+      //assert(sp_ >= -1 && sp_ < vmmethod()->stack_size);
+			assert(sp_ >= -1);
     }
 
     void remember_sp() {
@@ -389,10 +391,8 @@ namespace rubinius {
 
     Value* stack_position(int amount) {
       int pos = sp_ + amount;
-			std::cout << "amount: " << amount << "\n";
-			std::cout << "pos: " << pos << "\n";
-			std::cout << "stack_size: " << vmmethod()->stack_size << "\n";
-      assert(pos >= 0 && pos < vmmethod()->stack_size);
+//			assert(pos >= 0 && pos < vmmethod()->stack_size);
+			assert(pos >= 0);
 
       return b().CreateConstGEP1_32(stack_, pos, "stack_pos");
     }
@@ -406,16 +406,15 @@ namespace rubinius {
     }
 
     void stack_ptr_adjust(int amount) {
-			std::cout << "amount: " << amount << "\n";
-			std::cout << "sp_: " << sp_ << "\n";
-			std::cout << "stack_size: " << vmmethod()->stack_size << "\n";
       sp_ += amount;
-      assert(sp_ >= -1 && sp_ < vmmethod()->stack_size);
+//      assert(sp_ >= -1 && sp_ < vmmethod()->stack_size);
+      assert(sp_ >= -1);
     }
 
     void stack_remove(int count=1) {
       sp_ -= count;
-      assert(sp_ >= -1 && sp_ < vmmethod()->stack_size);
+//      assert(sp_ >= -1 && sp_ < vmmethod()->stack_size);
+      assert(sp_ >= -1);
     }
 
     void stack_push(Value* val) {
@@ -454,7 +453,7 @@ namespace rubinius {
     // Scope maintainence
     void flush_scope_to_heap(Value* vars) {
       Value* pos = b().CreateConstGEP2_32(vars, 0, offset::vars_on_heap,
-                                     "on_heap_pos");
+																					"on_heap_pos");
 
       Value* on_heap = b().CreateLoad(pos, "on_heap");
 
@@ -485,14 +484,14 @@ namespace rubinius {
     //
     Value* constant(Object* obj) {
       return b().CreateIntToPtr(
-          ConstantInt::get(ls_->IntPtrTy, (intptr_t)obj),
-          ObjType, "const_obj");
+				ConstantInt::get(ls_->IntPtrTy, (intptr_t)obj),
+				ObjType, "const_obj");
     }
 
     Value* constant(void* obj, const Type* type) {
       return b().CreateIntToPtr(
-          ConstantInt::get(ls_->IntPtrTy, (intptr_t)obj),
-          type, "const_of_type");
+				ConstantInt::get(ls_->IntPtrTy, (intptr_t)obj),
+				type, "const_of_type");
     }
 
     Value* ptrtoint(Value* ptr) {
@@ -514,7 +513,7 @@ namespace rubinius {
     //
     Value* cast_int(Value* obj) {
       return b().CreatePtrToInt(
-          obj, NativeIntTy, "cast");
+				obj, NativeIntTy, "cast");
     }
 
     // Fixnum manipulations
@@ -523,36 +522,36 @@ namespace rubinius {
       if(!type) type = FixnumTy;
 
       Value* i = b().CreatePtrToInt(
-          obj, NativeIntTy, "as_int");
+				obj, NativeIntTy, "as_int");
 
       Value* more = b().CreateLShr(
-          i, ConstantInt::get(NativeIntTy, 1),
-          "lshr");
+				i, ConstantInt::get(NativeIntTy, 1),
+				"lshr");
       return b().CreateIntCast(
-          more, type, true, "stripped");
+				more, type, true, "stripped");
     }
 
     Value* tag_strip32(Value* obj) {
       Value* i = b().CreatePtrToInt(
-          obj, ls_->Int32Ty, "as_int");
+				obj, ls_->Int32Ty, "as_int");
 
       return b().CreateLShr(
-          i, ConstantInt::get(ls_->Int32Ty, 1),
-          "lshr");
+				i, ConstantInt::get(ls_->Int32Ty, 1),
+				"lshr");
     }
 
     Value* fixnum_to_native(Value* obj) {
       Value* i = b().CreatePtrToInt(
-          obj, NativeIntTy, "as_int");
+				obj, NativeIntTy, "as_int");
 
       return b().CreateLShr(
-          i, ConstantInt::get(NativeIntTy, 1),
-          "lshr");
+				i, ConstantInt::get(NativeIntTy, 1),
+				"lshr");
     }
 
     Value* fixnum_tag(Value* obj) {
       Value* native_obj = b().CreateZExt(
-          obj, NativeIntTy, "as_native_int");
+				obj, NativeIntTy, "as_native_int");
       Value* one = ConstantInt::get(NativeIntTy, 1);
       Value* more = b().CreateShl(native_obj, one, "shl");
       Value* tagged = b().CreateOr(more, one, "or");
@@ -566,7 +565,7 @@ namespace rubinius {
 
     Value* fixnum_strip(Value* obj) {
       Value* i = b().CreatePtrToInt(
-          obj, NativeIntTy, "as_int");
+				obj, NativeIntTy, "as_int");
 
       return b().CreateLShr(i, One, "lshr");
     }
@@ -608,10 +607,10 @@ namespace rubinius {
       Value* pos = create_gep(tup, idx, 2, "table_size_pos");
 
       return b().CreateIntCast(
-          create_load(pos, "table_size"),
-          NativeIntTy,
-          true,
-          "to_native_int");
+				create_load(pos, "table_size"),
+				NativeIntTy,
+				true,
+				"to_native_int");
     }
 
     // Object access
@@ -619,8 +618,8 @@ namespace rubinius {
       assert(offset % sizeof(Object*) == 0);
 
       Value* cst = b().CreateBitCast(
-          obj,
-          PointerType::getUnqual(ObjType), "obj_array");
+				obj,
+				PointerType::getUnqual(ObjType), "obj_array");
 
       Value* idx2[] = {
         ConstantInt::get(ls_->Int32Ty, offset / sizeof(Object*))
@@ -635,8 +634,8 @@ namespace rubinius {
       assert(offset % sizeof(Object*) == 0);
 
       Value* cst = b().CreateBitCast(
-          obj,
-          PointerType::getUnqual(ObjType), "obj_array");
+				obj,
+				PointerType::getUnqual(ObjType), "obj_array");
 
       Value* idx2[] = {
         ConstantInt::get(ls_->Int32Ty, offset / sizeof(Object*))

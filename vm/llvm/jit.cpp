@@ -594,9 +594,7 @@ namespace rubinius {
 		void* func = 0; 
 		{
 		  jit.compile_trace(this, trace);
-			std::cout << "10" << "\n";
 			func = jit.generate_function(this);
-			std::cout << "11" << "\n";
 		}
 
 		// We were unable to compile this function, likely

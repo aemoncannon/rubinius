@@ -52,8 +52,6 @@ namespace rubinius {
 			vm =   ai++; 
 			vm->setName("state");
 
-			std::cout << "1" << "\n";
-
 			// For the trace, this is the current and active CallFrame
 			call_frame = ai++; 
 			call_frame->setName("call_frame");
@@ -74,7 +72,6 @@ namespace rubinius {
 			info_->set_call_frame(call_frame);
 			info_->set_entry(block);
 
-			std::cout << "2" << "\n";
 
 			BasicBlock* body = BasicBlock::Create(ls_->ctx(), "method_body", func);
 			method_body_ = body;
@@ -105,7 +102,6 @@ namespace rubinius {
 			b().CreateBr(body);
 			b().SetInsertPoint(body);
 
-			std::cout << "3" << "\n";
 
 		}
 
@@ -146,8 +142,6 @@ namespace rubinius {
 
 		bool TraceBuilder::generate_body() {
 
-			std::cout << "4" << "\n";
-
 			JITTraceVisit visitor(ls_, trace, info_, block_map_, b().GetInsertBlock());
 			visitor.set_called_args(0);
 			visitor.set_valid_flag(valid_flag);
@@ -156,20 +150,15 @@ namespace rubinius {
 
 			Walker walker(visitor, block_map_);
 
-			std::cout << "5" << "\n";
-
 			try {
 				trace->walk(walker);
 			} catch(JITVisit::Unsupported &e) {
 				return false;
 			}
 
-			std::cout << "6" << "\n";
-
 			info_->return_pad()->moveAfter(visitor.current_block());
 			info_->fin_block = visitor.current_block();
 
-			std::cout << "7" << "\n";
 			return true;
 		}
 
@@ -265,7 +254,7 @@ namespace rubinius {
 			}
 
 			const static int cUnknown = -10;
-			const static bool cDebugStack = true;
+			const static bool cDebugStack = false;
 
 #include "gen/instruction_effects.hpp"
 

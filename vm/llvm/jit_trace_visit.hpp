@@ -120,37 +120,29 @@ namespace rubinius {
 			// Stores into args Values.
 			setup_out_args(args);
 
-			std::cout << "A" << "\n";
 			CompiledMethod* cm = cur_trace_node_->send_cm;
 			VMMethod* vmm = cm->backend_method();
 			jit::Context ctx(ls_);
 			JITMethodInfo* new_info = new JITMethodInfo(ctx, cm, vmm);
 			JITMethodInfo* parent_info = info();
-			parent_info->set_saved_sp(sp());
 			new_info->is_block = false;
 			new_info->set_parent_info(parent_info);
 			method_info_ = new_info;
 
 			BasicBlock* cur = current_block();
 
+
 			// Generate hard return
 			set_block(info()->return_pad());
 			b().CreateRet(info()->return_phi());
 			set_block(cur);
 
-			// Method starts with stack at -1
-			set_sp(-1);
 
-			std::cout << "B" << "\n";
 			llvm::Module* mod = ls_->module();
 			const llvm::Type* cf_type = mod->getTypeByName("struct.rubinius::CallFrame");
 			const llvm::Type* stack_vars_type = mod->getTypeByName("struct.rubinius::StackVariables");
 			const llvm::Type* obj_type = ls_->ptr_type("Object");
 
-			std::cout << "C" << "\n";
-
-
-			std::cout << "C.2" << "\n";
 
       InlineCache* cache = reinterpret_cast<InlineCache*>(which);
       Value* msg = b().CreateIntToPtr(
@@ -163,8 +155,6 @@ namespace rubinius {
 			vm_->setName("vm");
 			info()->set_vm(vm_);
 
-			std::cout << "C.3" << "\n";
-
 			Value* prev_call_frame = parent_info->call_frame();
 			prev_call_frame->setName("prev_call_frame");
 			info()->set_previous(prev_call_frame);
@@ -174,7 +164,6 @@ namespace rubinius {
 			info()->set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
 			init_out_args();
 
-			std::cout << "D" << "\n";
 
 
 			Value* cfstk = b().CreateAlloca(obj_type,
@@ -187,8 +176,6 @@ namespace rubinius {
 																												 (sizeof(StackVariables) / sizeof(Object*)) + info()->vmm->number_of_locals),
 																				"var_mem");
 
-			std::cout << "E" << "\n";
-
 
 			check_arity();
 
@@ -199,7 +186,6 @@ namespace rubinius {
 			info()->set_call_frame(call_frame_);
 
 			Value* stk = b().CreateConstGEP1_32(cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
-			std::cout << "F" << "\n";
 			info()->set_stack(stk);
 
 			Value* vars = b().CreateBitCast(
@@ -207,7 +193,6 @@ namespace rubinius {
         PointerType::getUnqual(stack_vars_type), "vars");
 
 			info()->set_variables(vars);
-			std::cout << "G" << "\n";
 
       // Pasting code from initialize_frame
 
@@ -230,48 +215,38 @@ namespace rubinius {
 			// cm
 			b().CreateStore(method, cm_gep);
 
-			std::cout << "H" << "\n";
 
 			// flags
 			int flags = CallFrame::cJITed;
 			if(!use_full_scope_) flags |= CallFrame::cClosedScope;
 
-			std::cout << "H.1" << "\n";
 			b().CreateStore(
         ConstantInt::get(ls_->Int32Ty, flags),
         get_field(call_frame_, offset::cf_flags));
 
-			std::cout << "H.2" << "\n";
 			// ip
 			b().CreateStore(
         ConstantInt::get(ls_->Int32Ty, 0),
         get_field(call_frame_, offset::cf_ip));
 
-			std::cout << "H.3" << "\n";
 			// scope
 			b().CreateStore(vars, get_field(call_frame_, offset::cf_scope));
 
-			std::cout << "H.4" << "\n";
-
 			nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
-
-			std::cout << "H.5" << "\n";
 
 			import_args();
 
-			std::cout << "I" << "\n";
+			stack_remove(args + 1);
 
 			// b().CreateBr(body);
 			// b().SetInsertPoint(body);
 		}
 
+
 		void do_traced_return(){
 			method_info_ = info()->parent_info();
-
-			set_sp(info()->saved_sp());
 			vm_ = info()->vm();
 			call_frame_ = info()->call_frame();
-
 			// Info has changed, setup out_args stuff again.
 			init_out_args();
 		}
@@ -280,7 +255,6 @@ namespace rubinius {
 		void import_args() {
 			Value* vm_obj = info()->vm();
 			Value* arg_obj = info()->args();
-			std::cout << "H.6" << "\n";
 			setup_scope();
 
 			// Import the arguments
@@ -288,7 +262,6 @@ namespace rubinius {
 
 			Value* arg_ary = b().CreateLoad(offset, "arg_ary");
 
-			std::cout << "H.7" << "\n";
 			// If there are a precise number of args, easy.
 			if(info()->vmm->required_args == info()->vmm->total_args) {
 				for(int i = 0; i < info()->vmm->required_args; i++) {
@@ -309,7 +282,6 @@ namespace rubinius {
 					b().CreateStore(arg_val, pos);
 				}
 
-				std::cout << "H.8" << "\n";
 
 				// Otherwise, we must loop in the generate code because we don't know
 				// how many they've actually passed in.
@@ -420,7 +392,6 @@ namespace rubinius {
 			// For others to use.
 			info()->set_arg_total(total);
 
-
 			BasicBlock* arg_error = BasicBlock::Create(ls_->ctx(), "arg_error", info()->function());
 			BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "import_args", info()->function());
 
@@ -476,7 +447,6 @@ namespace rubinius {
 				ConstantInt::get(ls_->Int32Ty, info()->vmm->required_args)
 			};
 
-			std::cout << "E.1" << "\n";
 
 			Value* val = sig.call("rbx_arg_error", call_args, 5, "ret", b());
 			return_value(val);
@@ -497,25 +467,24 @@ namespace rubinius {
 			const llvm::Type* obj_type = ls_->ptr_type("Object");
 			Value* heap_null = ConstantExpr::getNullValue(PointerType::getUnqual(vars_type));
 			Value* heap_pos = get_field(info()->variables(), offset::vars_on_heap);
-			std::cout << "H.6.1" << "\n";
+
 			b().CreateStore(heap_null, heap_pos);
-			std::cout << "H.6.2" << "\n";
+
 			Value* self = b().CreateLoad(get_field(info()->args(), offset::args_recv),
 																	 "args.recv");
 			b().CreateStore(self, get_field(info()->variables(), offset::vars_self));
-			std::cout << "H.6.2.1" << "\n";
+
 			Value* module = b().CreateLoad(get_field(info()->msg(), offset::msg_module),
 																		 "msg.module");
-			std::cout << "H.6.2.2" << "\n";
+
 			b().CreateStore(module, get_field(info()->variables(), offset::vars_module));
-			std::cout << "H.6.3" << "\n";
+
 			Value* blk = b().CreateLoad(get_field(info()->args(), offset::args_block),
 																	"args.block");
 			b().CreateStore(blk, get_field(info()->variables(), offset::vars_block));
 
 			b().CreateStore(Constant::getNullValue(ls_->ptr_type("VariableScope")),
 											get_field(info()->variables(), offset::vars_parent));
-			std::cout << "H.6.4" << "\n";
 			b().CreateStore(constant(Qnil, obj_type), get_field(info()->variables(), offset::vars_last_match));
 
 			nil_locals();
@@ -618,7 +587,7 @@ namespace rubinius {
 
     void visit_send_stack(opcode which, opcode args) {
 			if(cur_trace_node_->traced_send){
-				do_traced_send(which, args);  
+				do_traced_send(which, args);
 			}
 			else{
 				InlineCache* cache = reinterpret_cast<InlineCache*>(which);
@@ -640,6 +609,74 @@ namespace rubinius {
 				info()->add_return_value(stack_top(), current_block());
 				b().CreateBr(info()->return_pad());
 			}
+    }
+
+    void visit_meta_send_op_plus(opcode name) {
+      InlineCache* cache = reinterpret_cast<InlineCache*>(name);
+      if(cache->classes_seen() == 0) {
+        set_has_side_effects();
+        Value* recv = stack_back(1);
+        Value* arg =  stack_top();
+
+        BasicBlock* fast = new_block("fast");
+				BasicBlock* dispatch = new_block("dispatch");
+        BasicBlock* tagnow = new_block("tagnow");
+        BasicBlock* cont = new_block("cont");
+
+        check_fixnums(recv, arg, fast, dispatch);
+
+        set_block(dispatch);
+
+        Value* called_value = simple_send(ls_->symbol("+"), 1);
+
+        check_for_exception_then(called_value, cont);
+
+        set_block(fast);
+
+        std::vector<const Type*> types;
+        types.push_back(FixnumTy);
+        types.push_back(FixnumTy);
+
+        std::vector<const Type*> struct_types;
+        struct_types.push_back(FixnumTy);
+        struct_types.push_back(ls_->Int1Ty);
+
+        StructType* st = StructType::get(ls_->ctx(), struct_types);
+
+        FunctionType* ft = FunctionType::get(st, types, false);
+        Function* func = cast<Function>(
+					module_->getOrInsertFunction(ADD_WITH_OVERFLOW, ft));
+
+        Value* recv_int = tag_strip(recv);
+        Value* arg_int = tag_strip(arg);
+        Value* call_args[] = { recv_int, arg_int };
+        Value* res = b().CreateCall(func, call_args, call_args+2, "add.overflow");
+
+        Value* sum = b().CreateExtractValue(res, 0, "sum");
+        Value* dof = b().CreateExtractValue(res, 1, "did_overflow");
+
+        b().CreateCondBr(dof, dispatch, tagnow);
+
+        set_block(tagnow);
+
+
+        Value* imm_value = fixnum_tag(sum);
+
+        b().CreateBr(cont);
+
+        set_block(cont);
+
+        PHINode* phi = b().CreatePHI(ObjType, "addition");
+        phi->addIncoming(called_value, dispatch);
+        phi->addIncoming(imm_value, tagnow);
+
+				//dump_int(3);
+
+        stack_remove(2);
+        stack_push(phi);
+      } else {
+        visit_send_stack(name, 1);
+      }
     }
 
 		void print_debug(){
@@ -684,6 +721,19 @@ namespace rubinius {
 				val
 			};
 			sig.call("rbx_show_vars", call_args, 3, "", b());
+		}
+
+		void dump_int(int i){
+
+			Value* val = ConstantInt::get(ls_->Int32Ty, i);
+
+			Signature sig(ls_, ls_->VoidTy);
+			sig << ls_->Int32Ty;
+
+			Value* call_args[] = {
+				val
+			};
+			sig.call("rbx_show_int", call_args, 1, "", b());
 		}
 
 

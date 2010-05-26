@@ -36,6 +36,10 @@ using namespace rubinius;
 
 extern "C" {
 
+  void rbx_show_int(int i)
+  {
+		std::cout << "DEBUG: " << i << "\n";
+  }
 
   void rbx_show_vars(STATE, CallFrame* call_frame, StackVariables* vars)
   {
@@ -51,8 +55,7 @@ extern "C" {
 
   void rbx_show_obj(STATE, Object* obj)
   {
-		String* s = obj->to_s(state);
-		std::cout << s->c_str() << "\n";
+		obj->type_info(state)->show(state, obj, 1);
   }
 
   void rbx_show_state(STATE, CallFrame* call_frame)

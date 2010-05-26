@@ -135,12 +135,8 @@ namespace rubinius {
 				return;
 			}
 
-			std::cout << "8" << "\n";
-
 			// Hook up the return pad and return phi.
 			work.generate_hard_return();
-
-			std::cout << "9" << "\n";
 
 			std::vector<BasicBlock*> to_remove;
 			bool Broken = false;
@@ -176,7 +172,7 @@ namespace rubinius {
 				return;
 			}
 
-			//			llvm::outs() << *func << "\n";
+			llvm::outs() << *func << "\n";
 
 			// Run optimization passes!
 			//ls->passes()->run(*func);

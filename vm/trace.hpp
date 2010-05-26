@@ -149,7 +149,6 @@ namespace rubinius {
 		void walk(T& walker) {
 			TraceNode* tmp = anchor;
 			while(tmp != NULL){
-				std::cout << "Visiting " << tmp->pc << ": " << tmp->op << "\n";
 				walker.call(this, tmp);
 				tmp = tmp->next;
 				if(tmp == anchor) break;

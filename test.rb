@@ -1,6 +1,6 @@
 require 'helpers'
 
-ITERATIONS = 5000000
+ITERATIONS = 5000
 
 
 def foo()
@@ -21,7 +21,6 @@ disable_tracing
 
 trace_time = Time.now.to_f - t
 puts "Trace time: #{trace_time} seconds."
-
 
 
 
