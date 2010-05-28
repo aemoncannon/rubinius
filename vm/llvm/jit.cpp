@@ -89,6 +89,7 @@ namespace rubinius {
     , root(0)
   {
     method_.set(cm);
+		root = this;
   }
 
   void JITMethodInfo::set_function(llvm::Function* func) {

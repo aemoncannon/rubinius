@@ -17,7 +17,7 @@
 namespace rubinius {
 
 
-	TraceNode::TraceNode(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
+	TraceNode::TraceNode(int id, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
 		: op(op),
 		  pc(pc),
 		  cm(call_frame->cm),
@@ -27,7 +27,8 @@ namespace rubinius {
 		  next(NULL),
 			traced_send(false),
 			active_send(NULL),
-			parent_send(NULL)
+			parent_send(NULL),
+			id(id)
 	{
 #include "vm/gen/instruction_trace_record.hpp"
 	}
@@ -51,8 +52,9 @@ namespace rubinius {
 	}
 
 	Trace::Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
-		anchor = new TraceNode(op, pc, ip_ptr, vmm, call_frame);
+		anchor = new TraceNode(0, op, pc, ip_ptr, vmm, call_frame);
 		head = anchor;
+		node_id = 0;
 	}
 
 
@@ -63,7 +65,8 @@ namespace rubinius {
 			return true;
 		}
 		else{
-			TraceNode* tmp = new TraceNode(op, pc, ip_ptr, vmm, call_frame);
+			node_id += 1;
+			TraceNode* tmp = new TraceNode(node_id, op, pc, ip_ptr, vmm, call_frame);
 			tmp->prev = head;
 			head->next = tmp;
 			head = tmp;

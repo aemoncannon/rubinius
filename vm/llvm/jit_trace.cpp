@@ -72,7 +72,6 @@ namespace rubinius {
 			info_->set_call_frame(call_frame);
 			info_->set_entry(block);
 
-
 			BasicBlock* body = BasicBlock::Create(ls_->ctx(), "method_body", func);
 			method_body_ = body;
 
@@ -98,12 +97,43 @@ namespace rubinius {
 			b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), ip_mem);
 
 
+			allocate_call_structures();
+
 
 			b().CreateBr(body);
 			b().SetInsertPoint(body);
-
-
 		}
+
+
+		void TraceBuilder::allocate_call_structures(){
+			const llvm::Type* obj_type = ls_->ptr_type("Object");
+			TraceNode* tmp = trace->anchor;
+			while(tmp != NULL){
+				if(tmp->traced_send){
+
+					std::cout << "writing args at " << tmp->id << "\n";
+					info_->pre_allocated_args[tmp->id] = 
+						b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
+
+					info_->pre_allocated_stacks[tmp->id] = 
+						b().CreateAlloca(obj_type,
+														 ConstantInt::get(ls_->Int32Ty,
+																							(sizeof(CallFrame) / sizeof(Object*)) + 
+																							tmp->send_cm->stack_size()->to_native()),
+														 "cfstk");
+
+					info_->pre_allocated_vars[tmp->id] = 
+						b().CreateAlloca(obj_type,
+														 ConstantInt::get(ls_->Int32Ty,
+																							(sizeof(StackVariables) / sizeof(Object*)) + 
+																							tmp->send_cm->number_of_locals()),
+														 "var_mem");
+				}
+				tmp = tmp->next;
+				if(tmp == trace->anchor) break;
+			}
+		}
+
 
 		Value* TraceBuilder::get_field(Value* val, int which) {
 			return b().CreateConstGEP2_32(val, 0, which);
@@ -303,7 +333,7 @@ namespace rubinius {
 					if(op == InstructionSequence::insn_ret && 
 						 cur_trace_node_->active_send) {
 						std::cout << "Decrementing at traced ret, to pop off self.\n";
-							sp_--;
+						sp_--;
 					}
 
 					assert(sp_ >= -1);

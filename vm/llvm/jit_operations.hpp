@@ -107,7 +107,6 @@ namespace rubinius {
 
     virtual ~JITOperations() {
       if(inline_policy_ and own_policy_) delete inline_policy_;
-			delete method_info_;
     }
 
     IRBuilder<>& b() { return builder_; }

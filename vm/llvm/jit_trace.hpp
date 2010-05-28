@@ -73,6 +73,8 @@ namespace rubinius {
 
 			bool generate_body();
 
+			void allocate_call_structures();
+
 			void generate_hard_return();
 
 			llvm::Value* get_field(llvm::Value* val, int which);

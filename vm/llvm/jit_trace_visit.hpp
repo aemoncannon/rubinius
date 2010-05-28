@@ -74,6 +74,8 @@ namespace rubinius {
       init_out_args();
     }
 
+
+
     void visit_goto_if_false(opcode ip) {
 
       Value* cond = stack_pop();
@@ -141,7 +143,6 @@ namespace rubinius {
 			llvm::Module* mod = ls_->module();
 			const llvm::Type* cf_type = mod->getTypeByName("struct.rubinius::CallFrame");
 			const llvm::Type* stack_vars_type = mod->getTypeByName("struct.rubinius::StackVariables");
-			const llvm::Type* obj_type = ls_->ptr_type("Object");
 
 
       InlineCache* cache = reinterpret_cast<InlineCache*>(which);
@@ -151,9 +152,11 @@ namespace rubinius {
 
 			info()->set_msg(msg);
 
-			vm_ = info()->parent_info()->vm();
+			vm_ = parent_info->vm();
 			vm_->setName("vm");
 			info()->set_vm(vm_);
+
+			info()->set_stack(parent_info->stack());
 
 			Value* prev_call_frame = parent_info->call_frame();
 			prev_call_frame->setName("prev_call_frame");
@@ -161,21 +164,13 @@ namespace rubinius {
 
 			info()->set_args(out_args_);
 
-			info()->set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
+			info()->set_out_args(info()->root_info()->pre_allocated_args[cur_trace_node_->id]);
+
 			init_out_args();
 
+			Value* cfstk = info()->root_info()->pre_allocated_stacks[cur_trace_node_->id];
 
-
-			Value* cfstk = b().CreateAlloca(obj_type,
-																			ConstantInt::get(ls_->Int32Ty,
-																											 (sizeof(CallFrame) / sizeof(Object*)) + info()->vmm->stack_size),
-																			"cfstk");
-
-			Value* var_mem = b().CreateAlloca(obj_type,
-																				ConstantInt::get(ls_->Int32Ty,
-																												 (sizeof(StackVariables) / sizeof(Object*)) + info()->vmm->number_of_locals),
-																				"var_mem");
-
+			Value* var_mem = info()->root_info()->pre_allocated_vars[cur_trace_node_->id];
 
 			check_arity();
 
@@ -185,8 +180,8 @@ namespace rubinius {
 
 			info()->set_call_frame(call_frame_);
 
-			Value* stk = b().CreateConstGEP1_32(cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
-			info()->set_stack(stk);
+			// Value* stk = b().CreateConstGEP1_32(cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
+			// info()->set_stack(stk);
 
 			Value* vars = b().CreateBitCast(
         var_mem,
@@ -232,7 +227,7 @@ namespace rubinius {
 			// scope
 			b().CreateStore(vars, get_field(call_frame_, offset::cf_scope));
 
-			nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
+//			nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
 
 			import_args();
 
@@ -249,6 +244,7 @@ namespace rubinius {
 			call_frame_ = info()->call_frame();
 			// Info has changed, setup out_args stuff again.
 			init_out_args();
+
 		}
 
 
@@ -735,6 +731,8 @@ namespace rubinius {
 			};
 			sig.call("rbx_show_int", call_args, 1, "", b());
 		}
+
+
 
 
 	};

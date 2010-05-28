@@ -39,6 +39,7 @@ namespace rubinius {
 		bool traced_send;
 		TraceNode* active_send;
 		TraceNode* parent_send;
+		int id;
 
 		int total_size;
 		int numargs;
@@ -46,7 +47,7 @@ namespace rubinius {
 		intptr_t arg2;
 
 
-		TraceNode(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+		TraceNode(int id, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		void pretty_print(STATE, std::ostream& out);
 
@@ -61,6 +62,7 @@ namespace rubinius {
 		size_t jitted_bytes;
 		void*  jitted_impl;
 		trace_executor  executor;
+		int node_id;;
 
 		Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 

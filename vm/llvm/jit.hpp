@@ -127,6 +127,13 @@ namespace rubinius {
     int called_args;
     std::vector<llvm::Value*>* stack_args;
 
+		typedef std::map<int, llvm::Value*> ValMap;
+
+
+    ValMap pre_allocated_args;
+    ValMap pre_allocated_stacks;
+    ValMap pre_allocated_vars;
+
     JITMethodInfo* root;
 
   public:
@@ -252,6 +259,7 @@ namespace rubinius {
       vm_ = info->vm();
       out_args_ = info->out_args();
       counter_ = info->counter();
+			root = info->root_info();
 
       set_function(info->function());
     }
@@ -262,6 +270,10 @@ namespace rubinius {
       }
 
       return 0;
+    }
+
+    JITMethodInfo* root_info() {
+      return root;
     }
 
     JITMethodInfo* parent_info() {
