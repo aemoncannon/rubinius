@@ -111,7 +111,6 @@ namespace rubinius {
 			while(tmp != NULL){
 				if(tmp->traced_send){
 
-					std::cout << "writing args at " << tmp->id << "\n";
 					info_->pre_allocated_args[tmp->id] = 
 						b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
 

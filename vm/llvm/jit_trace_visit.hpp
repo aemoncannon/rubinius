@@ -163,9 +163,7 @@ namespace rubinius {
 			info()->set_previous(prev_call_frame);
 
 			info()->set_args(out_args_);
-
 			info()->set_out_args(info()->root_info()->pre_allocated_args[cur_trace_node_->id]);
-
 			init_out_args();
 
 			Value* cfstk = info()->root_info()->pre_allocated_stacks[cur_trace_node_->id];
@@ -183,11 +181,11 @@ namespace rubinius {
 			// Value* stk = b().CreateConstGEP1_32(cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
 			// info()->set_stack(stk);
 
-			Value* vars = b().CreateBitCast(
+			vars_ = b().CreateBitCast(
         var_mem,
         PointerType::getUnqual(stack_vars_type), "vars");
 
-			info()->set_variables(vars);
+			info()->set_variables(vars_);
 
       // Pasting code from initialize_frame
 
@@ -225,13 +223,14 @@ namespace rubinius {
         get_field(call_frame_, offset::cf_ip));
 
 			// scope
-			b().CreateStore(vars, get_field(call_frame_, offset::cf_scope));
+			b().CreateStore(vars_, get_field(call_frame_, offset::cf_scope));
 
-//			nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
+//		nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
 
 			import_args();
 
 			stack_remove(args + 1);
+
 
 			// b().CreateBr(body);
 			// b().SetInsertPoint(body);
@@ -242,6 +241,7 @@ namespace rubinius {
 			method_info_ = info()->parent_info();
 			vm_ = info()->vm();
 			call_frame_ = info()->call_frame();
+			vars_ = info()->variables();
 			// Info has changed, setup out_args stuff again.
 			init_out_args();
 
@@ -276,6 +276,7 @@ namespace rubinius {
 					Value* pos = b().CreateGEP(info()->variables(), idx2, idx2+3, "var_pos");
 
 					b().CreateStore(arg_val, pos);
+
 				}
 
 
@@ -666,7 +667,6 @@ namespace rubinius {
         phi->addIncoming(called_value, dispatch);
         phi->addIncoming(imm_value, tagnow);
 
-				//dump_int(3);
 
         stack_remove(2);
         stack_push(phi);
@@ -717,6 +717,16 @@ namespace rubinius {
 				val
 			};
 			sig.call("rbx_show_vars", call_args, 3, "", b());
+		}
+
+		void dump_local(opcode which){
+      Value* idx2[] = {
+        ConstantInt::get(ls_->Int32Ty, 0),
+        ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+        ConstantInt::get(ls_->Int32Ty, which)
+      };
+      Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
+      dump_obj(b().CreateLoad(pos, "local"));
 		}
 
 		void dump_int(int i){
