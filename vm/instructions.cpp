@@ -145,7 +145,7 @@ Object* VMMethod::interpreter(STATE,
 	    else if(state->recording_trace != NULL){													\
 				if(state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame)){ \
 					std::cout << "Compiling trace:" << "\n";											\
-					state->recording_trace->pretty_print(state, std::cout);				\
+					state->recording_trace->pretty_print(state, std::cout);			\
 					state->recording_trace->compile(state);												\
 					vmm->traces[cur_ip] = state->recording_trace;									\
 					state->recording_trace = NULL;																\

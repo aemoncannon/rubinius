@@ -725,6 +725,13 @@ EOM
             file.puts "this->arg#{i+1} = (intptr_t)(*(ip_ptr + #{i + 1}));"
           end
           file.puts "this->numargs = #{obj.arguments.length};"
+
+          # Transform PCs for trace..
+          file.puts "this->trace_pc = pc_base + this->pc;"
+          if obj.control_flow == :branch
+             file.puts "this->arg1 += pc_base;"
+          end
+
           file.puts "break;"
         end
       end

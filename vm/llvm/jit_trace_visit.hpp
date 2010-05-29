@@ -74,7 +74,19 @@ namespace rubinius {
       init_out_args();
     }
 
-
+    void visit_goto(opcode ip) {
+			// Skip useless unconditional jumps (artifacts of
+			// tracing).
+			if(cur_trace_node_->next->trace_pc == (int)ip &&
+				 cur_trace_node_->next != trace_->anchor){
+				return;
+			}
+				
+			BasicBlock* bb = block_map_[ip].block;
+			assert(bb);
+			b().CreateBr(bb);
+			set_block(new_block("continue"));
+    }
 
     void visit_goto_if_false(opcode ip) {
 
@@ -163,12 +175,12 @@ namespace rubinius {
 			info()->set_previous(prev_call_frame);
 
 			info()->set_args(out_args_);
-			info()->set_out_args(info()->root_info()->pre_allocated_args[cur_trace_node_->id]);
+			info()->set_out_args(info()->root_info()->pre_allocated_args[cur_trace_node_->trace_pc]);
 			init_out_args();
 
-			Value* cfstk = info()->root_info()->pre_allocated_stacks[cur_trace_node_->id];
+			Value* cfstk = info()->root_info()->pre_allocated_stacks[cur_trace_node_->trace_pc];
 
-			Value* var_mem = info()->root_info()->pre_allocated_vars[cur_trace_node_->id];
+			Value* var_mem = info()->root_info()->pre_allocated_vars[cur_trace_node_->trace_pc];
 
 			check_arity();
 

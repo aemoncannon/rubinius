@@ -138,6 +138,8 @@ namespace rubinius {
 			// Hook up the return pad and return phi.
 			work.generate_hard_return();
 
+			//llvm::outs() << *func << "\n";
+
 			std::vector<BasicBlock*> to_remove;
 			bool Broken = false;
 			for(Function::iterator I = func->begin(), E = func->end(); I != E; ++I) {

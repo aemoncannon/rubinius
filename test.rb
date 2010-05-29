@@ -1,19 +1,24 @@
 require 'helpers'
 
-ITERATIONS = 100000
+ITERATIONS = 1000000
 
-def bar(a,b)
-  a + b
-end
+class Rabbit
 
-def foo(a,b)
-  bar(a,b)
+  def bar(a,b)
+    a + b
+  end
+
+  def foo(a,b)
+    bar(a,b)
+  end
+
 end
 
 def run()
   i = 0
   while i < ITERATIONS
-    i = i + foo(1,1)
+    rabbit = Rabbit.new
+    i = i + rabbit.foo(1,0)
   end
 end
 
@@ -38,6 +43,7 @@ t = Time.now.to_f
 run()
 
 non_trace_time = Time.now.to_f - t
+
 puts "Non-trace time: #{non_trace_time} seconds."
 
 puts ""

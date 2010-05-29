@@ -39,7 +39,8 @@ namespace rubinius {
 		bool traced_send;
 		TraceNode* active_send;
 		TraceNode* parent_send;
-		int id;
+		int trace_pc;
+		int pc_base;
 
 		int total_size;
 		int numargs;
@@ -47,7 +48,7 @@ namespace rubinius {
 		intptr_t arg2;
 
 
-		TraceNode(int id, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+		TraceNode(int pc_base, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		void pretty_print(STATE, std::ostream& out);
 
@@ -62,7 +63,7 @@ namespace rubinius {
 		size_t jitted_bytes;
 		void*  jitted_impl;
 		trace_executor  executor;
-		int node_id;;
+		int pc_base_counter;
 
 		Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
@@ -91,12 +92,11 @@ namespace rubinius {
 
 		template <typename T>
 		void dispatch(T& v, TraceNode* node){
-			int ip = node->pc;
 			opcode op = node->op;
 			intptr_t arg1 = node->arg1;
 			intptr_t arg2 = node->arg2;
 			v.at_trace_node(node);
-			v.at_ip(ip);
+			v.at_ip(node->trace_pc);
 
 			switch(op) {
 #define HANDLE_INST0(code, name)										\

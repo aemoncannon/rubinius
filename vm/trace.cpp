@@ -17,7 +17,7 @@
 namespace rubinius {
 
 
-	TraceNode::TraceNode(int id, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
+	TraceNode::TraceNode(int pc_base, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
 		: op(op),
 		  pc(pc),
 		  cm(call_frame->cm),
@@ -28,13 +28,15 @@ namespace rubinius {
 			traced_send(false),
 			active_send(NULL),
 			parent_send(NULL),
-			id(id)
+			trace_pc(0),
+			pc_base(pc_base)
+
 	{
 #include "vm/gen/instruction_trace_record.hpp"
 	}
 
 	void TraceNode::pretty_print(STATE, std::ostream& out) {
-		out << cm->name()->c_str(state) << " - " << pc  <<  ": ";
+		out << cm->name()->c_str(state) << " - " << trace_pc  <<  ": ";
 		out << InstructionSequence::get_instruction_name(op);
 		out << " ";
 		if(numargs > 0) out << arg1;
@@ -54,53 +56,55 @@ namespace rubinius {
 	Trace::Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
 		anchor = new TraceNode(0, op, pc, ip_ptr, vmm, call_frame);
 		head = anchor;
-		node_id = 0;
+		pc_base_counter = 0;
 	}
 
 
 	bool Trace::add(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
-		if(ip_ptr == anchor->ip_ptr){
+		if(pc == anchor->pc && call_frame->cm == anchor->cm){
 			head->next = anchor;
 			head = anchor;
 			return true;
 		}
 		else{
-			node_id += 1;
-			TraceNode* tmp = new TraceNode(node_id, op, pc, ip_ptr, vmm, call_frame);
-			tmp->prev = head;
-			head->next = tmp;
-			head = tmp;
+			TraceNode* prev = head;
+			TraceNode* active_send = prev->active_send;
+			TraceNode* parent_send = prev->parent_send;
+			CompiledMethod* cm = call_frame->cm;
+			int pc_base = prev->pc_base;
 
-			opcode prev_op = head->prev->op;
-
-			if(head->prev){
-				head->active_send = head->prev->active_send;
-				head->parent_send = head->prev->parent_send;				
-			}
-
-			if(head->prev && head->cm != head->prev->cm){
-				if(prev_op == InstructionSequence::insn_ret){
-					if(head->prev->parent_send){
-						head->active_send = head->prev->parent_send;
-						head->parent_send = head->active_send->parent_send;
+			if(prev->cm != cm){
+				if(prev->op == InstructionSequence::insn_ret){
+					active_send = prev->parent_send;
+					if(prev->parent_send){
+						parent_send = prev->parent_send->parent_send;
+					}
+					if(prev->active_send){
+						pc_base = prev->active_send->pc_base;
 					}
 					else{
-						head->active_send = NULL;
-						head->parent_send = NULL;
+						pc_base = anchor->pc_base;
 					}
 				}
-				else if(prev_op == InstructionSequence::insn_send_stack ||
-								prev_op == InstructionSequence::insn_send_method){
-					// The cm has changed and the previous
-					// op was a send. We must be tracing into a call.
-					head->prev->traced_send = true;
-					head->prev->send_cm = head->cm;
-					head->parent_send = head->prev->active_send;
-					head->active_send = head->prev;
-				}
+				else if(prev->op == InstructionSequence::insn_send_stack ||
+								prev->op == InstructionSequence::insn_send_method){
 
+					pc_base_counter += prev->cm->backend_method()->total;
+					pc_base = pc_base_counter;
+
+					prev->traced_send = true;
+					prev->send_cm = cm;
+
+					parent_send = prev->active_send;
+					active_send = prev;
+				}
 			}
 
+			head = new TraceNode(pc_base, op, pc, ip_ptr, vmm, call_frame);
+			head->active_send = active_send;
+			head->parent_send = parent_send;
+			head->prev = prev;
+			prev->next = head;
 
 			return false;
 		}

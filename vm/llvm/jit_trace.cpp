@@ -111,17 +111,17 @@ namespace rubinius {
 			while(tmp != NULL){
 				if(tmp->traced_send){
 
-					info_->pre_allocated_args[tmp->id] = 
+					info_->pre_allocated_args[tmp->trace_pc] = 
 						b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
 
-					info_->pre_allocated_stacks[tmp->id] = 
+					info_->pre_allocated_stacks[tmp->trace_pc] = 
 						b().CreateAlloca(obj_type,
 														 ConstantInt::get(ls_->Int32Ty,
 																							(sizeof(CallFrame) / sizeof(Object*)) + 
 																							tmp->send_cm->stack_size()->to_native()),
 														 "cfstk");
 
-					info_->pre_allocated_vars[tmp->id] = 
+					info_->pre_allocated_vars[tmp->trace_pc] = 
 						b().CreateAlloca(obj_type,
 														 ConstantInt::get(ls_->Int32Ty,
 																							(sizeof(StackVariables) / sizeof(Object*)) + 
@@ -295,6 +295,7 @@ namespace rubinius {
 
 				BlockMap::iterator i = map_.find(current_ip_);
 				if(i != map_.end()) {
+//					std::cout << "Found block at " << current_ip_ << "\n";
 					if(i->second.sp == cUnknown) {
 						if(cDebugStack) {
 							std::cout << current_ip_ << ": " << sp_ << " (inherit)\n";
@@ -308,7 +309,8 @@ namespace rubinius {
 					}
 
 					current_block_ = &i->second;
-				} else {
+				} 
+				else {
 					if(force_break_) {
 						if(cDebugStack) {
 							std::cout << current_ip_ << ": dead\n";
@@ -329,9 +331,8 @@ namespace rubinius {
 				if(sp_ != cUnknown) {
 					sp_ += stack_difference(op, arg1, arg2);
 
-					if(op == InstructionSequence::insn_ret && 
-						 cur_trace_node_->active_send) {
-						std::cout << "Decrementing at traced ret, to pop off self.\n";
+					//Decrementing at traced ret, to pop off self
+					if(op == InstructionSequence::insn_ret && cur_trace_node_->active_send) {
 						sp_--;
 					}
 
@@ -342,9 +343,9 @@ namespace rubinius {
 			}
 
 			JITBasicBlock* break_at(opcode ip) {
+//				std::cout << "Breaking at " << ip << "\n";
 				BlockMap::iterator i = map_.find(ip);
 				if(i == map_.end()) {
-					std::cout << "New BB at " << ip << "\n";
 					std::ostringstream ss;
 					ss << "ip" << ip;
 					JITBasicBlock& jbb = map_[ip];
