@@ -8,18 +8,26 @@ class Rabbit
     a + b
   end
 
-  def foo(a,b)
-    bar(a,b)
+  def value(a,b)
+    k = 0
+    while k < 100
+      k += 1#bar(a,b)
+    end
+    k
   end
 
 end
 
+
 def run()
+  j = 0
   i = 0
   while i < ITERATIONS
     rabbit = Rabbit.new
-    i = i + rabbit.foo(1,0)
+    j += rabbit.value(1,2)
+    i += 1
   end
+  puts "Result: #{j}"
 end
 
 

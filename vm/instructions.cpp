@@ -138,14 +138,11 @@ Object* VMMethod::interpreter(STATE,
 #define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
 	  op = vmm->opcodes[cur_ip];																					\
 	  if(state->tracing_enabled){																					\
-		  if(vmm->traces[cur_ip] != NULL){																	\
-			  std::cout << "Calling trace!" << "\n";													\
+		  if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
 			  vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope);	\
       }																																	\
 	    else if(state->recording_trace != NULL){													\
 				if(state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame)){ \
-					std::cout << "Compiling trace:" << "\n";											\
-					state->recording_trace->pretty_print(state, std::cout);			\
 					state->recording_trace->compile(state);												\
 					vmm->traces[cur_ip] = state->recording_trace;									\
 					state->recording_trace = NULL;																\

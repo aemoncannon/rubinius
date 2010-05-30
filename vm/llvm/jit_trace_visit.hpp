@@ -14,6 +14,7 @@ namespace rubinius {
 
 		Trace* trace_;
 		TraceNode* cur_trace_node_;
+		BasicBlock* loop_exit_stub_;
 
   public:
 
@@ -63,6 +64,11 @@ namespace rubinius {
       info()->add_return_value(crv, current_block());
       b().CreateBr(info()->return_pad());
 
+      loop_exit_stub_ = new_block("loop_exit_stub");
+      set_block(loop_exit_stub_);
+      info()->add_return_value(Constant::getNullValue(ObjType), loop_exit_stub_);
+      b().CreateBr(info()->return_pad());
+
       set_block(start);
 
       ip_pos_ = b().CreateConstGEP2_32(call_frame_, 0, offset::cf_ip, "ip_pos");
@@ -105,23 +111,8 @@ namespace rubinius {
 				"is_true");
 
       BasicBlock* cont = new_block("continue");
-      BasicBlock* bb = block_map_[ip].block;
-      assert(bb);
-      b().CreateCondBr(cmp, bb, cont);
-
-
-      ////////////////////
-			// Trace exit stub!
-
-      set_block(bb);
-			print_debug();
-      info()->add_return_value(Constant::getNullValue(ObjType), bb);
-      b().CreateBr(info()->return_pad());
-
-      /////////////
-
+      b().CreateCondBr(cmp, loop_exit_stub_, cont);
       set_block(cont);
-
     }
 
 		Value* get_field(Value* val, int which) {
