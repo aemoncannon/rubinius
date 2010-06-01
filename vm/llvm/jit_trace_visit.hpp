@@ -14,7 +14,6 @@ namespace rubinius {
 
 		Trace* trace_;
 		TraceNode* cur_trace_node_;
-		BasicBlock* loop_exit_stub_;
 
   public:
 
@@ -64,11 +63,6 @@ namespace rubinius {
       info()->add_return_value(crv, current_block());
       b().CreateBr(info()->return_pad());
 
-      loop_exit_stub_ = new_block("loop_exit_stub");
-      set_block(loop_exit_stub_);
-      info()->add_return_value(Constant::getNullValue(ObjType), loop_exit_stub_);
-      b().CreateBr(info()->return_pad());
-
       set_block(start);
 
       ip_pos_ = b().CreateConstGEP2_32(call_frame_, 0, offset::cf_ip, "ip_pos");
@@ -79,6 +73,28 @@ namespace rubinius {
 
       init_out_args();
     }
+
+    void visit_nested_trace() {
+
+			Signature sig(ls_, ls_->VoidTy);
+			sig << "VM";
+			sig << "CallFrame";
+			sig << ObjArrayTy;
+			sig << "StackVariables";
+			sig << ls_->Int32Ty;
+
+			Value* call_args[] = {
+				info()->vm(),
+				info()->call_frame(),
+				stack_ptr(),
+				info()->variables(),
+				ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc)
+			};
+
+			sig.call("rbx_call_trace", call_args, 5, "", b());
+
+			dump_obj(stack_top());
+		}
 
     void visit_goto(opcode ip) {
 			// Skip useless unconditional jumps (artifacts of
@@ -111,7 +127,17 @@ namespace rubinius {
 				"is_true");
 
       BasicBlock* cont = new_block("continue");
-      b().CreateCondBr(cmp, loop_exit_stub_, cont);
+
+      BasicBlock* loop_exit_stub = new_block("loop_exit_stub");
+
+      b().CreateCondBr(cmp, loop_exit_stub, cont);
+
+      set_block(loop_exit_stub);
+			flush_ip(cur_trace_node_->interp_jump_target());
+			flush_stack();
+      info()->add_return_value(Constant::getNullValue(ObjType), loop_exit_stub);
+      b().CreateBr(info()->return_pad());
+
       set_block(cont);
     }
 
@@ -220,6 +246,8 @@ namespace rubinius {
         ConstantInt::get(ls_->Int32Ty, flags),
         get_field(call_frame_, offset::cf_flags));
 
+      ip_pos_ = b().CreateConstGEP2_32(call_frame_, 0, offset::cf_ip, "ip_pos");
+
 			// ip
 			b().CreateStore(
         ConstantInt::get(ls_->Int32Ty, 0),
@@ -250,6 +278,21 @@ namespace rubinius {
 
 		}
 
+    void flush_ip(int ip) {
+			Value* call_frame = info()->root_info()->call_frame();
+      Value* pos = b().CreateConstGEP2_32(call_frame, 0, offset::cf_ip, "ip_pos");
+			// Note, pos points to an offset in the root call_frame for this trace,
+			// not any of the subsequent call_frames created for traced sends.
+      b().CreateStore(ConstantInt::get(ls_->Int32Ty, ip), pos);
+    }
+
+    void flush_stack() {
+			Value* stk = b().CreateBitCast(stack_ptr(), ObjArrayTy, "obj_ary_type");
+			Value* call_frame = info()->root_info()->call_frame();
+			Value* pos = b().CreateBitCast(get_field(call_frame, offset::cf_flush_stk),
+																		 PointerType::getUnqual(ObjArrayTy));
+			b().CreateStore(stk, pos);
+    }
 
 		void import_args() {
 			Value* vm_obj = info()->vm();
@@ -719,6 +762,7 @@ namespace rubinius {
 				call_frame_,
 				val
 			};
+
 			sig.call("rbx_show_vars", call_args, 3, "", b());
 		}
 

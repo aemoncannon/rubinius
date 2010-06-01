@@ -51,6 +51,8 @@ namespace rubinius {
 
     Arguments* arguments;
 
+    Object* flush_stk[];
+
     // Stack
     Object* stk[];
 

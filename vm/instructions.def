@@ -2508,3 +2508,7 @@ instruction invoke_primitive(literal args) [ +args -- value ]
   HANDLE_EXCEPTION(ret);
   stack_push(ret);
 end
+
+
+instruction nested_trace() [ -- ]
+end

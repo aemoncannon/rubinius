@@ -1,6 +1,6 @@
 require 'helpers'
 
-ITERATIONS = 1000000
+ITERATIONS = 100000
 
 class Rabbit
 
@@ -17,7 +17,6 @@ class Rabbit
   end
 
 end
-
 
 def run()
   j = 0

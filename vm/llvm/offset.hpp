@@ -12,7 +12,8 @@ namespace offset {
   const static int cf_top_scope = 7;
   const static int cf_scope = 8;
   const static int cf_arguments = 9;
-  const static int cf_stk = 10;
+  const static int cf_flush_stk = 10;
+  const static int cf_stk = 11;
 
   const static int args_recv = 0;
   const static int args_block = 1;

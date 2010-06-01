@@ -379,6 +379,8 @@ namespace rubinius {
       throw Unsupported();
     }
 
+    void visit_nested_trace() {}
+
     void visit_pop() {
       stack_remove(1);
     }

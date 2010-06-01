@@ -352,7 +352,7 @@ namespace rubinius {
     //
     Value* stack_slot_position(int which) {
 //      assert(which >= 0 && which < vmmethod()->stack_size);
-      assert(which >= 0);
+//      assert(which >= 0);
       return b().CreateConstGEP1_32(stack_, which, "stack_pos");
     }
 

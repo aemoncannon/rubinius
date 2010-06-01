@@ -36,7 +36,7 @@ namespace rubinius {
 	}
 
 	void TraceNode::pretty_print(STATE, std::ostream& out) {
-		out << cm->name()->c_str(state) << " - " << trace_pc  <<  ": ";
+		out << cm->name()->c_str(state) << " - " << trace_pc  <<  "(" << pc << "): ";
 		out << InstructionSequence::get_instruction_name(op);
 		out << " ";
 		if(numargs > 0) out << arg1;
@@ -109,6 +109,7 @@ namespace rubinius {
 			return false;
 		}
 	}
+
 
 	void Trace::compile(STATE) {
 		LLVMState* ls = LLVMState::get(state);

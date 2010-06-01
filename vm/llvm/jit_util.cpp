@@ -4,6 +4,7 @@
 #include "objectmemory.hpp"
 #include "llvm/jit.hpp"
 #include "call_frame.hpp"
+#include "trace.hpp"
 #include "builtin/object.hpp"
 #include "builtin/symbol.hpp"
 #include "builtin/system.hpp"
@@ -58,6 +59,7 @@ extern "C" {
 		obj->type_info(state)->show(state, obj, 1);
   }
 
+
   void rbx_show_state(STATE, CallFrame* call_frame)
   {
 		Object** stk = call_frame->stk;
@@ -90,6 +92,18 @@ extern "C" {
   void rbx_print_debug()
   {
 		std::cout << "trace debug!" << "\n";
+  }
+
+  void rbx_call_trace(STATE, CallFrame* call_frame, Object** stack, StackVariables* vars, int pc)
+  {
+		Trace* trace = call_frame->cm->backend_method()->traces[pc];
+		if(trace != NULL){
+			std::cout << "Calling nested trace!" << "\n";
+			trace->executor(state, call_frame, stack, vars);
+		}
+		else{
+			std::cout << "Failed to find nested trace!" << "\n";
+		}
   }
 
   Object* rbx_write_barrier(STATE, Object* obj, Object* val) {

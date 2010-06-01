@@ -52,6 +52,10 @@ namespace rubinius {
 
 		void pretty_print(STATE, std::ostream& out);
 
+		int interp_jump_target(){
+			return arg1 - pc_base;
+		}
+
 	};
 
 
@@ -99,52 +103,52 @@ namespace rubinius {
 			v.at_ip(node->trace_pc);
 
 			switch(op) {
-#define HANDLE_INST0(code, name)										\
-				case code:																	\
+#define HANDLE_INST0(code, name)									\
+				case code:																\
 					if(v.before(op)) { v.visit_ ## name();}	\
 					break;
 
-#define HANDLE_INST1(code, name)												\
-				case code:																			\
+#define HANDLE_INST1(code, name)														\
+				case code:																					\
 					if(v.before(op, arg1)) { v.visit_ ## name(arg1);}	\
 					break;
 
-#define HANDLE_INST2(code, name)															\
-				case code:																						\
+#define HANDLE_INST2(code, name)																				\
+				case code:																											\
 					if(v.before(op, arg1, arg2)) { v.visit_ ## name(arg1, arg2);}	\
 					break;
 			
-
 #include "vm/gen/instruction_visitors.hpp"
 
 #undef HANDLE_INST0
 #undef HANDLE_INST1
 #undef HANDLE_INST2
+
 			}
 		}
 
 
-	// class Walker {
-	// 		JITVisit& v_;
-	// 		BlockMap& map_;
+		// class Walker {
+		// 		JITVisit& v_;
+		// 		BlockMap& map_;
 
-	// 	public:
-	// 		Walker(JITVisit& v, BlockMap& map)
-	// 			: v_(v)
-	// 			, map_(map)
-	// 		{}
+		// 	public:
+		// 		Walker(JITVisit& v, BlockMap& map)
+		// 			: v_(v)
+		// 			, map_(map)
+		// 		{}
 
-	// 		void call(OpcodeIterator& iter) {
-	// 			v_.dispatch(iter.stream(), iter.ip());
+		// 		void call(OpcodeIterator& iter) {
+		// 			v_.dispatch(iter.stream(), iter.ip());
 
-	// 			if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
-	// 				BlockMap::iterator i = map_.find(iter.next_ip());
-	// 				if(i != map_.end()) {
-	// 					v_.b().CreateBr(i->second.block);
-	// 				}
-	// 			}
-	// 		}
-	// 	};
+		// 			if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
+		// 				BlockMap::iterator i = map_.find(iter.next_ip());
+		// 				if(i != map_.end()) {
+		// 					v_.b().CreateBr(i->second.block);
+		// 				}
+		// 			}
+		// 		}
+		// 	};
 
 
 		template <typename T>
