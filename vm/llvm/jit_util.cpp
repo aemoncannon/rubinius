@@ -98,8 +98,7 @@ extern "C" {
   {
 		Trace* trace = call_frame->cm->backend_method()->traces[pc];
 		if(trace != NULL){
-			std::cout << "Calling nested trace!" << "\n";
-			trace->executor(state, call_frame, stack, vars);
+			trace->executor(state, call_frame, stack + 1, vars);
 		}
 		else{
 			std::cout << "Failed to find nested trace!" << "\n";

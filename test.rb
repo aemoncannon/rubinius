@@ -10,7 +10,7 @@ class Rabbit
 
   def value(a,b)
     k = 0
-    while k < 100
+    while k < 1000
       k += 1#bar(a,b)
     end
     k

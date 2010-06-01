@@ -93,7 +93,6 @@ namespace rubinius {
 
 			sig.call("rbx_call_trace", call_args, 5, "", b());
 
-			dump_obj(stack_top());
 		}
 
     void visit_goto(opcode ip) {
