@@ -70,8 +70,10 @@ namespace rubinius {
   {
     VMMethod* const vmm = env->vmmethod(state);
 
+	  bool trace = true;
+
 #ifdef ENABLE_LLVM
-    if(vmm->call_count >= 0) {
+    if(!trace && vmm->call_count >= 0) {
       if(vmm->call_count >= state->shared.config.jit_call_til_compile) {
         LLVMState* ls = LLVMState::get(state);
 

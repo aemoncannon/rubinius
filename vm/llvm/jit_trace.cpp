@@ -283,7 +283,7 @@ namespace rubinius {
 			}
 
 			const static int cUnknown = -10;
-			const static bool cDebugStack = true;
+			const static bool cDebugStack = false;
 
 #include "gen/instruction_effects.hpp"
 
