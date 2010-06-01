@@ -37,6 +37,7 @@ namespace rubinius {
 		TraceNode* prev;
 		TraceNode* next;
 		bool traced_send;
+		bool traced_yield;
 		TraceNode* active_send;
 		TraceNode* parent_send;
 		int trace_pc;

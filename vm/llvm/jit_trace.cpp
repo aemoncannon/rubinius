@@ -283,7 +283,7 @@ namespace rubinius {
 			}
 
 			const static int cUnknown = -10;
-			const static bool cDebugStack = false;
+			const static bool cDebugStack = true;
 
 #include "gen/instruction_effects.hpp"
 
@@ -332,10 +332,9 @@ namespace rubinius {
 					sp_ += stack_difference(op, arg1, arg2);
 
 					//Decrementing at traced ret, to pop off self
-					if(op == InstructionSequence::insn_ret && cur_trace_node_->active_send) {
+					if(op == InstructionSequence::insn_ret && cur_trace_node_->active_send){
 						sp_--;
 					}
-
 					assert(sp_ >= -1);
 				}
 
@@ -370,7 +369,7 @@ namespace rubinius {
 					// scope of the current handler and it's illegal for code
 					// to generate a goto across a handler boundary
 					// if(exception_handlers_.size() > 0) {
-          // jbb.exception_handler = exception_handlers_.back();
+					// jbb.exception_handler = exception_handlers_.back();
 					// }
 
 					if(ip < current_ip_) {

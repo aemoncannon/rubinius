@@ -26,6 +26,7 @@ namespace rubinius {
 		  prev(NULL),
 		  next(NULL),
 			traced_send(false),
+			traced_yield(false),
 			active_send(NULL),
 			parent_send(NULL),
 			trace_pc(0),
@@ -87,12 +88,18 @@ namespace rubinius {
 					}
 				}
 				else if(prev->op == InstructionSequence::insn_send_stack ||
-								prev->op == InstructionSequence::insn_send_method){
+								prev->op == InstructionSequence::insn_send_method ||
+								prev->op == InstructionSequence::insn_yield_stack){
 
 					pc_base_counter += prev->cm->backend_method()->total;
 					pc_base = pc_base_counter;
 
-					prev->traced_send = true;
+					if(prev->op == InstructionSequence::insn_yield_stack){
+						prev->traced_yield = true;
+					}
+					else{
+						prev->traced_send = true;
+					}
 					prev->send_cm = cm;
 
 					parent_send = prev->active_send;
