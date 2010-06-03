@@ -109,7 +109,7 @@ namespace rubinius {
 			const llvm::Type* obj_type = ls_->ptr_type("Object");
 			TraceNode* tmp = trace->anchor;
 			while(tmp != NULL){
-				if(tmp->traced_send){
+				if(tmp->traced_send || tmp->traced_yield){
 
 					info_->pre_allocated_args[tmp->trace_pc] = 
 						b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
@@ -283,7 +283,7 @@ namespace rubinius {
 			}
 
 			const static int cUnknown = -10;
-			const static bool cDebugStack = false;
+			const static bool cDebugStack = true;
 
 #include "gen/instruction_effects.hpp"
 
@@ -333,7 +333,10 @@ namespace rubinius {
 
 					//Decrementing at traced ret, to pop off self
 					if(op == InstructionSequence::insn_ret && cur_trace_node_->active_send){
-						sp_--;
+						if(cur_trace_node_->active_send->traced_send){
+							std::cout << "Fixing!" << "\n";
+							sp_--;
+						}
 					}
 					assert(sp_ >= -1);
 				}

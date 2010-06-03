@@ -95,6 +95,8 @@ namespace rubinius {
     llvm::Value* stack_;
     llvm::Value* vm_;
     llvm::Value* args_;
+    llvm::Value* block_env_;
+    llvm::Value* top_scope_;
     llvm::Value* variables_;
     llvm::Value* previous_;
     llvm::Value* profiling_entry_;
@@ -164,6 +166,22 @@ namespace rubinius {
 
     llvm::Value* args() {
       return args_;
+    }
+
+    void set_block_env(llvm::Value* env) {
+      block_env_ = env;
+    }
+
+    llvm::Value* block_env() {
+      return block_env_;
+    }
+
+    void set_top_scope(llvm::Value* env) {
+      top_scope_ = env;
+    }
+
+    llvm::Value* top_scope() {
+      return top_scope_;
     }
 
     void set_arg_total(llvm::Value* arg_total) {

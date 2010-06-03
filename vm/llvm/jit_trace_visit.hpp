@@ -199,7 +199,6 @@ namespace rubinius {
 
 		#include "vm/llvm/jit_trace_yield.hpp"
     void visit_yield_stack(opcode count) {
-
 			if(cur_trace_node_->traced_yield){
 				do_traced_yield_stack(count);
 			}
