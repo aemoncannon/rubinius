@@ -2,8 +2,13 @@ void do_traced_yield_stack(opcode args) {
 
 	// Emit setup code for new call.
 	// Stores into args Values.
+	std::cout << "sp: " << sp() << "\n";
+	std::cout << "args: " << args << "\n";
+
 	setup_out_args(args);
 
+	std::cout << "sp: " << sp() << "\n";
+	
 	CompiledMethod* cm = cur_trace_node_->send_cm;
 	VMMethod* vmm = cm->backend_method();
 	jit::Context ctx(ls_);

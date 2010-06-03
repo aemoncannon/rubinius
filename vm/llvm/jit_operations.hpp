@@ -391,7 +391,7 @@ namespace rubinius {
     Value* stack_position(int amount) {
       int pos = sp_ + amount;
 //			assert(pos >= 0 && pos < vmmethod()->stack_size);
-			assert(pos >= 0);
+//			assert(pos >= 0);
 
       return b().CreateConstGEP1_32(stack_, pos, "stack_pos");
     }
