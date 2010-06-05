@@ -728,7 +728,7 @@ EOM
 
           # Transform PCs for trace..
           file.puts "this->trace_pc = pc_base + this->pc;"
-          if obj.control_flow == :branch
+          if obj.control_flow == :branch or obj.control_flow == :handler
              file.puts "this->arg1 += pc_base;"
           end
 

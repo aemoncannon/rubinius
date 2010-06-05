@@ -2,28 +2,28 @@ require 'helpers'
 
 ITERATIONS = 100000
 
-class Rabbit
-
-  def bar(a,b)
-    a + b
-  end
-
-  def value(a,b)
-    k = 0
-    100.times do
-      k += 1
-    end
-    k
-  end
-
-end
+#class Rabbit
+#
+#  def bar(a,b)
+#    a + b
+#  end
+#
+#  def value(a,b)
+#    k = 0
+#    100.times do
+#      k += Math.sqrt(4)
+#    end
+#    k
+#  end
+#
+#end
 
 def run()
   j = 0
   i = 0
   while i < ITERATIONS
-    rabbit = Rabbit.new
-    j += rabbit.value(0,1)
+#    rabbit = Rabbit.new
+    j += Math.sqrt(4)#rabbit.value(0,1)
     i += 1
   end
   puts "Result: #{j}"
