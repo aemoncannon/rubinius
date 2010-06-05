@@ -1,9 +1,14 @@
 
-void do_traced_send(opcode which, opcode args){
+void do_traced_send(opcode which, opcode args, bool with_block){
 
 	// Emit setup code for new call.
 	// Stores into args Values.
-	setup_out_args(args);
+	if(with_block){
+		setup_out_args_with_block(args);
+	}
+	else{
+		setup_out_args(args);
+	}
 
 	CompiledMethod* cm = cur_trace_node_->send_cm;
 	VMMethod* vmm = cm->backend_method();
@@ -12,6 +17,7 @@ void do_traced_send(opcode which, opcode args){
 	JITMethodInfo* parent_info = info();
 	new_info->is_block = false;
 	new_info->set_parent_info(parent_info);
+	new_info->init_return_pad();
 	method_info_ = new_info;
 
 	BasicBlock* cur = current_block();
@@ -26,7 +32,6 @@ void do_traced_send(opcode which, opcode args){
 	llvm::Module* mod = ls_->module();
 	const llvm::Type* cf_type = mod->getTypeByName("struct.rubinius::CallFrame");
 	const llvm::Type* stack_vars_type = mod->getTypeByName("struct.rubinius::StackVariables");
-
 
 	InlineCache* cache = reinterpret_cast<InlineCache*>(which);
 	Value* msg = b().CreateIntToPtr(
@@ -114,7 +119,13 @@ void do_traced_send(opcode which, opcode args){
 
 	import_args();
 
-	stack_remove(args + 1);
+
+	if(with_block){
+		stack_remove(args + 2);
+	}
+	else{
+		stack_remove(args + 1);
+	}
 
 
 	// b().CreateBr(body);

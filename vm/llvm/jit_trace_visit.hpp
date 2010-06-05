@@ -28,6 +28,8 @@ namespace rubinius {
 		}
 
     void initialize() {
+			info()->init_return_pad();
+
       BasicBlock* start = b().GetInsertBlock();
 
       bail_out_ = new_block("bail_out");
@@ -180,10 +182,10 @@ namespace rubinius {
     }
 
 
-		#include "vm/llvm/jit_trace_send.hpp"
+#include "vm/llvm/jit_trace_send.hpp"
     void visit_send_stack(opcode which, opcode args) {
 			if(cur_trace_node_->traced_send){
-				do_traced_send(which, args);
+				do_traced_send(which, args, false);
 			}
 			else{
 				InlineCache* cache = reinterpret_cast<InlineCache*>(which);
@@ -196,8 +198,35 @@ namespace rubinius {
 			}
     }
 
+    void visit_send_stack_with_block(opcode which, opcode args) {
+			if(cur_trace_node_->traced_send){
+				do_traced_send(which, args, true);
+			}
+			else{
+				set_has_side_effects();
 
-		#include "vm/llvm/jit_trace_yield.hpp"
+				InlineCache* cache = reinterpret_cast<InlineCache*>(which);
+
+				bool has_literal_block = (current_block_ >= 0);
+				bool block_on_stack = !has_literal_block;
+
+				// Detect a literal block being created and passed here.
+				if(!block_on_stack) {
+					emit_create_block(current_block_);
+				}
+
+				Value* ret = block_send(cache, args, allow_private_);
+				stack_remove(args + 2);
+				check_for_return(ret);
+				allow_private_ = false;
+
+				// Clear the current block
+				current_block_ = -1;
+			}
+    }
+
+
+#include "vm/llvm/jit_trace_yield.hpp"
     void visit_yield_stack(opcode count) {
 			if(cur_trace_node_->traced_yield){
 				do_traced_yield_stack(count);

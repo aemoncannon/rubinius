@@ -2,12 +2,8 @@ void do_traced_yield_stack(opcode args) {
 
 	// Emit setup code for new call.
 	// Stores into args Values.
-	std::cout << "sp: " << sp() << "\n";
-	std::cout << "args: " << args << "\n";
 
 	setup_out_args(args);
-
-	std::cout << "sp: " << sp() << "\n";
 	
 	CompiledMethod* cm = cur_trace_node_->send_cm;
 	VMMethod* vmm = cm->backend_method();
@@ -18,13 +14,12 @@ void do_traced_yield_stack(opcode args) {
 	new_info->set_parent_info(parent_info);
 	method_info_ = new_info;
 
-
-	BasicBlock* cur = current_block();
+//	BasicBlock* cur = current_block();
 
 	// Generate hard return
-	set_block(info()->return_pad());
-	b().CreateRet(info()->return_phi());
-	set_block(cur);
+	// set_block(info()->return_pad());
+	// b().CreateRet(info()->return_phi());
+	// set_block(cur);
 
 	llvm::Module* mod = ls_->module();
 	const llvm::Type* cf_type = mod->getTypeByName("struct.rubinius::CallFrame");
@@ -37,6 +32,12 @@ void do_traced_yield_stack(opcode args) {
 	Value* block_env = b().CreateLoad(
 		b().CreateConstGEP2_32(parent_info->variables(), 0, offset::vars_block),
 		"env");
+	block_env = b().CreateBitCast(block_env,
+																ls_->ptr_type("BlockEnvironment"),
+																"block_env");
+
+	info()->set_call_frame(call_frame_);
+
 	info()->set_block_env(block_env);
 
 	Value* prev_call_frame = parent_info->call_frame();
@@ -120,12 +121,15 @@ void setup_yield_scope() {
 
 void initialize_yield_frame(int stack_size) {
 
+
 	Value* method = b().CreateLoad(get_field(info()->block_env(), offset::blockenv_method),
 																 "env.method");
 
 
 	// static_scope
-	Value* ss = b().CreateLoad(get_field(method, offset::cm_static_scope), "invocation.static_scope");
+	Value* ss = b().CreateLoad(get_field(method, offset::cm_static_scope), 
+														 "invocation.static_scope");
+
 
 	b().CreateStore(ss, get_field(info()->call_frame(), offset::cf_static_scope));
 

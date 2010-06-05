@@ -94,11 +94,12 @@ namespace rubinius {
 
   void JITMethodInfo::set_function(llvm::Function* func) {
     function_ = func;
-
-    return_pad_ = llvm::BasicBlock::Create(context_.state()->ctx(), "return_pad", func);
-    return_phi_ = llvm::PHINode::Create(
-																				context_.state()->ptr_type("Object"), "return_phi", return_pad_);
   }
+
+	void JITMethodInfo::init_return_pad(){
+		return_pad_ = llvm::BasicBlock::Create(context_.state()->ctx(), "return_pad", function_);
+		return_phi_ = llvm::PHINode::Create(context_.state()->ptr_type("Object"), "return_phi", return_pad_);
+	}
 
   JITInlineBlock::JITInlineBlock(LLVMState* ls, llvm::PHINode* phi, llvm::BasicBlock* brk,
 																 CompiledMethod* cm, VMMethod* code,
@@ -145,7 +146,7 @@ namespace rubinius {
   const llvm::Type* LLVMState::ptr_type(std::string name) {
     std::string full_name = std::string("struct.rubinius::") + name;
     return PointerType::getUnqual(
-																	module_->getTypeByName(full_name.c_str()));
+			module_->getTypeByName(full_name.c_str()));
   }
 
   const llvm::Type* LLVMState::type(std::string name) {
@@ -414,7 +415,7 @@ namespace rubinius {
       log_ = &std::cerr;
     } else {
       std::ofstream* s = new std::ofstream(
-																					 state->shared.config.jit_log.value.c_str(), std::ios::out);
+				state->shared.config.jit_log.value.c_str(), std::ios::out);
 
       if(s->fail()) {
         delete s;
@@ -499,9 +500,9 @@ namespace rubinius {
     object_ = ptr_type("Object");
 
     profiling_ = new GlobalVariable(
-																		*module_, Int1Ty, false,
-																		GlobalVariable::ExternalLinkage,
-																		0, "profiling_flag");
+			*module_, Int1Ty, false,
+			GlobalVariable::ExternalLinkage,
+			0, "profiling_flag");
 
     engine_->addGlobalMapping(profiling_,
 															reinterpret_cast<void*>(state->shared.profiling_address()));
@@ -761,7 +762,7 @@ namespace rubinius {
 
     while(ud_disassemble(&ud)) {
       void* address = reinterpret_cast<void*>(
-																							reinterpret_cast<uintptr_t>(buffer) + ud_insn_off(&ud));
+				reinterpret_cast<uintptr_t>(buffer) + ud_insn_off(&ud));
 
       std::cout << std::setw(10) << std::right
                 << address

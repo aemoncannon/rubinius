@@ -272,6 +272,8 @@ namespace rubinius {
       return_phi_->addIncoming(val, block);
     }
 
+		void init_return_pad();
+
     void set_parent_info(JITMethodInfo* info) {
       parent_info_ = info;
       vm_ = info->vm();
@@ -623,17 +625,17 @@ namespace rubinius {
     }
 
     llvm::CallInst* call(const char* name, llvm::Value** start, int size,
-                      const char* inst_name, llvm::BasicBlock* block) {
+												 const char* inst_name, llvm::BasicBlock* block) {
       return llvm::CallInst::Create(function(name), start, start+size, inst_name, block);
     }
 
     llvm::CallInst* call(const char* name, llvm::Value** start, int size,
-                      const char* inst_name, llvm::IRBuilder<>& builder) {
+												 const char* inst_name, llvm::IRBuilder<>& builder) {
       return builder.CreateCall(function(name), start, start+size, inst_name);
     }
 
     llvm::CallInst* call(const char* name, std::vector<llvm::Value*> args,
-                      const char* inst_name, llvm::IRBuilder<>& builder) {
+												 const char* inst_name, llvm::IRBuilder<>& builder) {
       return builder.CreateCall(function(name), args.begin(), args.end(), inst_name);
     }
 

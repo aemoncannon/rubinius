@@ -43,13 +43,13 @@ namespace rubinius {
 		if(numargs > 0) out << arg1;
 		if(numargs > 1) out << ", " << arg2;
 		if(active_send){
-			out << " : active(";
-			active_send->pretty_print(state, out);
+			out << " : active_send(";
+			out << active_send->trace_pc;
 			out << ")";
 		}
 		if(parent_send){
 			out << " : parent(";
-			parent_send->pretty_print(state, out);
+			out << parent_send->trace_pc;
 			out << ")";
 		}
 	}
@@ -89,6 +89,7 @@ namespace rubinius {
 				}
 				else if(prev->op == InstructionSequence::insn_send_stack ||
 								prev->op == InstructionSequence::insn_send_method ||
+								prev->op == InstructionSequence::insn_send_stack_with_block ||
 								prev->op == InstructionSequence::insn_yield_stack){
 
 					pc_base_counter += prev->cm->backend_method()->total;
