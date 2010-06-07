@@ -1225,7 +1225,8 @@ namespace rubinius {
 
         b().CreateRet(call);
 
-      } else {
+      } 
+			else {
         Value* sp = last_sp_as_int();
 
         flush();

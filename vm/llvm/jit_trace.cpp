@@ -353,7 +353,9 @@ namespace rubinius {
 			}
 
 			JITBasicBlock* break_at(opcode ip) {
-				std::cout << "Breaking at " << ip << "\n";
+				if(cDebugStack) {
+					std::cout << "Breaking at " << ip << "\n";
+				}
 				BlockMap::iterator i = map_.find(ip);
 				if(i == map_.end()) {
 					std::ostringstream ss;
@@ -392,7 +394,9 @@ namespace rubinius {
 					}
 					return &jbb;
 				} else {
-					std::cout << "Verifying that " << i->second.sp << " == " << sp_ << "\n";
+					if(cDebugStack) {
+						std::cout << "Verifying that " << i->second.sp << " == " << sp_ << "\n";
+					}
 					assert(i->second.sp == sp_);
 					return &(i->second);
 				}

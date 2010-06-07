@@ -140,6 +140,9 @@ Object* VMMethod::interpreter(STATE,
 	  if(state->tracing_enabled){																					\
 		  if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
 			  vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope);	\
+				ip_ptr = vmm->addresses + call_frame->ip();									    \
+				stack_ptr = call_frame->flush_stk; \
+				goto continue_to_run;               \
       }																																	\
 		  else if(state->recording_trace != NULL && vmm->traces[cur_ip] != NULL){ \
 				state->recording_trace->add(InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); \
