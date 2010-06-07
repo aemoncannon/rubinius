@@ -17,7 +17,7 @@
 namespace rubinius {
 
 
-	TraceNode::TraceNode(int pc_base, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
+	TraceNode::TraceNode(int depth, int pc_base, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
 		: op(op),
 		  pc(pc),
 		  cm(call_frame->cm),
@@ -30,14 +30,20 @@ namespace rubinius {
 			active_send(NULL),
 			parent_send(NULL),
 			trace_pc(0),
-			pc_base(pc_base)
+			pc_base(pc_base),
+			call_depth(depth)
 
 	{
 #include "vm/gen/instruction_trace_record.hpp"
 	}
 
 	void TraceNode::pretty_print(STATE, std::ostream& out) {
-		out << cm->name()->c_str(state) << " - " << trace_pc  <<  "(" << pc << "): ";
+		if(state != NULL){
+			out << cm->name()->c_str(state) << " - " << trace_pc  <<  "(" << pc << "): ";
+		}
+		else{
+			out << "____" << " - " << trace_pc  <<  "(" << pc << "): ";
+		}
 		out << InstructionSequence::get_instruction_name(op);
 		out << " ";
 		if(numargs > 0) out << arg1;
@@ -55,7 +61,7 @@ namespace rubinius {
 	}
 
 	Trace::Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
-		anchor = new TraceNode(0, op, pc, ip_ptr, vmm, call_frame);
+		anchor = new TraceNode(0, 0, op, pc, ip_ptr, vmm, call_frame);
 		head = anchor;
 		pc_base_counter = 0;
 	}
@@ -73,12 +79,13 @@ namespace rubinius {
 			TraceNode* parent_send = prev->parent_send;
 			CompiledMethod* cm = call_frame->cm;
 			int pc_base = prev->pc_base;
+			int call_depth = prev->call_depth;
 
 			if(prev->cm != cm){
 				if(prev->op == InstructionSequence::insn_ret){
 					active_send = prev->parent_send;
 					if(prev->parent_send){
-						parent_send = prev->parent_send->parent_send;
+						parent_send = prev->parent_send->active_send;
 					}
 					if(prev->active_send){
 						pc_base = prev->active_send->pc_base;
@@ -86,6 +93,7 @@ namespace rubinius {
 					else{
 						pc_base = anchor->pc_base;
 					}
+					call_depth -= 1;
 				}
 				else if(prev->op == InstructionSequence::insn_send_stack ||
 								prev->op == InstructionSequence::insn_send_method ||
@@ -105,10 +113,11 @@ namespace rubinius {
 
 					parent_send = prev->active_send;
 					active_send = prev;
+					call_depth += 1;
 				}
 			}
 
-			head = new TraceNode(pc_base, op, pc, ip_ptr, vmm, call_frame);
+			head = new TraceNode(call_depth, pc_base, op, pc, ip_ptr, vmm, call_frame);
 			head->active_send = active_send;
 			head->parent_send = parent_send;
 			head->prev = prev;
@@ -132,6 +141,7 @@ namespace rubinius {
 		out << "[" << "\n";
 		TraceNode* tmp = anchor;
 		while(tmp != NULL){
+			for(int i=0; i < tmp->call_depth;i++) out << "  ";
 			tmp->pretty_print(state, out);
 			out << "\n";
 			tmp = tmp->next;

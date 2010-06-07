@@ -42,6 +42,7 @@ namespace rubinius {
 		TraceNode* parent_send;
 		int trace_pc;
 		int pc_base;
+		int call_depth;
 
 		int total_size;
 		int numargs;
@@ -49,7 +50,7 @@ namespace rubinius {
 		intptr_t arg2;
 
 
-		TraceNode(int pc_base, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+		TraceNode(int depth, int pc_base, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		void pretty_print(STATE, std::ostream& out);
 

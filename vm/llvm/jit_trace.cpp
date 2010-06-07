@@ -282,6 +282,12 @@ namespace rubinius {
 				*/
 			}
 
+			void debug_node() {
+				for(int i=0; i < cur_trace_node_->call_depth;i++) std::cout << "  ";
+				cur_trace_node_->pretty_print(NULL, std::cout);
+				std::cout << " ";
+			}
+
 			const static int cUnknown = -10;
 			const static bool cDebugStack = false;
 
@@ -298,12 +304,14 @@ namespace rubinius {
 //					std::cout << "Found block at " << current_ip_ << "\n";
 					if(i->second.sp == cUnknown) {
 						if(cDebugStack) {
+							debug_node();
 							std::cout << current_ip_ << ": " << sp_ << " (inherit)\n";
 						}
 						i->second.sp = sp_;
 					} else {
 						sp_ = i->second.sp;
 						if(cDebugStack) {
+							debug_node();
 							std::cout << current_ip_ << ": " << sp_ << " (reset)\n";
 						}
 					}
@@ -313,12 +321,14 @@ namespace rubinius {
 				else {
 					if(force_break_) {
 						if(cDebugStack) {
+							debug_node();
 							std::cout << current_ip_ << ": dead\n";
 						}
 						return false;
 					}
 
 					if(cDebugStack) {
+						debug_node();
 						std::cout << current_ip_ << ": " << sp_ << "\n";
 					}
 				}
@@ -333,8 +343,8 @@ namespace rubinius {
 
 					//Decrementing at traced ret, to pop off self
 					if(op == InstructionSequence::insn_ret && cur_trace_node_->active_send){
-							std::cout << "Fixing!" << "\n";
-							sp_--;
+						std::cout << "Fixing!" << "\n";
+						sp_--;
 					}
 					assert(sp_ >= -1);
 				}
@@ -343,7 +353,7 @@ namespace rubinius {
 			}
 
 			JITBasicBlock* break_at(opcode ip) {
-//				std::cout << "Breaking at " << ip << "\n";
+				std::cout << "Breaking at " << ip << "\n";
 				BlockMap::iterator i = map_.find(ip);
 				if(i == map_.end()) {
 					std::ostringstream ss;
@@ -382,6 +392,7 @@ namespace rubinius {
 					}
 					return &jbb;
 				} else {
+					std::cout << "Verifying that " << i->second.sp << " == " << sp_ << "\n";
 					assert(i->second.sp == sp_);
 					return &(i->second);
 				}
