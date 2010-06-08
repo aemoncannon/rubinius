@@ -1,6 +1,6 @@
 require 'helpers'
 
-ITERATIONS = 100000
+ITERATIONS = 1000000
 
 def foo(i)
   k = 0

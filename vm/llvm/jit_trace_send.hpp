@@ -1,5 +1,5 @@
 
-void do_traced_send(opcode which, opcode args, bool with_block){
+void emit_traced_send(opcode which, opcode args, bool with_block){
 
 	// Emit setup code for new call.
 	// Stores into args Values.

@@ -1,4 +1,4 @@
-void do_traced_yield_stack(opcode args) {
+void emit_traced_yield_stack(opcode args) {
 
 	// Emit setup code for new call.
 	// Stores into args Values.
@@ -49,7 +49,6 @@ void do_traced_yield_stack(opcode args) {
 	info()->set_args(out_args_);
 	info()->set_out_args(info()->root_info()->pre_allocated_args[cur_trace_node_->trace_pc]);
 	init_out_args();
-
 
 	Value* cfstk = info()->root_info()->pre_allocated_stacks[cur_trace_node_->trace_pc];
 	Value* var_mem = info()->root_info()->pre_allocated_vars[cur_trace_node_->trace_pc];
@@ -121,15 +120,15 @@ void setup_yield_scope() {
 
 void initialize_yield_frame(int stack_size) {
 
-
 	Value* method = b().CreateLoad(get_field(info()->block_env(), offset::blockenv_method),
 																 "env.method");
-
 
 	// static_scope
 	Value* ss = b().CreateLoad(get_field(method, offset::cm_static_scope), 
 														 "invocation.static_scope");
 
+	// previous
+	b().CreateStore(info()->previous(), get_field(info()->call_frame(), offset::cf_previous));
 
 	b().CreateStore(ss, get_field(info()->call_frame(), offset::cf_static_scope));
 

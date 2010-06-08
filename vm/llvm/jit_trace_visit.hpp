@@ -174,8 +174,7 @@ namespace rubinius {
 			return b().CreateConstGEP2_32(val, 0, which);
 		}
 
-
-		void do_traced_return(){
+		void emit_traced_return(){
 			method_info_ = info()->parent_info();
 			vm_ = info()->vm();
 			call_frame_ = info()->call_frame();
@@ -235,7 +234,7 @@ namespace rubinius {
 #include "vm/llvm/jit_trace_send.hpp"
     void visit_send_stack(opcode which, opcode args) {
 			if(cur_trace_node_->traced_send){
-				do_traced_send(which, args, false);
+				emit_traced_send(which, args, false);
 			}
 			else{
 				InlineCache* cache = reinterpret_cast<InlineCache*>(which);
@@ -250,7 +249,7 @@ namespace rubinius {
 
     void visit_send_stack_with_block(opcode which, opcode args) {
 			if(cur_trace_node_->traced_send){
-				do_traced_send(which, args, true);
+				emit_traced_send(which, args, true);
 			}
 			else{
 				set_has_side_effects();
@@ -279,7 +278,7 @@ namespace rubinius {
 #include "vm/llvm/jit_trace_yield.hpp"
     void visit_yield_stack(opcode count) {
 			if(cur_trace_node_->traced_yield){
-				do_traced_yield_stack(count);
+				emit_traced_yield_stack(count);
 			}
 			else{
 				set_has_side_effects();
@@ -315,7 +314,7 @@ namespace rubinius {
     void visit_ret() {
       if(use_full_scope_) flush_scope_to_heap(info()->variables());
 			if(cur_trace_node_->active_send){
-				do_traced_return();
+				emit_traced_return();
 			}
 			else{
 				info()->add_return_value(stack_top(), current_block());

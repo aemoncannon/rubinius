@@ -159,6 +159,7 @@ Object* VMMethod::interpreter(STATE,
 					state->recording_trace = NULL;																\
 				}																																\
 				else if(s == Trace::TRACE_CANCEL){														  \
+					std::cout << "Canceling trace at " << cur_ip << "\n";					\
 					delete state->recording_trace;																\
 					state->recording_trace = NULL;																\
 				}																																\
@@ -290,7 +291,8 @@ Object* VMMethod::uncommon_interpreter(STATE,
 {
 
 #include "vm/gen/instruction_locations.hpp"
-
+	
+//	std::cout << "Entering uncommon at " << entry_ip << "\n";
 
 	VMMethod* vmm = vmm_;
 
@@ -329,7 +331,6 @@ Object* VMMethod::uncommon_interpreter(STATE,
 #define DISPATCH op = stream[call_frame->inc_ip()];				\
     if(op == InstructionSequence::insn_ret &&							\
 			 call_frame->is_traced_frame()) {										\
-			std::cout << "Returning to traced call_frame..\n";	\
 			call_frame = call_frame->previous;									\
 			vmm = call_frame->cm->backend_method();							\
 			stream = vmm->opcodes;															\
