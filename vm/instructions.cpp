@@ -131,8 +131,8 @@ Object* VMMethod::interpreter(STATE,
 
  continue_to_run:
   try {
-	  opcode op;
-	  int cur_ip;
+		opcode op;
+		int cur_ip;
 
 #undef DISPATCH
 //#define DISPATCH goto **ip_ptr++;
@@ -291,7 +291,6 @@ Object* VMMethod::uncommon_interpreter(STATE,
 
 #include "vm/gen/instruction_locations.hpp"
 
-	std::cout << "Entering uncommon interpreter..\n";
 
 	VMMethod* vmm = vmm_;
 

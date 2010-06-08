@@ -205,8 +205,6 @@ namespace rubinius {
 
     void emit_uncommon(int target_pc) {
 
-			print_debug();
-
 			flush_ip(target_pc);
 			flush_stack();
 
