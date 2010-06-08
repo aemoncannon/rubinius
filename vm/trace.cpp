@@ -68,11 +68,14 @@ namespace rubinius {
 	}
 
 
-	bool Trace::add(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
+	Trace::Status Trace::add(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
 		if(pc == anchor->pc && call_frame->cm == anchor->cm){
 			head->next = anchor;
 			head = anchor;
-			return true;
+			return TRACE_FINISHED;
+		}
+		else if(op == InstructionSequence::insn_ret && call_frame == anchor->call_frame){
+			return TRACE_CANCEL;
 		}
 		else{
 			TraceNode* prev = head;
@@ -124,7 +127,7 @@ namespace rubinius {
 			head->prev = prev;
 			prev->next = head;
 
-			return false;
+			return TRACE_OK;
 		}
 	}
 

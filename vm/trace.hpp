@@ -72,9 +72,11 @@ namespace rubinius {
 		trace_executor  executor;
 		int pc_base_counter;
 
+		enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
+
 		Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
-		bool add(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+		Status add(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		void pretty_print(STATE, std::ostream& out);
 
