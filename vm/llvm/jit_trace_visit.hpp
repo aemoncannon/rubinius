@@ -205,23 +205,20 @@ namespace rubinius {
 
     void emit_uncommon(int target_pc) {
 
-      //emit_delayed_create_block(true);
-
 			print_debug();
-
-			Value* sp = last_sp_as_int();
 
 			flush_ip(target_pc);
 			flush_stack();
-			//			flush();
+
+			Value* stk = b().CreateBitCast(stack_ptr(), ObjArrayTy, "obj_ary_type");
 
 			Signature sig(ls_, "Object");
 			sig << "VM";
 			sig << "CallFrame";
 			sig << ls_->Int32Ty;
-			sig << ls_->IntPtrTy;
+			sig << ObjArrayTy;
 
-			Value* call_args[] = { info()->vm(), info()->call_frame(), cint(target_pc), sp };
+			Value* call_args[] = { info()->vm(), info()->call_frame(), cint(target_pc), stk};
 
 			Value* call = sig.call("rbx_continue_uncommon", call_args, 4, "", b());
 

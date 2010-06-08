@@ -281,7 +281,7 @@ Object* VMMethod::uncommon_interpreter(STATE,
                                        VMMethod* const vmm_,
                                        CallFrame* const call_frame_,
                                        int32_t entry_ip,
-                                       native_int sp)
+                                       Object** stack_ptr_)
 {
 
 #include "vm/gen/instruction_locations.hpp"
@@ -296,7 +296,7 @@ Object* VMMethod::uncommon_interpreter(STATE,
 
   InterpreterState is;
 
-  Object** stack_ptr = call_frame->stk + sp;
+  Object** stack_ptr = stack_ptr_;
 
   int current_unwind = 0;
   UnwindInfo unwinds[kMaxUnwindInfos];
@@ -329,7 +329,6 @@ Object* VMMethod::uncommon_interpreter(STATE,
 			call_frame = call_frame->previous;									\
 			vmm = call_frame->cm->backend_method();							\
 			stream = vmm->opcodes;															\
-			stack_ptr = call_frame->flush_stk;									\
 			goto continue_to_run;																\
 		}																											\
 		goto *insn_locations[op];

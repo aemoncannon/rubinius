@@ -5,10 +5,10 @@ ITERATIONS = 1000000
 
 def calc(i)
   k = 0
-  if i < ITERATIONS
+  if i < ITERATIONS/2
     k = 2
   else
-    k = -2
+    k = -3
   end
   k
 end

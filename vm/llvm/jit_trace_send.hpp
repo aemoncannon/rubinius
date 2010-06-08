@@ -104,8 +104,9 @@ void do_traced_send(opcode which, opcode args, bool with_block){
 		ConstantInt::get(ls_->Int32Ty, flags),
 		get_field(call_frame_, offset::cf_flags));
 
-  // Store return ip in previous call_frame
-	b().CreateStore(ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc + 1),
+  // Store return ip in previous call_frame.
+	// (skip over the 2 stack_send args)
+	b().CreateStore(ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc + 3),
 									get_field(info()->previous(), offset::cf_ip));
 
 	// Store stack pointer in previous call frame
