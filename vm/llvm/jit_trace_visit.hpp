@@ -27,6 +27,34 @@ namespace rubinius {
 			cur_trace_node_ = node;
 		}
 
+    void at_ip(int ip) {
+
+      BlockMap::iterator i = block_map_.find(ip);
+      if(i != block_map_.end()) {
+        JITBasicBlock& jbb = i->second;
+        current_jbb_ = &jbb;
+
+
+				// Might need this stuff if we ever have branches in our
+				// traces..
+				
+        // if(BasicBlock* next = jbb.block) {
+        //   if(!b().GetInsertBlock()->getTerminator()) {
+				// 		std::cout << "ACK! creating BR!!" << "\n";
+        //     b().CreateBr(next);
+        //   }
+        //   next->moveAfter(b().GetInsertBlock());
+        //   set_block(next);
+        // }
+        // if(jbb.sp != -10) set_sp(jbb.sp);
+      }
+
+      remember_sp();
+
+      current_ip_ = ip;
+    }
+
+
     void initialize() {
 			info()->init_return_pad();
 
@@ -98,6 +126,7 @@ namespace rubinius {
 		}
 
     void visit_goto(opcode ip) {
+
 			// Skip useless unconditional jumps (artifacts of
 			// tracing).
 			if(cur_trace_node_->next->trace_pc == (int)ip &&
@@ -111,9 +140,11 @@ namespace rubinius {
 			set_block(new_block("continue"));
     }
 
+   
     void visit_goto_if_false(opcode ip) {
 
       Value* cond = stack_pop();
+
       Value* i = b().CreatePtrToInt(
 				cond, ls_->IntPtrTy, "as_int");
 
@@ -128,20 +159,16 @@ namespace rubinius {
 				"is_true");
 
       BasicBlock* cont = new_block("continue");
+      BasicBlock* exit_stub = new_block("exit_stub");
 
-      BasicBlock* loop_exit_stub = new_block("loop_exit_stub");
+      b().CreateCondBr(cmp, exit_stub, cont);
 
-      b().CreateCondBr(cmp, loop_exit_stub, cont);
-
-      set_block(loop_exit_stub);
+      set_block(exit_stub);
 			emit_uncommon(cur_trace_node_->interp_jump_target());
-			// flush_ip(cur_trace_node_->interp_jump_target());
-			// flush_stack();
-      // info()->add_return_value(Constant::getNullValue(ObjType), loop_exit_stub);
-      // b().CreateBr(info()->return_pad());
 
       set_block(cont);
     }
+
 
 		Value* get_field(Value* val, int which) {
 			return b().CreateConstGEP2_32(val, 0, which);
@@ -162,7 +189,6 @@ namespace rubinius {
     }
 
     void flush_ip(int ip) {
-			// Store in current call_frame in case we're invoking uncommon interpreter..
 			Value* call_frame = info()->call_frame();
       Value* pos = b().CreateConstGEP2_32(call_frame, 0, offset::cf_ip, "ip_pos");
       b().CreateStore(ConstantInt::get(ls_->Int32Ty, ip), pos);
@@ -181,13 +207,13 @@ namespace rubinius {
 
       //emit_delayed_create_block(true);
 
+			print_debug();
+
 			Value* sp = last_sp_as_int();
 
 			flush_ip(target_pc);
 			flush_stack();
 			//			flush();
-
-			dump_int(target_pc);
 
 			Signature sig(ls_, "Object");
 			sig << "VM";
@@ -203,12 +229,13 @@ namespace rubinius {
 			b().CreateBr(info()->return_pad());
     }
 
-
+    void visit_push_self() {
+      stack_push(get_self());
+    }
 
     void visit_send_method(opcode which) {
       visit_send_stack(which, 0);
     }
-
 
 #include "vm/llvm/jit_trace_send.hpp"
     void visit_send_stack(opcode which, opcode args) {

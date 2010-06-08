@@ -341,20 +341,18 @@ namespace rubinius {
 
         current_jbb_ = &jbb;
 
-				// Aemon TODO, what's the use of this?
-				//
-        // if(BasicBlock* next = jbb.block) {
-        //   if(!b().GetInsertBlock()->getTerminator()) {
-				// 		std::cout << "ACK! creating BR!!" << "\n";
-        //     b().CreateBr(next);
-        //   }
+        if(BasicBlock* next = jbb.block) {
+          if(!b().GetInsertBlock()->getTerminator()) {
+						std::cout << "ACK! creating BR!!" << "\n";
+            b().CreateBr(next);
+          }
 
-        //   // std::cout << ip << ": " << jbb.sp << "\n";
+          // std::cout << ip << ": " << jbb.sp << "\n";
 
-        //   next->moveAfter(b().GetInsertBlock());
+          next->moveAfter(b().GetInsertBlock());
 
-        //   set_block(next);
-        // }
+          set_block(next);
+        }
 
         if(jbb.sp != -10) set_sp(jbb.sp);
       }
