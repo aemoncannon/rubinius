@@ -60,9 +60,8 @@ void do_traced_send(opcode which, opcode args, bool with_block){
 
 	check_arity();
 
-	call_frame_ = b().CreateBitCast(
-		cfstk,
-		PointerType::getUnqual(cf_type), "call_frame");
+	call_frame_ = b().CreateBitCast(cfstk,
+																	PointerType::getUnqual(cf_type), "call_frame");
 
 	info()->set_call_frame(call_frame_);
 
@@ -96,7 +95,6 @@ void do_traced_send(opcode which, opcode args, bool with_block){
 	// cm
 	b().CreateStore(method, cm_gep);
 
-
 	// flags
 	int flags = CallFrame::cJITed;
 	if(!use_full_scope_) flags |= CallFrame::cClosedScope;
@@ -105,12 +103,21 @@ void do_traced_send(opcode which, opcode args, bool with_block){
 		ConstantInt::get(ls_->Int32Ty, flags),
 		get_field(call_frame_, offset::cf_flags));
 
-	ip_pos_ = b().CreateConstGEP2_32(call_frame_, 0, offset::cf_ip, "ip_pos");
+  // Store return ip in previous call_frame
+	b().CreateStore(ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc + 1),
+									get_field(info()->previous(), offset::cf_ip));
 
-	// ip
-	b().CreateStore(
-		ConstantInt::get(ls_->Int32Ty, 0),
-		get_field(call_frame_, offset::cf_ip));
+	// Store stack pointer in previous call frame
+	Value* stk = b().CreateBitCast(stack_ptr(), ObjArrayTy, "obj_ary_type");
+	Value* stk_pos = b().CreateBitCast(get_field(info()->previous(), offset::cf_flush_stk),
+																 PointerType::getUnqual(ObjArrayTy));
+	b().CreateStore(stk, stk_pos);
+
+
+	ip_pos_ = b().CreateConstGEP2_32(call_frame_, 0, offset::cf_ip, "ip_pos");
+  // Store ip of 0 in new call frame
+	b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0),
+									get_field(call_frame_, offset::cf_ip));
 
 	// scope
 	b().CreateStore(vars_, get_field(call_frame_, offset::cf_scope));
