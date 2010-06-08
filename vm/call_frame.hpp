@@ -33,7 +33,8 @@ namespace rubinius {
       cClosedScope =        1 << 4,
       cBlockAsMethod =      1 << 5,
       cJITed =              1 << 6,
-      cBlock =              1 << 7
+      cBlock =              1 << 7,
+      cTracedFrame =        1 << 8,
     };
 
     CallFrame* previous;
@@ -172,6 +173,10 @@ namespace rubinius {
       return flags & cInlineFrame;
     }
 
+    bool is_traced_frame() {
+      return flags & cTracedFrame;
+    }
+
     bool has_closed_scope_p() {
       return flags & cClosedScope;
     }
@@ -229,7 +234,7 @@ namespace rubinius {
     }
   };
 
-#define ALLOCA_CALLFRAME(stack_size) \
+#define ALLOCA_CALLFRAME(stack_size)																		\
   (InterpreterCallFrame*)alloca(sizeof(InterpreterCallFrame) + (sizeof(Object*) * stack_size))
 };
 

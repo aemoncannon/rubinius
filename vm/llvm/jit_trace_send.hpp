@@ -97,6 +97,7 @@ void do_traced_send(opcode which, opcode args, bool with_block){
 
 	// flags
 	int flags = CallFrame::cJITed;
+	flags |= CallFrame::cTracedFrame;
 	if(!use_full_scope_) flags |= CallFrame::cClosedScope;
 
 	b().CreateStore(
