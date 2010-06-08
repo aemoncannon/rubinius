@@ -2,7 +2,6 @@ require 'helpers'
 
 ITERATIONS = 1000000
 
-
 def foo(i)
   k = 0
   if i < ITERATIONS/2
@@ -14,9 +13,12 @@ def foo(i)
 end
 
 def calc(i)
-  foo(i)
+  k = 0
+  1.times do
+    k += foo(i)
+  end
+  k
 end
-
 
 def run()
   j = 0

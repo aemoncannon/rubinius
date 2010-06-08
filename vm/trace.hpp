@@ -31,7 +31,8 @@ namespace rubinius {
 	public:
 		opcode op;
 		int pc;
-		CompiledMethod* cm;
+		CallFrame* const call_frame;
+		CompiledMethod* const cm;
 		CompiledMethod* send_cm;
 		void** ip_ptr;
 		TraceNode* prev;

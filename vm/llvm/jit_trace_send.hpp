@@ -109,12 +109,6 @@ void do_traced_send(opcode which, opcode args, bool with_block){
 	b().CreateStore(ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc + 3),
 									get_field(info()->previous(), offset::cf_ip));
 
-	// Store stack pointer in previous call frame
-	Value* stk = b().CreateBitCast(stack_ptr(), ObjArrayTy, "obj_ary_type");
-	Value* stk_pos = b().CreateBitCast(get_field(info()->previous(), offset::cf_flush_stk),
-																 PointerType::getUnqual(ObjArrayTy));
-	b().CreateStore(stk, stk_pos);
-
 
 	ip_pos_ = b().CreateConstGEP2_32(call_frame_, 0, offset::cf_ip, "ip_pos");
   // Store ip of 0 in new call frame

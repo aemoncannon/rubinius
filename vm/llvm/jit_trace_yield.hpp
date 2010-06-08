@@ -147,18 +147,25 @@ void initialize_yield_frame(int stack_size) {
 	// flags
 	Value* inv_flags = ConstantInt::get(ls_->Int32Ty, 0);
 	//b().CreateLoad(get_field(block_inv, offset::blockinv_flags),
-//																		"invocation.flags");
+  //																		"invocation.flags");
 
 	int block_flags = CallFrame::cCustomStaticScope |
 		CallFrame::cMultipleScopes |
-		CallFrame::cBlock;
+		CallFrame::cBlock |
+		CallFrame::cTracedFrame;
 
 	if(!use_full_scope_) block_flags |= CallFrame::cClosedScope;
 
 	Value* flags = b().CreateOr(inv_flags,
 															ConstantInt::get(ls_->Int32Ty, block_flags), "flags");
-
 	b().CreateStore(flags, get_field(info()->call_frame(), offset::cf_flags));
+
+
+  // Store return ip in previous call_frame.
+	// (skip over the 2 stack_send args)
+	b().CreateStore(ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc + 2),
+									get_field(info()->previous(), offset::cf_ip));
+
 
 	// ip
 	b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0),

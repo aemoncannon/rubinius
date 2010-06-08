@@ -20,6 +20,7 @@ namespace rubinius {
 	TraceNode::TraceNode(int depth, int pc_base, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
 		: op(op),
 		  pc(pc),
+		  call_frame(call_frame),
 		  cm(call_frame->cm),
 		  send_cm(NULL),
 		  ip_ptr(ip_ptr),
@@ -81,7 +82,7 @@ namespace rubinius {
 			int pc_base = prev->pc_base;
 			int call_depth = prev->call_depth;
 
-			if(prev->cm != cm){
+			if(prev->call_frame != call_frame){
 				if(prev->op == InstructionSequence::insn_ret){
 					active_send = prev->parent_send;
 					if(prev->parent_send){
