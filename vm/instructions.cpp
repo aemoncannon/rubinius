@@ -128,30 +128,34 @@ Object* VMMethod::interpreter(STATE,
   if(unlikely(state->check_local_interrupts)) {
     if(!state->process_async(call_frame)) return NULL;
   }
+	bool debug = false;
 
  continue_to_run:
   try {
 	  opcode op;
 	  int cur_ip;
+
 #undef DISPATCH
 //#define DISPATCH goto **ip_ptr++;
 #define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
 	  op = vmm->opcodes[cur_ip];																					\
+		if(debug) std::cout << "at pc: " << cur_ip << "\n"; \
 	  if(state->tracing_enabled){																					\
 		  if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
-			  vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope);	\
-				ip_ptr = vmm->addresses + call_frame->ip();									    \
-				stack_ptr = call_frame->flush_stk; \
-				goto continue_to_run;               \
+				if(debug) std::cout << "entering trace at: " << cur_ip << "\n";							\
+			  Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope);	\
+				return ret; \
       }																																	\
 		  else if(state->recording_trace != NULL && vmm->traces[cur_ip] != NULL){ \
+				if(debug) std::cout << "looking at nested trace at: " << cur_ip << "\n";							\
 				state->recording_trace->add(InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); \
 			  vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope);	\
 				ip_ptr = vmm->addresses + call_frame->ip();									    \
-				stack_ptr = call_frame->flush_stk; \
+				stack_ptr = call_frame->flush_stk;															\
 				goto continue_to_run;                                           \
       }																																	\
 	    else if(state->recording_trace != NULL){													\
+				if(debug) std::cout << "continue recording at: " << cur_ip << "\n";							\
 				if(state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame)){ \
 					state->recording_trace->pretty_print(state, std::cout); \
 					state->recording_trace->compile(state);												\
@@ -160,12 +164,14 @@ Object* VMMethod::interpreter(STATE,
 				}																																\
 			}																																	\
 			else if(op == InstructionSequence::insn_goto){										\
+				if(debug) std::cout << "counting goto at: " << cur_ip << "\n";							\
 				intptr_t location = (intptr_t)(*(ip_ptr + 1));									\
 				if(location < cur_ip){																					\
 					vmm->trace_counters[location]++;															\
 				}																																\
 	    }																																	\
 			else{																															\
+				if(debug) std::cout << "checking for trace conditio at: " << cur_ip << "\n";							\
 				if(vmm->trace_counters[cur_ip] > 10){														\
 					state->recording_trace = new Trace(op, cur_ip, ip_ptr, vmm, call_frame); \
 				}																																\
@@ -308,6 +314,8 @@ Object* VMMethod::uncommon_interpreter(STATE,
   if(unlikely(state->check_local_interrupts)) {
     if(!state->process_async(call_frame)) return NULL;
   }
+
+	std::cout << "Starting uncommon at pc: " << call_frame->ip() << "\n";
 
  continue_to_run:
   try {

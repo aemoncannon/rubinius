@@ -104,6 +104,7 @@ namespace rubinius {
     llvm::Value* counter_;
     llvm::Value* msg_;
     llvm::Value* arg_total_;
+    llvm::Value* trace_result_;
     int saved_sp_;;
 
     JITMethodInfo* parent_info_;

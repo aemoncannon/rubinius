@@ -134,10 +134,11 @@ namespace rubinius {
       b().CreateCondBr(cmp, loop_exit_stub, cont);
 
       set_block(loop_exit_stub);
-			flush_ip(cur_trace_node_->interp_jump_target());
-			flush_stack();
-      info()->add_return_value(Constant::getNullValue(ObjType), loop_exit_stub);
-      b().CreateBr(info()->return_pad());
+			emit_uncommon(cur_trace_node_->interp_jump_target());
+			// flush_ip(cur_trace_node_->interp_jump_target());
+			// flush_stack();
+      // info()->add_return_value(Constant::getNullValue(ObjType), loop_exit_stub);
+      // b().CreateBr(info()->return_pad());
 
       set_block(cont);
     }
@@ -161,20 +162,47 @@ namespace rubinius {
     }
 
     void flush_ip(int ip) {
-			Value* call_frame = info()->root_info()->call_frame();
+			// Store in current call_frame in case we're invoking uncommon interpreter..
+			Value* call_frame = info()->call_frame();
       Value* pos = b().CreateConstGEP2_32(call_frame, 0, offset::cf_ip, "ip_pos");
-			// Note, pos points to an offset in the root call_frame for this trace,
-			// not any of the subsequent call_frames created for traced sends.
       b().CreateStore(ConstantInt::get(ls_->Int32Ty, ip), pos);
     }
 
     void flush_stack() {
 			Value* stk = b().CreateBitCast(stack_ptr(), ObjArrayTy, "obj_ary_type");
-			Value* call_frame = info()->root_info()->call_frame();
+			Value* call_frame = info()->call_frame();
 			Value* pos = b().CreateBitCast(get_field(call_frame, offset::cf_flush_stk),
 																		 PointerType::getUnqual(ObjArrayTy));
 			b().CreateStore(stk, pos);
     }
+
+
+    void emit_uncommon(int target_pc) {
+
+      //emit_delayed_create_block(true);
+
+			Value* sp = last_sp_as_int();
+
+			flush_ip(target_pc);
+			flush_stack();
+			//			flush();
+
+			dump_int(target_pc);
+
+			Signature sig(ls_, "Object");
+			sig << "VM";
+			sig << "CallFrame";
+			sig << ls_->Int32Ty;
+			sig << ls_->IntPtrTy;
+
+			Value* call_args[] = { info()->vm(), info()->call_frame(), cint(target_pc), sp };
+
+			Value* call = sig.call("rbx_continue_uncommon", call_args, 4, "", b());
+
+			info()->add_return_value(call, current_block());
+			b().CreateBr(info()->return_pad());
+    }
+
 
 
     void visit_send_method(opcode which) {
