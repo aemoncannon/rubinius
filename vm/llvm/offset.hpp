@@ -2,9 +2,11 @@
 #define RBX_LLVM_OFFSET_HPP
 
 namespace offset {
-  const static int trace_info_ip = 0;
-  const static int trace_info_cf = 1;
-  const static int trace_info_stk = 2;
+  const static int trace_info_exit_ip = 0;
+  const static int trace_info_exit_stk = 1;
+  const static int trace_info_exit_cf = 2;
+  const static int trace_info_entry_cf = 3;
+  const static int trace_info_home_exit = 4;
 
   const static int cf_previous = 0;
   const static int cf_static_scope = 1;

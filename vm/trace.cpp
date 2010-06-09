@@ -65,6 +65,7 @@ namespace rubinius {
 		anchor = new TraceNode(0, 0, op, pc, ip_ptr, vmm, call_frame);
 		head = anchor;
 		pc_base_counter = 0;
+		expected_exit_ip = -1;
 	}
 
 

@@ -72,6 +72,7 @@ namespace rubinius {
 		void*  jitted_impl;
 		trace_executor  executor;
 		int pc_base_counter;
+		int expected_exit_ip;
 
 		enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
 

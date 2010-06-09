@@ -17,8 +17,10 @@ namespace rubinius {
 	class TraceInfo {
 	public:
 		int exit_ip;
-		CallFrame* call_frame;
 		Object** exit_stack;
+		CallFrame* exit_call_frame;
+		CallFrame* entry_call_frame;
+		bool home_exit;
 	};
 
 }
