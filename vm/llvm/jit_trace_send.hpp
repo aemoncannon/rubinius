@@ -331,11 +331,6 @@ void check_arity() {
 	b().SetInsertPoint(cont);
 }
 
-void return_value(Value* ret, BasicBlock* cont = 0) {
-	info()->add_return_value(ret, b().GetInsertBlock());
-	b().CreateBr(info()->return_pad());
-}
-
 
 void setup_scope() {
 	llvm::Module* mod = ls_->module();

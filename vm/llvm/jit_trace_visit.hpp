@@ -83,15 +83,13 @@ namespace rubinius {
         flush_scope_to_heap(vars_);
       }
 
-      info()->add_return_value(Constant::getNullValue(ObjType), current_block());
-      b().CreateBr(info()->return_pad());
+			return_value(Constant::getNullValue(ObjType));
 
       set_block(ret_raise_val);
       Value* crv = f.clear_raise_value.call(&vm_, 1, "crv", b());
       if(use_full_scope_) flush_scope_to_heap(vars_);
 
-      info()->add_return_value(crv, current_block());
-      b().CreateBr(info()->return_pad());
+			return_value(crv);
 
       set_block(start);
 
@@ -105,6 +103,21 @@ namespace rubinius {
     }
 
     void visit_nested_trace() {
+			
+			// Save away current trace info
+			Value* exp_exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_expected_exit_ip);
+			Value* save_expected_exit_ip = b().CreateLoad(exp_exit_ip_pos, "save_expected_exit_ip");
+
+			Value* entry_cf_pos = get_field(info()->trace_info(), offset::trace_info_entry_cf);
+			Value* save_entry_call_frame = b().CreateLoad(entry_cf_pos, "save_entry_call_frame");
+
+			// Write new trace info for this nested trace
+			b().CreateStore(exp_exit_ip_pos, 
+											ConstantInt::get(ls_->Int32Ty, cur_trace_node_->nested_trace->expected_exit_ip));
+      b().CreateStore(entry_cf_pos, info()->call_frame());
+
+
+			// Call the nested trace
 
 			Signature sig(ls_, ls_->VoidTy);
 			sig << "VM";
@@ -113,7 +126,6 @@ namespace rubinius {
 			sig << "StackVariables";
 			sig << ls_->Int32Ty;
 			sig << "TraceInfo";
-
 			Value* call_args[] = {
 				info()->vm(),
 				info()->call_frame(),
@@ -122,10 +134,30 @@ namespace rubinius {
 				ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc),
 				info()->trace_info()
 			};
-
 			sig.call("rbx_call_trace", call_args, 6, "", b());
 
+			// Restore saved trace info
+      b().CreateStore(save_expected_exit_ip, exp_exit_ip_pos);
+      b().CreateStore(save_entry_call_frame, entry_cf_pos);
+
+			Value* nestable_pos = get_field(info()->trace_info(), offset::trace_info_nestable);
+			Value* nestable = b().CreateLoad(nestable_pos, "nestable");
+			Value* not_nestable = b().CreateNot(nestable, "not_nestable");
+
+      BasicBlock* cont = new_block("continue");
+      BasicBlock* not_nestable_b = new_block("not_nestable");
+      b().CreateCondBr(not_nestable, not_nestable_b, cont);
+
+      set_block(not_nestable_b);
+			//  The nested trace already exited into the interpreter and
+			//  returned from the home call_frame of the trace.
+			return_value(constant(Qnil));
+
+			// If we get to hear, then the nested trace exited on the expected_ip, at this call_frame,
+			// so we can just continue on our merry way.
+      set_block(cont);
 		}
+
 
     void visit_goto(opcode ip) {
 
@@ -203,8 +235,65 @@ namespace rubinius {
 			b().CreateStore(stk, pos);
     }
 
+		void return_value(Value* ret) {
+			info()->add_return_value(ret, current_block());
+			b().CreateBr(info()->return_pad());
+		}
 
     void emit_uncommon(int target_pc) {
+
+			Value* recording_pos = get_field(info()->trace_info(), offset::trace_info_recording);
+			Value* recording = b().CreateIntCast(b().CreateLoad(recording_pos, "recording"), ls_->Int1Ty, "recording");
+			Value* not_recording = b().CreateNot(recording, "no_recording");
+
+			Value* entry_cf_pos = get_field(info()->trace_info(), offset::trace_info_entry_cf);
+			Value* entry_call_frame = b().CreateLoad(entry_cf_pos, "save_entry_call_frame");
+
+			Value* exp_exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_expected_exit_ip);
+			Value* expected_exit_ip = b().CreateLoad(exp_exit_ip_pos, "save_expected_exit_ip");
+
+			Value* nestable_pos = get_field(info()->trace_info(), offset::trace_info_nestable);
+			Value* exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_exit_ip);
+
+			Value* actual_exit_ip = ConstantInt::get(ls_->Int32Ty, target_pc);
+
+      Value* ip_cmp = b().CreateICmpEQ(actual_exit_ip, expected_exit_ip, "exiting_at_expected_ip_p");
+      Value* cf_cmp = b().CreateICmpEQ(entry_call_frame, info()->call_frame(), "at_expected_call_frame_p");
+
+      BasicBlock* cont = new_block("continue");
+      BasicBlock* exit = new_block("exit");
+
+			// If we are recording, and the current call_frame is the call_frame from which this
+			// trace was invoked, exit directly to the caller of the trace - setting nestable to true
+      Value* anded = b().CreateAnd(recording, cf_cmp, "and");
+      b().CreateCondBr(anded, exit, cont);
+      set_block(exit);
+			b().CreateStore(actual_exit_ip, exit_ip_pos);
+      b().CreateStore(ConstantInt::get(ls_->IntPtrTy, 1), nestable_pos);
+			return_value(constant(Qnil));
+
+      set_block(cont);
+
+			// If we are NOT recording, and the current call_frame is the call_frame from which this
+			// trace was invoked, and the ip we are exiting to is the ip that the caller was expecting,
+			// exit directly to the caller of the trace - setting nestable to true
+      cont = new_block("continue");
+      exit = new_block("exit");
+      anded = b().CreateAnd(not_recording, cf_cmp, "and");
+      anded = b().CreateAnd(anded, ip_cmp, "and");
+      b().CreateCondBr(anded, exit, cont);
+			set_block(exit);
+			b().CreateStore(actual_exit_ip, exit_ip_pos);
+      b().CreateStore(ConstantInt::get(ls_->IntPtrTy, 1), nestable_pos);
+			return_value(constant(Qnil));
+
+
+			// Otherwise, we exit to the interpreter.
+
+      set_block(cont);
+
+			// Alert any listeners that this trace is not nestable
+      b().CreateStore(ConstantInt::get(ls_->IntPtrTy, 0), nestable_pos);
 
 			flush_ip(target_pc);
 			flush_stack();
@@ -220,9 +309,9 @@ namespace rubinius {
 			Value* call_args[] = { info()->vm(), info()->call_frame(), cint(target_pc), stk};
 
 			Value* call = sig.call("rbx_continue_uncommon", call_args, 4, "", b());
+			
+			return_value(call);
 
-			info()->add_return_value(call, current_block());
-			b().CreateBr(info()->return_pad());
     }
 
     void visit_push_has_block() {
@@ -367,8 +456,7 @@ namespace rubinius {
 				emit_traced_return();
 			}
 			else{
-				info()->add_return_value(stack_top(), current_block());
-				b().CreateBr(info()->return_pad());
+				return_value(stack_top());
 			}
     }
 

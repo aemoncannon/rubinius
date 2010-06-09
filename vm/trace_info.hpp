@@ -20,7 +20,11 @@ namespace rubinius {
 		Object** exit_stack;
 		CallFrame* exit_call_frame;
 		CallFrame* entry_call_frame;
-		bool home_exit;
+		int expected_exit_ip;
+		int nestable;
+		int recording;
+
+		TraceInfo();
 	};
 
 }

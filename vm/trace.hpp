@@ -22,6 +22,7 @@ namespace rubinius {
 	class Symbol;
 	class JITVisit;
 	class TraceInfo;
+	class Trace;
 
 	typedef uintptr_t opcode;
   typedef map<int, JITBasicBlock> BlockMap;
@@ -45,6 +46,7 @@ namespace rubinius {
 		int trace_pc;
 		int pc_base;
 		int call_depth;
+		Trace* nested_trace;
 
 		int total_size;
 		int numargs;

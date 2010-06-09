@@ -32,7 +32,8 @@ namespace rubinius {
 			parent_send(NULL),
 			trace_pc(0),
 			pc_base(pc_base),
-			call_depth(depth)
+			call_depth(depth),
+			nested_trace(NULL)
 
 	{
 #include "vm/gen/instruction_trace_record.hpp"

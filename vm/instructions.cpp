@@ -149,8 +149,9 @@ Object* VMMethod::interpreter(STATE,
 				state->recording_trace->add(InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); \
 				TraceInfo ti;																										\
 				ti.entry_call_frame = call_frame;																\
+				ti.recording = true;																						\
 			  Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
-				if(!(ti.home_exit)){																						\
+				if(!(ti.nestable)){																							\
 					delete state->recording_trace;																\
 					state->recording_trace = NULL;																\
 					return ret;																										\
