@@ -5,7 +5,7 @@ ITERATIONS = 100000
 def foo(i)
   k = 0
   if i < ITERATIONS/2
-    k = 3
+    k = 2
   else
     k = -3
   end

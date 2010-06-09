@@ -113,6 +113,8 @@ namespace rubinius {
 
     bool use_full_scope_;
 
+    bool traced_block_supplied_;
+
     JITInlineBlock* inline_block_;
     JITInlineBlock* block_info_;
 
@@ -334,6 +336,14 @@ namespace rubinius {
       }
 
       return nfo;
+    }
+
+    bool traced_block_supplied() {
+      return traced_block_supplied_;
+    }
+
+    void set_traced_block_supplied(bool val) {
+      traced_block_supplied_ = val;
     }
 
     JITInlineBlock* inline_block() {

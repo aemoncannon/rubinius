@@ -75,6 +75,7 @@ namespace rubinius {
     , parent_info_(parent)
     , creator_info_(0)
     , use_full_scope_(false)
+    , traced_block_supplied_(false)
     , inline_block_(0)
     , block_info_(0)
     , method_(&ctx.state()->roots())

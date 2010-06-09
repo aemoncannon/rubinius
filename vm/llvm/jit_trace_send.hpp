@@ -19,6 +19,7 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 	new_info->set_parent_info(parent_info);
 	method_info_ = new_info;
 
+	new_info->set_traced_block_supplied(with_block);
 
 	llvm::Module* mod = ls_->module();
 	const llvm::Type* cf_type = mod->getTypeByName("struct.rubinius::CallFrame");

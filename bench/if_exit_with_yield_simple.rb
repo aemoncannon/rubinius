@@ -4,13 +4,8 @@ ITERATIONS = 100000
 
 def calc(i)
   1.times do
-    if i < ITERATIONS/2
-      3
-    else
-      -3
-    end
+    3
   end
-  3
 end
 
 def run()

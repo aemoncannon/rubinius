@@ -225,6 +225,16 @@ namespace rubinius {
 			b().CreateBr(info()->return_pad());
     }
 
+    void visit_push_has_block() {
+      // We're in a traced method, so we know if there is a block staticly.
+      if(info()->traced_block_supplied()) {
+				stack_push(constant(Qtrue));
+			}
+			else{
+				stack_push(constant(Qfalse));
+			}
+    }
+
     void visit_push_self() {
       stack_push(get_self());
     }
@@ -249,17 +259,55 @@ namespace rubinius {
 			}
     }
 
+		void emit_create_block(opcode which) {
+      // if we're inside an inlined method that has a block
+      // visible, that means that we've note yet emited the code to
+      // actually create the block for this inlined block.
+      //
+      // But, because we're about to create a block here, it might
+      // want to yield (ie, inlining Enumerable#find on an Array, but
+      // not inlining the call to each inside find).
+      //
+      // So at this point, we have to create the block object
+      // for this parent block.
+
+      //emit_delayed_create_block();
+
+      std::vector<const Type*> types;
+      types.push_back(VMTy);
+      types.push_back(CallFrameTy);
+      types.push_back(ls_->Int32Ty);
+
+      FunctionType* ft = FunctionType::get(ObjType, types, false);
+      Function* func = cast<Function>(
+				module_->getOrInsertFunction("rbx_create_block", ft));
+
+      Value* call_args[] = {
+        vm_,
+        call_frame_,
+        ConstantInt::get(ls_->Int32Ty, which)
+      };
+
+      stack_set_top(b().CreateCall(func, call_args, call_args+3, "create_block"));
+    }
+
     void visit_send_stack_with_block(opcode which, opcode args) {
+
+			InlineCache* cache = reinterpret_cast<InlineCache*>(which);
+			bool has_literal_block = (current_block_ >= 0);
+			bool block_on_stack = !has_literal_block;
+
 			if(cur_trace_node_->traced_send){
+
+				if(!block_on_stack) {
+					emit_create_block(current_block_);
+				}
+
 				emit_traced_send(which, args, true);
+
 			}
 			else{
 				set_has_side_effects();
-
-				InlineCache* cache = reinterpret_cast<InlineCache*>(which);
-
-				bool has_literal_block = (current_block_ >= 0);
-				bool block_on_stack = !has_literal_block;
 
 				// Detect a literal block being created and passed here.
 				if(!block_on_stack) {

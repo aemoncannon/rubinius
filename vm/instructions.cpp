@@ -295,7 +295,6 @@ Object* VMMethod::uncommon_interpreter(STATE,
 
 #include "vm/gen/instruction_locations.hpp"
 	
-//	std::cout << "Entering uncommon at " << entry_ip << "\n";
 
 	VMMethod* vmm = vmm_;
 
@@ -323,6 +322,9 @@ Object* VMMethod::uncommon_interpreter(STATE,
   if(unlikely(state->check_local_interrupts)) {
     if(!state->process_async(call_frame)) return NULL;
   }
+
+//	std::cout << "Entering uncommon at " << entry_ip << " : " << call_frame->cm->name()->c_str(state) << "\n";
+
 
 	opcode op;
 

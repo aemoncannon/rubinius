@@ -14,7 +14,6 @@ void emit_traced_yield_stack(opcode args) {
 	new_info->set_parent_info(parent_info);
 	method_info_ = new_info;
 
-
 	llvm::Module* mod = ls_->module();
 	const llvm::Type* cf_type = mod->getTypeByName("struct.rubinius::CallFrame");
 	const llvm::Type* stack_vars_type = mod->getTypeByName("struct.rubinius::StackVariables");
@@ -30,6 +29,7 @@ void emit_traced_yield_stack(opcode args) {
 																ls_->ptr_type("BlockEnvironment"),
 																"block_env");
 
+
 	info()->set_call_frame(call_frame_);
 
 	info()->set_block_env(block_env);
@@ -44,6 +44,7 @@ void emit_traced_yield_stack(opcode args) {
 	info()->set_out_args(info()->root_info()->pre_allocated_args[cur_trace_node_->trace_pc]);
 	init_out_args();
 
+
 	Value* cfstk = info()->root_info()->pre_allocated_stacks[cur_trace_node_->trace_pc];
 	Value* var_mem = info()->root_info()->pre_allocated_vars[cur_trace_node_->trace_pc];
 
@@ -57,11 +58,14 @@ void emit_traced_yield_stack(opcode args) {
 		PointerType::getUnqual(stack_vars_type), "vars");
 	info()->set_variables(vars_);
 
+
 	initialize_yield_frame(info()->vmm->stack_size);
 
 	setup_yield_scope();
 
 	stack_remove(args);
+
+
 }
 
 void setup_yield_scope() {
@@ -110,6 +114,7 @@ void setup_yield_scope() {
 	b().CreateStore(constant(Qnil, obj_type), get_field(info()->variables(), offset::vars_last_match));
 
 	nil_locals();
+
 }
 
 void initialize_yield_frame(int stack_size) {
@@ -133,6 +138,7 @@ void initialize_yield_frame(int stack_size) {
 	b().CreateStore(Constant::getNullValue(ls_->Int8PtrTy),
 									get_field(info()->call_frame(), offset::cf_msg));
 
+
 	// cm
 	Value* cm_gep = get_field(info()->call_frame(), offset::cf_cm);
 	b().CreateStore(method, cm_gep);
@@ -146,6 +152,7 @@ void initialize_yield_frame(int stack_size) {
 		CallFrame::cMultipleScopes |
 		CallFrame::cBlock |
 		CallFrame::cTracedFrame;
+
 
 	if(!use_full_scope_) block_flags |= CallFrame::cClosedScope;
 
@@ -174,6 +181,7 @@ void initialize_yield_frame(int stack_size) {
 	info()->set_top_scope(top_scope);
 
 	b().CreateStore(info()->top_scope(), get_field(info()->call_frame(), offset::cf_top_scope));
+
 
 }
 
