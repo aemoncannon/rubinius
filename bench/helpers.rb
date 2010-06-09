@@ -1,16 +1,15 @@
-#def enable_tracing
-#  Ruby.primitive :vm_enable_tracing  
-#end
-#
-#
-#def disable_tracing
-#  Ruby.primitive :vm_disable_tracing
-#end
-#
-#
-#def set_no_trace(obj)
-#  Ruby.primitive :vm_set_no_trace, obj
-#end
+
+$iterations = ARGV[0].to_i
+
+
+def enable_tracing
+  Ruby.primitive :vm_enable_tracing  
+end
+
+
+def disable_tracing
+  Ruby.primitive :vm_disable_tracing
+end
 
 
 #def time_with_tracing
@@ -24,9 +23,11 @@
 #end
 
 def time
+  if ARGV[1];enable_tracing;end
   t = Time.now.to_f
   yield
   elapsed = Time.now.to_f - t
-  puts "Time: #{trace_time} seconds."
+  puts "#{elapsed} seconds."
+  if ARGV[1];disable_tracing;end
   elapsed
 end

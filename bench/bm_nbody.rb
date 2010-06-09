@@ -126,17 +126,14 @@ BODIES = [
 
 
 
-n = 1000
-
-
 offset_momentum(BODIES)
-puts "%.9f" % energy(BODIES)
+#puts "%.9f" % energy(BODIES)
 
 nbodies = BODIES.size
 dt = 0.01
 
-time_with_tracing do
-  n.times do
+time do
+  $iterations.times do
     i = 0
     while i < nbodies
       b = BODIES[i]
@@ -146,15 +143,4 @@ time_with_tracing do
   end
 end
 
-#time_without_tracing do
-#  n.times do
-#    i = 0
-#    while i < nbodies
-#      b = BODIES[i]
-#      b.move_from_i(BODIES, nbodies, dt, i + 1)
-#      i += 1
-#    end
-#  end
-#end
-
-puts "%.9f" % energy(BODIES)
+#puts "%.9f" % energy(BODIES)

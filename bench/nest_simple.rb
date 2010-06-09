@@ -1,12 +1,10 @@
 require 'helpers'
 
-ITERATIONS = ARGV[0].to_i
-
 def run()
   j = 0
   i = 0
 
-  while i < ITERATIONS
+  while i < $iterations
     i += 1
     k = 0
     while k < 1000

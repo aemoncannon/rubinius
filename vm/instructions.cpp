@@ -139,8 +139,8 @@ Object* VMMethod::interpreter(STATE,
 //#define DISPATCH goto **ip_ptr++;
 #define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
 	  op = vmm->opcodes[cur_ip];																					\
-	  if(state->tracing_enabled){																					\
-		  if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
+		if(state->tracing_enabled) {																				\
+			if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
 				TraceInfo ti;																										\
 				ti.entry_call_frame = call_frame;																\
 				ti.recording = false;																						\
@@ -148,35 +148,35 @@ Object* VMMethod::interpreter(STATE,
 				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
 				if(!(ti.nestable)){																							\
 					return ret;																										\
-	      }																																\
-	      ip_ptr = vmm->addresses + ti.next_ip;														\
-				stack_ptr = ti.exit_stack + 1;															    \
-				goto continue_to_run;                                           \
-      }																																	\
-		  else if(state->recording_trace != NULL && vmm->traces[cur_ip] != NULL){ \
+				}																																\
+				ip_ptr = vmm->addresses + ti.next_ip;														\
+				stack_ptr = ti.exit_stack + 1;																	\
+				goto continue_to_run;																						\
+			}																																	\
+			else if(state->recording_trace != NULL && vmm->traces[cur_ip] != NULL){ \
 				state->recording_trace->add(InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); \
 				TraceInfo ti;																										\
 				ti.entry_call_frame = call_frame;																\
 				ti.recording = true;																						\
-			  Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
+				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
 				if(!(ti.nestable)){																							\
 					delete state->recording_trace;																\
 					state->recording_trace = NULL;																\
 					return ret;																										\
-	      }																																\
+				}																																\
 				vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip;							\
-	      ip_ptr = vmm->addresses + ti.next_ip;														\
-				stack_ptr = ti.exit_stack + 1;															    \
-				goto continue_to_run;                                           \
-      }																																	\
-	    else if(state->recording_trace != NULL){													\
+				ip_ptr = vmm->addresses + ti.next_ip;														\
+				stack_ptr = ti.exit_stack + 1;																	\
+				goto continue_to_run;																						\
+			}																																	\
+			else if(state->recording_trace != NULL){													\
 				Trace::Status s = state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame); \
 				if(s == Trace::TRACE_FINISHED){																	\
 					state->recording_trace->compile(state);												\
 					vmm->traces[cur_ip] = state->recording_trace;									\
 					state->recording_trace = NULL;																\
 				}																																\
-				else if(s == Trace::TRACE_CANCEL){														  \
+				else if(s == Trace::TRACE_CANCEL){															\
 					delete state->recording_trace;																\
 					state->recording_trace = NULL;																\
 				}																																\

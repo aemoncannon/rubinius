@@ -152,12 +152,10 @@ namespace rubinius {
 
     void enable_tracing() {
 		tracing_enabled = true;
-		std::cout << "TRACING ENABLED" << "\n";
     }
 
     void disable_tracing() {
 		tracing_enabled = false;
-		std::cout << "TRACING DISABLED" << "\n";
     }
 
     Globals& globals() {

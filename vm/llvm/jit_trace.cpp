@@ -349,7 +349,7 @@ namespace rubinius {
 
 					//Decrementing at traced ret, to pop off self
 					if(op == InstructionSequence::insn_ret && cur_trace_node_->active_send){
-						std::cout << "Fixing!" << "\n";
+						if(cDebugStack) std::cout << "Fixing!" << "\n";
 						sp_--;
 					}
 					assert(sp_ >= -1);
