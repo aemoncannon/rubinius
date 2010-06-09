@@ -142,23 +142,38 @@ Object* VMMethod::interpreter(STATE,
 	  if(state->tracing_enabled){																					\
 		  if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
 				TraceInfo ti;																										\
+				ti.entry_call_frame = call_frame;																\
+				ti.recording = false;																						\
+				ti.nested = false;																							\
 				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
-				return ret;																											\
+				if(!(ti.nestable)){																							\
+					std::cout << "Trace returned in funny state, bailing.\n";			\
+					std::cout << "expected exit:  " << cur_ip << "\n";						\
+					std::cout << "exit:  " << ti.exit_ip << "\n";						      \
+					return ret;																										\
+	      }																																\
+				std::cout << "Trace returned in expected state, continuing to " << ti.next_ip << "\n"; \
+	      ip_ptr = vmm->addresses + ti.next_ip;														\
+				stack_ptr = ti.exit_stack + 1;															    \
+				goto continue_to_run;                                           \
       }																																	\
 		  else if(state->recording_trace != NULL && vmm->traces[cur_ip] != NULL){ \
+				std::cout << "Recording nested trace at " << cur_ip << "\n";		\
 				state->recording_trace->add(InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); \
 				TraceInfo ti;																										\
 				ti.entry_call_frame = call_frame;																\
 				ti.recording = true;																						\
 			  Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
 				if(!(ti.nestable)){																							\
+					std::cout << "Not nestable, bail completely at " << cur_ip << "\n";	\
 					delete state->recording_trace;																\
 					state->recording_trace = NULL;																\
 					return ret;																										\
 	      }																																\
+				std::cout << "Nestable! " << cur_ip << "\n";										\
 				vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip;							\
-	      ip_ptr = vmm->addresses + ti.exit_ip;														\
-				stack_ptr = ti.exit_stack;															        \
+	      ip_ptr = vmm->addresses + ti.next_ip;														\
+				stack_ptr = ti.exit_stack + 1;															    \
 				goto continue_to_run;                                           \
       }																																	\
 	    else if(state->recording_trace != NULL){													\
@@ -183,6 +198,7 @@ Object* VMMethod::interpreter(STATE,
 			}																																	\
 			else{																															\
 				if(vmm->trace_counters[cur_ip] > 10){														\
+					std::cout << "Starting trace at! " << cur_ip << "\n";					\
 					state->recording_trace = new Trace(op, cur_ip, ip_ptr, vmm, call_frame); \
 				}																																\
 			}																																	\

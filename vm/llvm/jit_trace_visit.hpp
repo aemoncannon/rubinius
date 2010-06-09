@@ -111,11 +111,13 @@ namespace rubinius {
 			Value* entry_cf_pos = get_field(info()->trace_info(), offset::trace_info_entry_cf);
 			Value* save_entry_call_frame = b().CreateLoad(entry_cf_pos, "save_entry_call_frame");
 
-			// Write new trace info for this nested trace
-			b().CreateStore(exp_exit_ip_pos, 
-											ConstantInt::get(ls_->Int32Ty, cur_trace_node_->nested_trace->expected_exit_ip));
-      b().CreateStore(entry_cf_pos, info()->call_frame());
+			Value* nested_pos = get_field(info()->trace_info(), offset::trace_info_nested);
+			Value* save_nested = b().CreateLoad(nested_pos, "save_nested");
 
+			// Write new trace info for this nested trace
+			b().CreateStore(ConstantInt::get(ls_->Int32Ty, cur_trace_node_->nested_trace->expected_exit_ip), exp_exit_ip_pos);
+      b().CreateStore(info()->call_frame(), entry_cf_pos);
+      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nested_pos);
 
 			// Call the nested trace
 
@@ -139,9 +141,10 @@ namespace rubinius {
 			// Restore saved trace info
       b().CreateStore(save_expected_exit_ip, exp_exit_ip_pos);
       b().CreateStore(save_entry_call_frame, entry_cf_pos);
+      b().CreateStore(save_nested, nested_pos);
 
 			Value* nestable_pos = get_field(info()->trace_info(), offset::trace_info_nestable);
-			Value* nestable = b().CreateLoad(nestable_pos, "nestable");
+			Value* nestable = b().CreateIntCast(b().CreateLoad(nestable_pos, ""), ls_->Int1Ty, "nestable");
 			Value* not_nestable = b().CreateNot(nestable, "not_nestable");
 
       BasicBlock* cont = new_block("continue");
@@ -154,8 +157,12 @@ namespace rubinius {
 			return_value(constant(Qnil));
 
 			// If we get to hear, then the nested trace exited on the expected_ip, at this call_frame,
-			// so we can just continue on our merry way.
+			// so we load the adjusted stack pointer, and continue on our merry way.
       set_block(cont);
+
+			// Value* exit_stk_pos = get_field(info()->trace_info(), offset::trace_info_exit_stk);
+			// Value* exit_stk = b().CreateLoad(exit_stk_pos, "exit_stack");
+
 		}
 
 
@@ -244,7 +251,11 @@ namespace rubinius {
 
 			Value* recording_pos = get_field(info()->trace_info(), offset::trace_info_recording);
 			Value* recording = b().CreateIntCast(b().CreateLoad(recording_pos, "recording"), ls_->Int1Ty, "recording");
-			Value* not_recording = b().CreateNot(recording, "no_recording");
+			Value* not_recording = b().CreateNot(recording, "not_recording");
+
+			Value* nested_pos = get_field(info()->trace_info(), offset::trace_info_nested);
+			Value* nested = b().CreateIntCast(b().CreateLoad(nested_pos, "nested"), ls_->Int1Ty, "nested");
+			Value* not_nested = b().CreateNot(nested, "not_nested");
 
 			Value* entry_cf_pos = get_field(info()->trace_info(), offset::trace_info_entry_cf);
 			Value* entry_call_frame = b().CreateLoad(entry_cf_pos, "save_entry_call_frame");
@@ -254,8 +265,11 @@ namespace rubinius {
 
 			Value* nestable_pos = get_field(info()->trace_info(), offset::trace_info_nestable);
 			Value* exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_exit_ip);
+			Value* next_ip_pos = get_field(info()->trace_info(), offset::trace_info_next_ip);
+			Value* exit_stk_pos = get_field(info()->trace_info(), offset::trace_info_exit_stk);
 
-			Value* actual_exit_ip = ConstantInt::get(ls_->Int32Ty, target_pc);
+			Value* actual_exit_ip = ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc);
+			Value* next_ip = ConstantInt::get(ls_->Int32Ty, target_pc);
 
       Value* ip_cmp = b().CreateICmpEQ(actual_exit_ip, expected_exit_ip, "exiting_at_expected_ip_p");
       Value* cf_cmp = b().CreateICmpEQ(entry_call_frame, info()->call_frame(), "at_expected_call_frame_p");
@@ -269,7 +283,9 @@ namespace rubinius {
       b().CreateCondBr(anded, exit, cont);
       set_block(exit);
 			b().CreateStore(actual_exit_ip, exit_ip_pos);
-      b().CreateStore(ConstantInt::get(ls_->IntPtrTy, 1), nestable_pos);
+			b().CreateStore(next_ip, next_ip_pos);
+      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nestable_pos);
+      b().CreateStore(stack_ptr(), exit_stk_pos);
 			return_value(constant(Qnil));
 
       set_block(cont);
@@ -280,11 +296,32 @@ namespace rubinius {
       cont = new_block("continue");
       exit = new_block("exit");
       anded = b().CreateAnd(not_recording, cf_cmp, "and");
+      anded = b().CreateAnd(anded, not_nested, "and");
+      b().CreateCondBr(anded, exit, cont);
+			set_block(exit);
+			b().CreateStore(actual_exit_ip, exit_ip_pos);
+			b().CreateStore(next_ip, next_ip_pos);
+      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nestable_pos);
+      b().CreateStore(stack_ptr(), exit_stk_pos);
+			return_value(constant(Qnil));
+
+      set_block(cont);
+
+			// If we are NOT recording, and this was a nested trace, and the current call_frame is 
+			// the call_frame from which this
+			// trace was invoked, and the ip we are exiting to is the ip that the caller was expecting,
+			// exit directly to the caller of the trace - setting nestable to true
+      cont = new_block("continue");
+      exit = new_block("exit");
+      anded = b().CreateAnd(not_recording, cf_cmp, "and");
+      anded = b().CreateAnd(anded, nested, "and");
       anded = b().CreateAnd(anded, ip_cmp, "and");
       b().CreateCondBr(anded, exit, cont);
 			set_block(exit);
 			b().CreateStore(actual_exit_ip, exit_ip_pos);
-      b().CreateStore(ConstantInt::get(ls_->IntPtrTy, 1), nestable_pos);
+			b().CreateStore(next_ip, next_ip_pos);
+      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nestable_pos);
+      b().CreateStore(stack_ptr(), exit_stk_pos);
 			return_value(constant(Qnil));
 
 
@@ -293,7 +330,7 @@ namespace rubinius {
       set_block(cont);
 
 			// Alert any listeners that this trace is not nestable
-      b().CreateStore(ConstantInt::get(ls_->IntPtrTy, 0), nestable_pos);
+      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), nestable_pos);
 
 			flush_ip(target_pc);
 			flush_stack();
@@ -589,6 +626,24 @@ namespace rubinius {
 			Signature sig(ls_, ls_->VoidTy);
 			sig << ls_->Int32Ty;
 
+			Value* call_args[] = {
+				val
+			};
+			sig.call("rbx_show_int", call_args, 1, "", b());
+		}
+
+		void dump_int1(Value* val){
+			Signature sig(ls_, ls_->VoidTy);
+			sig << ls_->Int1Ty;
+			Value* call_args[] = {
+				val
+			};
+			sig.call("rbx_show_int", call_args, 1, "", b());
+		}
+
+		void dump_int32(Value* val){
+			Signature sig(ls_, ls_->VoidTy);
+			sig << ls_->Int32Ty;
 			Value* call_args[] = {
 				val
 			};

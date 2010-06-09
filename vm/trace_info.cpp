@@ -16,7 +16,8 @@ namespace rubinius {
 			entry_call_frame(NULL),
 			expected_exit_ip(-1),
 			nestable(0),
-			recording(0)
+			recording(0),
+			next_ip(-1)
 	{}
 
 

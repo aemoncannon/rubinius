@@ -23,6 +23,9 @@ namespace rubinius {
 		int expected_exit_ip;
 		int nestable;
 		int recording;
+		int nested;
+		int next_ip;
+
 
 		TraceInfo();
 	};

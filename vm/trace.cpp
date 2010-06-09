@@ -129,6 +129,10 @@ namespace rubinius {
 			head->prev = prev;
 			prev->next = head;
 
+			if(op == InstructionSequence::insn_nested_trace){
+				head->nested_trace = vmm->traces[pc];
+			}
+
 			return TRACE_OK;
 		}
 	}

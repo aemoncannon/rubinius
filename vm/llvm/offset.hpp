@@ -9,6 +9,8 @@ namespace offset {
   const static int trace_info_expected_exit_ip = 4;
   const static int trace_info_nestable = 5;
   const static int trace_info_recording = 6;
+  const static int trace_info_nested = 7;
+  const static int trace_info_next_ip = 8;
 
   const static int cf_previous = 0;
   const static int cf_static_scope = 1;

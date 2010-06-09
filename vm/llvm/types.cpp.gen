@@ -384,6 +384,8 @@ StructTy_struct_rubinius__TraceInfo_fields.push_back(PointerTy_18);
 StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(getGlobalContext(), 32));
 StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(getGlobalContext(), 32));
 StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(getGlobalContext(), 32));
+StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(getGlobalContext(), 32));
+StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(getGlobalContext(), 32));
 StructType* StructTy_struct_rubinius__TraceInfo = StructType::get(mod->getContext(), StructTy_struct_rubinius__TraceInfo_fields, /*isPacked=*/false);
 mod->addTypeName("struct.rubinius::TraceInfo", StructTy_struct_rubinius__TraceInfo);
 
