@@ -1,6 +1,6 @@
 require 'helpers'
 
-ITERATIONS = 10000
+ITERATIONS = ARGV[0].to_i
 
 def run()
   j = 0
@@ -15,18 +15,10 @@ def run()
     end
   end
 
-  puts "Result: #{j}"
 end
 
-
-trace_time = time_with_tracing do
+time do
   run()
 end
-
-non_trace_time = time_without_tracing do
-  run()
-end
-
-puts "Tracing is #{non_trace_time / trace_time} times faster."
 
 

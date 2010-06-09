@@ -145,13 +145,10 @@ Object* VMMethod::interpreter(STATE,
 				ti.entry_call_frame = call_frame;																\
 				ti.recording = false;																						\
 				ti.nested = false;																							\
-				std::cout << "Calling trace at! " << cur_ip << "\n";						\
 				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
 				if(!(ti.nestable)){																							\
-					std::cout << "Doh! fell off \n";												\
 					return ret;																										\
 	      }																																\
-				std::cout << "Continueing nicely! \n";													\
 	      ip_ptr = vmm->addresses + ti.next_ip;														\
 				stack_ptr = ti.exit_stack + 1;															    \
 				goto continue_to_run;                                           \
@@ -175,13 +172,11 @@ Object* VMMethod::interpreter(STATE,
 	    else if(state->recording_trace != NULL){													\
 				Trace::Status s = state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame); \
 				if(s == Trace::TRACE_FINISHED){																	\
-					state->recording_trace->pretty_print(state, std::cout);				\
 					state->recording_trace->compile(state);												\
 					vmm->traces[cur_ip] = state->recording_trace;									\
 					state->recording_trace = NULL;																\
 				}																																\
 				else if(s == Trace::TRACE_CANCEL){														  \
-					std::cout << "Canceling trace at " << cur_ip << "\n";					\
 					delete state->recording_trace;																\
 					state->recording_trace = NULL;																\
 				}																																\
