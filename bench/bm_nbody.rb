@@ -135,8 +135,7 @@ puts "%.9f" % energy(BODIES)
 nbodies = BODIES.size
 dt = 0.01
 
-time_with_tracing do
-
+time_without_tracing do
   n.times do
     i = 0
     while i < nbodies
@@ -145,7 +144,6 @@ time_with_tracing do
       i += 1
     end
   end
-
 end
 
 puts "%.9f" % energy(BODIES)

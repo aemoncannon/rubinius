@@ -73,6 +73,7 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 	Value* method = b().CreateBitCast(
 		exec, cast<PointerType>(cm_gep->getType())->getElementType(), "cm");
 
+
 	// previous
 	b().CreateStore(info()->previous(), get_field(call_frame_, offset::cf_previous));
 
@@ -95,6 +96,8 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 	b().CreateStore(
 		ConstantInt::get(ls_->Int32Ty, flags),
 		get_field(call_frame_, offset::cf_flags));
+
+	info()->set_counter(b().CreateAlloca(ls_->Int32Ty, 0, "counter_alloca"));
 
   // Store return ip in previous call_frame.
 	// (skip over the 2 stack_send args)
@@ -130,7 +133,9 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 void import_args() {
 	Value* vm_obj = info()->vm();
 	Value* arg_obj = info()->args();
+
 	setup_scope();
+
 
 	// Import the arguments
 	Value* offset = b().CreateConstGEP2_32(arg_obj, 0, offset::args_ary, "arg_ary_pos");
@@ -161,7 +166,8 @@ void import_args() {
 
 		// Otherwise, we must loop in the generate code because we don't know
 		// how many they've actually passed in.
-	} else {
+	} 
+	else {
 		Value* loop_i = info()->counter();
 
 		BasicBlock* top = BasicBlock::Create(ls_->ctx(), "arg_loop_top", info()->function());
@@ -333,6 +339,7 @@ void check_arity() {
 
 
 void setup_scope() {
+
 	llvm::Module* mod = ls_->module();
 	const llvm::Type* vars_type = mod->getTypeByName("struct.rubinius::VariableScope");
 	const llvm::Type* obj_type = ls_->ptr_type("Object");
@@ -402,6 +409,7 @@ void nil_locals() {
 	Value* nil = constant(Qnil, obj_type);
 	int size = info()->vmm->number_of_locals;
 
+
 	if(size == 0) return;
 	// Stack size 5 or less, do 5 stores in a row rather than
 	// the loop.
@@ -419,6 +427,7 @@ void nil_locals() {
 		return;
 	}
 
+
 	Value* max = ConstantInt::get(ls_->Int32Ty, size);
 	Value* one = ConstantInt::get(ls_->Int32Ty, 1);
 
@@ -431,6 +440,7 @@ void nil_locals() {
 
 	b().SetInsertPoint(top);
 
+
 	Value* cur = b().CreateLoad(info()->counter(), "counter");
 	Value* idx[] = {
 		ConstantInt::get(ls_->Int32Ty, 0),
@@ -441,11 +451,13 @@ void nil_locals() {
 	Value* gep = b().CreateGEP(info()->variables(), idx, idx+3, "local_pos");
 	b().CreateStore(nil, gep);
 
+
 	Value* added = b().CreateAdd(cur, one, "added");
 	b().CreateStore(added, info()->counter());
 
 	Value* cmp = b().CreateICmpEQ(added, max, "loop_check");
 	b().CreateCondBr(cmp, cont, top);
+
 
 	b().SetInsertPoint(cont);
 }
