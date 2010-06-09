@@ -147,12 +147,8 @@ Object* VMMethod::interpreter(STATE,
 				ti.nested = false;																							\
 				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
 				if(!(ti.nestable)){																							\
-					std::cout << "Trace returned in funny state, bailing.\n";			\
-					std::cout << "expected exit:  " << cur_ip << "\n";						\
-					std::cout << "exit:  " << ti.exit_ip << "\n";						      \
 					return ret;																										\
 	      }																																\
-				std::cout << "Trace returned in expected state, continuing to " << ti.next_ip << "\n"; \
 	      ip_ptr = vmm->addresses + ti.next_ip;														\
 				stack_ptr = ti.exit_stack + 1;															    \
 				goto continue_to_run;                                           \
