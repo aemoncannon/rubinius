@@ -2,22 +2,15 @@ require 'helpers'
 
 ITERATIONS = 100000
 
-def foo(i)
-  k = 0
-  if i < ITERATIONS/2
-    k = 3
-  else
-    k = -3
-  end
-  k
-end
-
 def calc(i)
-  k = 0
   1.times do
-    k += foo(i)
+    if i < ITERATIONS/2
+      3
+    else
+      -3
+    end
   end
-  k
+  3
 end
 
 def run()

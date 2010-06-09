@@ -14,12 +14,6 @@ void emit_traced_yield_stack(opcode args) {
 	new_info->set_parent_info(parent_info);
 	method_info_ = new_info;
 
-//	BasicBlock* cur = current_block();
-
-	// Generate hard return
-	// set_block(info()->return_pad());
-	// b().CreateRet(info()->return_phi());
-	// set_block(cur);
 
 	llvm::Module* mod = ls_->module();
 	const llvm::Type* cf_type = mod->getTypeByName("struct.rubinius::CallFrame");

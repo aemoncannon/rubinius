@@ -291,6 +291,8 @@ namespace rubinius {
       counter_ = info->counter();
 			root = info->root_info();
 			trace_info_ = info->trace_info();
+			return_phi_ = info->return_phi();
+			return_pad_ = info->return_pad();
 
       set_function(info->function());
     }

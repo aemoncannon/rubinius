@@ -17,16 +17,7 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 	JITMethodInfo* parent_info = info();
 	new_info->is_block = false;
 	new_info->set_parent_info(parent_info);
-	new_info->init_return_pad();
 	method_info_ = new_info;
-
-	BasicBlock* cur = current_block();
-
-
-	// Generate hard return
-	set_block(info()->return_pad());
-	b().CreateRet(info()->return_phi());
-	set_block(cur);
 
 
 	llvm::Module* mod = ls_->module();
@@ -129,7 +120,6 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 	else{
 		stack_remove(args + 1);
 	}
-
 
 	// b().CreateBr(body);
 	// b().SetInsertPoint(body);
