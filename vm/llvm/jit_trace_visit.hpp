@@ -112,16 +112,18 @@ namespace rubinius {
 			sig << ObjArrayTy;
 			sig << "StackVariables";
 			sig << ls_->Int32Ty;
+			sig << "TraceInfo";
 
 			Value* call_args[] = {
 				info()->vm(),
 				info()->call_frame(),
 				stack_ptr(),
 				info()->variables(),
-				ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc)
+				ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc),
+				info()->trace_info()
 			};
 
-			sig.call("rbx_call_trace", call_args, 5, "", b());
+			sig.call("rbx_call_trace", call_args, 6, "", b());
 
 		}
 

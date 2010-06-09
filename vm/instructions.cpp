@@ -21,6 +21,7 @@
 #include "builtin/iseq.hpp"
 
 #include "call_frame.hpp"
+#include "trace_info.hpp"
 
 #include "objectmemory.hpp"
 #include "arguments.hpp"
@@ -140,12 +141,14 @@ Object* VMMethod::interpreter(STATE,
 	  op = vmm->opcodes[cur_ip];																					\
 	  if(state->tracing_enabled){																					\
 		  if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
-			  Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope);	\
+				TraceInfo ti;																									\
+				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
 				return ret;																											\
       }																																	\
 		  else if(state->recording_trace != NULL && vmm->traces[cur_ip] != NULL){ \
 				state->recording_trace->add(InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); \
-			  vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope);	\
+				TraceInfo ti;																									\
+			  vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
 				ip_ptr = vmm->addresses + call_frame->ip();									    \
 				stack_ptr = call_frame->flush_stk;															\
 				goto continue_to_run;                                           \
@@ -328,14 +331,14 @@ Object* VMMethod::uncommon_interpreter(STATE,
   try {
 
 #undef DISPATCH
-#define DISPATCH op = stream[call_frame->inc_ip()];				\
-    if(op == InstructionSequence::insn_ret &&							\
-			 call_frame->is_traced_frame()) {										\
-			call_frame = call_frame->previous;									\
-			vmm = call_frame->cm->backend_method();							\
-			stream = vmm->opcodes;															\
-			goto continue_to_run;																\
-		}																											\
+#define DISPATCH op = stream[call_frame->inc_ip()];	\
+    if(op == InstructionSequence::insn_ret &&				\
+			 call_frame->is_traced_frame()) {							\
+			call_frame = call_frame->previous;						\
+			vmm = call_frame->cm->backend_method();				\
+			stream = vmm->opcodes;												\
+			goto continue_to_run;													\
+		}																								\
 		goto *insn_locations[op];
 
 #undef next_int

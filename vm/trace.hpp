@@ -21,10 +21,11 @@ namespace rubinius {
 	class StackVariables;
 	class Symbol;
 	class JITVisit;
+	class TraceInfo;
 
 	typedef uintptr_t opcode;
   typedef map<int, JITBasicBlock> BlockMap;
-  typedef Object* (*trace_executor)(VM*, CallFrame*, Object**, StackVariables*);
+  typedef Object* (*trace_executor)(VM*, CallFrame*, Object**, StackVariables*, TraceInfo*);
 
 
 	class TraceNode {

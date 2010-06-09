@@ -40,6 +40,7 @@ namespace rubinius {
 			ftypes.push_back(ls_->ptr_type("CallFrame"));
 			ftypes.push_back(obj_ary_type);
 			ftypes.push_back(ls_->ptr_type("StackVariables"));
+			ftypes.push_back(ls_->ptr_type("TraceInfo"));
 
 			FunctionType* ft = FunctionType::get(ls_->ptr_type("Object"), ftypes, false);
 
@@ -64,12 +65,17 @@ namespace rubinius {
 			Value* vars = ai++; 
 			vars->setName("vars");
 
+			// Get the vars pointer
+			Value* trace_info = ai++;
+			trace_info->setName("trace_info");
+
 			BasicBlock* block = BasicBlock::Create(ls_->ctx(), "entry", func);
 			builder_.SetInsertPoint(block);
 
 			info_->set_function(func);
 			info_->set_vm(vm);
 			info_->set_call_frame(call_frame);
+			info_->set_trace_info(trace_info);
 			info_->set_entry(block);
 
 			BasicBlock* body = BasicBlock::Create(ls_->ctx(), "method_body", func);

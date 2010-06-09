@@ -94,14 +94,15 @@ extern "C" {
 		std::cout << "trace debug!" << "\n";
   }
 
-  void rbx_call_trace(STATE, CallFrame* call_frame, Object** stack, StackVariables* vars, int pc)
+  Object* rbx_call_trace(STATE, CallFrame* call_frame, Object** stack, StackVariables* vars, int pc, TraceInfo* ti)
   {
 		Trace* trace = call_frame->cm->backend_method()->traces[pc];
 		if(trace != NULL){
-			trace->executor(state, call_frame, stack + 1, vars);
+			return trace->executor(state, call_frame, stack + 1, vars, ti);
 		}
 		else{
 			std::cout << "Failed to find nested trace!" << "\n";
+			return Qnil;
 		}
   }
 

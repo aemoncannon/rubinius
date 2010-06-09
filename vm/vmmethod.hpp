@@ -37,6 +37,7 @@ namespace rubinius {
   class InterpreterCallFrame;
   class InlineCache;
   class Trace;
+  class TraceInfo;
 
   typedef Object* (*Runner)(STATE, VMMethod* const vmm, CallFrame* const call_frame);
   typedef Object* (*InterpreterRunner)(STATE, VMMethod* const vmm,

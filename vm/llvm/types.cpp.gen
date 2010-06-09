@@ -179,6 +179,7 @@ PointerType* PointerTy_21 = PointerType::get(StructTy_struct_rubinius__Arguments
 
 StructTy_struct_rubinius__CallFrame_fields.push_back(PointerTy_21);
 StructTy_struct_rubinius__CallFrame_fields.push_back(ArrayTy_12);
+StructTy_struct_rubinius__CallFrame_fields.push_back(ArrayTy_12);
 StructType* StructTy_struct_rubinius__CallFrame = StructType::get(mod->getContext(), StructTy_struct_rubinius__CallFrame_fields, /*isPacked=*/false);
 mod->addTypeName("struct.rubinius::CallFrame", StructTy_struct_rubinius__CallFrame);
 
@@ -375,6 +376,13 @@ mod->addTypeName("struct.rubinius::Selector", OpaqueTy_struct_rubinius__Selector
 mod->addTypeName("struct.rubinius::StackVariables", StructTy_struct_rubinius__StackVariables);
 mod->addTypeName("struct.rubinius::StaticScope", OpaqueTy_struct_rubinius__StaticScope);
 mod->addTypeName("struct.rubinius::Symbol", OpaqueTy_struct_rubinius__Symbol);
+std::vector<const Type*>StructTy_struct_rubinius__TraceInfo_fields;
+StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(getGlobalContext(), 32));
+StructTy_struct_rubinius__TraceInfo_fields.push_back(PointerTy_18);
+StructTy_struct_rubinius__TraceInfo_fields.push_back(PointerTy_0);
+StructType* StructTy_struct_rubinius__TraceInfo = StructType::get(mod->getContext(), StructTy_struct_rubinius__TraceInfo_fields, /*isPacked=*/false);
+mod->addTypeName("struct.rubinius::TraceInfo", StructTy_struct_rubinius__TraceInfo);
+
 mod->addTypeName("struct.rubinius::Tuple", StructTy_struct_rubinius__Tuple);
 mod->addTypeName("struct.rubinius::TypeInfo", OpaqueTy_struct_rubinius__TypeInfo);
 std::vector<const Type*>StructTy_struct_rubinius__UnwindInfo_fields;

@@ -9,6 +9,7 @@ namespace :jit do
                  rubinius::Object
                  rubinius::StackVariables
                  rubinius::CallFrame
+                 rubinius::TraceInfo
                  rubinius::UnwindInfo
                  rubinius::VariableScope
                  rubinius::CompiledMethod
@@ -32,6 +33,7 @@ namespace :jit do
     require 'tempfile'
 
     files = %w!vm/call_frame.hpp
+               vm/trace_info.hpp
                vm/arguments.hpp
                vm/dispatch.hpp
                vm/inline_cache.hpp
@@ -81,6 +83,6 @@ namespace :jit do
     end
 
     `llvm-as < vm/gen/types.ll > vm/gen/types.bc`
-    `vm/external_libs/llvm/Release/bin/llc -march=cpp -cppgen=contents -f -o vm/llvm/types.cpp.gen vm/gen/types.bc`
+    `llc -march=cpp -cppgen=contents -f -o vm/llvm/types.cpp.gen vm/gen/types.bc`
   end
 end
