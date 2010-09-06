@@ -138,37 +138,57 @@ Object* VMMethod::interpreter(STATE,
 #undef DISPATCH
 //#define DISPATCH goto **ip_ptr++;
 #define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
+		/***********************************************/ \
+		/* TODO: Find a way to remove this horror of a macro.*/				\
+		/***********************************************/ \
 	  op = vmm->opcodes[cur_ip];																					\
 		if(state->tracing_enabled) {																				\
+			/*Not currently recording. Hit an ip with a stored trace...*/			\
 			if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
 				TraceInfo ti;																										\
 				ti.entry_call_frame = call_frame;																\
 				ti.recording = false;																						\
 				ti.nested = false;																							\
 				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
+				/* If traceinfo answers false to nestable, the trace must have bailed into */ \
+				/* uncommon interpreter, which will have already finished  */		\
+				/* interpreting this invocation, so we pop this frame. */				\
 				if(!(ti.nestable)){																							\
 					return ret;																										\
 				}																																\
+				/* Otherwise, we know that the */																\
+				/* trace exited politely, and we can keep rolling with the */		\
+				/* same call_frame. */																					\
 				ip_ptr = vmm->addresses + ti.next_ip;														\
 				stack_ptr = ti.exit_stack + 1;																	\
 				goto continue_to_run;																						\
 			}																																	\
+			/*Recording. Hit an ip with a stored trace...*/										\
 			else if(state->recording_trace != NULL && vmm->traces[cur_ip] != NULL){ \
+				/* Add a virtual op that will cause call of nested trace to be emitted */ \
 				state->recording_trace->add(InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); \
 				TraceInfo ti;																										\
 				ti.entry_call_frame = call_frame;																\
 				ti.recording = true;																						\
 				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
+				/* If traceinfo answers false to nestable, the nested trace must have bailed into */ \
+				/* uncommon interpreter, we consider this recording invalidated.  */ \
+				/* Pop the frame  */																						\
 				if(!(ti.nestable)){																							\
 					delete state->recording_trace;																\
 					state->recording_trace = NULL;																\
 					return ret;																										\
 				}																																\
+				/* Otherwise, we know that the */																\
+				/* trace exited politely, and A) we can keep rolling with the */ \
+				/* same call_frame, B) we've successfully recorded a call to  */ \
+				/* a nested trace. */																						\
 				vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip;							\
 				ip_ptr = vmm->addresses + ti.next_ip;														\
 				stack_ptr = ti.exit_stack + 1;																	\
 				goto continue_to_run;																						\
 			}																																	\
+			/* Normal recording...*/									 \
 			else if(state->recording_trace != NULL){													\
 				Trace::Status s = state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame); \
 				if(s == Trace::TRACE_FINISHED){																	\
@@ -181,12 +201,14 @@ Object* VMMethod::interpreter(STATE,
 					state->recording_trace = NULL;																\
 				}																																\
 			}																																	\
+			/* Check for backward gotos, increment corresponding counter.*/		\
 			else if(op == InstructionSequence::insn_goto){										\
 				intptr_t location = (intptr_t)(*(ip_ptr + 1));									\
 				if(location < cur_ip){																					\
 					vmm->trace_counters[location]++;															\
 				}																																\
 			}																																	\
+			/* Start recording after threshold is hit..*/		\
 			else{																															\
 				if(vmm->trace_counters[cur_ip] > 50){														\
 					state->recording_trace = new Trace(op, cur_ip, ip_ptr, vmm, call_frame); \
@@ -204,20 +226,20 @@ Object* VMMethod::interpreter(STATE,
 #include "vm/gen/instruction_implementations.hpp"
 
 	} catch(TypeError& e) {
-    flush_ip();
-    Exception* exc =
-      Exception::make_type_error(state, e.type, e.object, e.reason);
-    exc->locations(state, System::vm_backtrace(state, Fixnum::from(0), call_frame));
+		flush_ip();
+		Exception* exc =
+			Exception::make_type_error(state, e.type, e.object, e.reason);
+		exc->locations(state, System::vm_backtrace(state, Fixnum::from(0), call_frame));
 
-    state->thread_state()->raise_exception(exc);
-    call_frame->scope->flush_to_heap(state);
-    return NULL;
-  } catch(const RubyException& exc) {
-    exc.exception->locations(state,
+		state->thread_state()->raise_exception(exc);
+		call_frame->scope->flush_to_heap(state);
+		return NULL;
+	} catch(const RubyException& exc) {
+		exc.exception->locations(state,
 														 System::vm_backtrace(state, Fixnum::from(0), call_frame));
-    state->thread_state()->raise_exception(exc.exception);
-    return NULL;
-  }
+		state->thread_state()->raise_exception(exc.exception);
+		return NULL;
+	}
 
 // There is no reason to be here. Either the bytecode loop exits,
 // or it jumps to exception;

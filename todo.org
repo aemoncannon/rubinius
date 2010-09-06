@@ -1,0 +1,6 @@
+* Publicize the project. 
+** Put it up on github, with simple benchmarks.
+** Tell Evan and co.
+** Ask for advice on what to try next.
+
+* Work on sqroot benchmark

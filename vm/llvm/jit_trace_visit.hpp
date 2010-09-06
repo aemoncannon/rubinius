@@ -115,12 +115,16 @@ namespace rubinius {
 			Value* save_nested = b().CreateLoad(nested_pos, "save_nested");
 
 			// Write new trace info for this nested trace
+			// The ip where the trace should exit, if all goes as planned
 			b().CreateStore(ConstantInt::get(ls_->Int32Ty, cur_trace_node_->nested_trace->expected_exit_ip), exp_exit_ip_pos);
+
+			// The active callframe. 'home' call_frame from the nested trace's perspective.
       b().CreateStore(info()->call_frame(), entry_cf_pos);
+
+			// Yes, this trace invocation is 'nested' (being called from a parent trace)
       b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nested_pos);
 
 			// Call the nested trace
-
 			Signature sig(ls_, ls_->VoidTy);
 			sig << "VM";
 			sig << "CallFrame";
@@ -138,11 +142,13 @@ namespace rubinius {
 			};
 			sig.call("rbx_call_trace", call_args, 6, "", b());
 
-			// Restore saved trace info
+			// Restore the trace-info for the parent trace
       b().CreateStore(save_expected_exit_ip, exp_exit_ip_pos);
       b().CreateStore(save_entry_call_frame, entry_cf_pos);
       b().CreateStore(save_nested, nested_pos);
 
+			// Check if the result of the nested trace is 'nestable'. That is, check if
+			// the trace run exited in a polite way.
 			Value* nestable_pos = get_field(info()->trace_info(), offset::trace_info_nestable);
 			Value* nestable = b().CreateIntCast(b().CreateLoad(nestable_pos, ""), ls_->Int1Ty, "nestable");
 			Value* not_nestable = b().CreateNot(nestable, "not_nestable");
@@ -151,15 +157,16 @@ namespace rubinius {
       BasicBlock* not_nestable_b = new_block("not_nestable");
       b().CreateCondBr(not_nestable, not_nestable_b, cont);
 
+			//  The nested trace must have bailed into the uncommon interpreter and has 
+			//  already popped its home call_frame.  This trace is no longer relavent.
       set_block(not_nestable_b);
-			//  The nested trace already exited into the interpreter and
-			//  returned from the home call_frame of the trace.
 			return_value(constant(Qnil));
 
-			// If we get to hear, then the nested trace exited on the expected_ip, at this call_frame,
-			// so we load the adjusted stack pointer, and continue on our merry way.
+			// The nested trace exited on the expected_ip, on its home callframe.
+			// Continue on our merry way.
       set_block(cont);
 
+			// Shouldn't need to adjust the stack pointer if the trace exited politely...
 			// Value* exit_stk_pos = get_field(info()->trace_info(), offset::trace_info_exit_stk);
 			// Value* exit_stk = b().CreateLoad(exit_stk_pos, "exit_stack");
 
@@ -249,6 +256,9 @@ namespace rubinius {
 
     void emit_uncommon(int target_pc) {
 
+			// Emit code for entering the uncommon interpreter.
+			// This is used in exit stubs, when the trace bails for some reason.
+
 			Value* recording_pos = get_field(info()->trace_info(), offset::trace_info_recording);
 			Value* recording = b().CreateIntCast(b().CreateLoad(recording_pos, "recording"), ls_->Int1Ty, "recording");
 			Value* not_recording = b().CreateNot(recording, "not_recording");
@@ -277,8 +287,9 @@ namespace rubinius {
       BasicBlock* cont = new_block("continue");
       BasicBlock* exit = new_block("exit");
 
-			// If we are recording, and the current call_frame is the call_frame from which this
-			// trace was invoked, exit directly to the caller of the trace - setting nestable to true
+			// If we are recording, and the current call_frame is this trace's home call_frame,
+			// return directly to the caller of the trace - setting nestable to true. Result will
+			// be that this trace will be recorded as a nested trace.
       Value* anded = b().CreateAnd(recording, cf_cmp, "and");
       b().CreateCondBr(anded, exit, cont);
       set_block(exit);
@@ -290,9 +301,10 @@ namespace rubinius {
 
       set_block(cont);
 
-			// If we are NOT recording, and the current call_frame is the call_frame from which this
-			// trace was invoked, and the ip we are exiting to is the ip that the caller was expecting,
-			// exit directly to the caller of the trace - setting nestable to true
+			// If we are not recording, and the current call_frame is this trace's home call_frame,
+			// and the ip we are exiting to is the ip that the caller was expecting,
+			// exit directly to the caller of the trace - setting nestable to true (this informs caller
+			// that the trace exited politely, so interpreter doesn't have to pop itself)
       cont = new_block("continue");
       exit = new_block("exit");
       anded = b().CreateAnd(not_recording, cf_cmp, "and");
@@ -307,10 +319,10 @@ namespace rubinius {
 
       set_block(cont);
 
-			// If we are NOT recording, and this was a nested trace, and the current call_frame is 
-			// the call_frame from which this
-			// trace was invoked, and the ip we are exiting to is the ip that the caller was expecting,
-			// exit directly to the caller of the trace - setting nestable to true
+			// If we are not recording, and this was a nested trace, and the current call_frame is 
+			// this trace's home call_frame, and the ip we are exiting to is the ip that the caller was expecting,
+			// exit directly to the caller of the trace - setting nestable to true  (this informs caller
+			// that the trace exited politely, so parent trace doesn't have to pop itself)
       cont = new_block("continue");
       exit = new_block("exit");
       anded = b().CreateAnd(not_recording, cf_cmp, "and");
@@ -325,18 +337,17 @@ namespace rubinius {
 			return_value(constant(Qnil));
 
 
-			// Otherwise, we exit to the interpreter.
-
+			// Otherwise, we exit to the uncommon interpreter,
+			// setting 'nestable' to false so the caller of this trace will know that
+			// this trace run did not exit politely.
       set_block(cont);
-
-			// Alert any listeners that this trace is not nestable
       b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), nestable_pos);
 
+			// Write these out to the call_frame so the uncommon interpreter
+			// can load them.
 			flush_ip(target_pc);
 			flush_stack();
-
 			Value* stk = b().CreateBitCast(stack_ptr(), ObjArrayTy, "obj_ary_type");
-
 			Signature sig(ls_, "Object");
 			sig << "VM";
 			sig << "CallFrame";
@@ -344,11 +355,9 @@ namespace rubinius {
 			sig << ObjArrayTy;
 
 			Value* call_args[] = { info()->vm(), info()->call_frame(), cint(target_pc), stk};
-
 			Value* call = sig.call("rbx_continue_uncommon", call_args, 4, "", b());
 			
 			return_value(call);
-
     }
 
     void visit_push_has_block() {
