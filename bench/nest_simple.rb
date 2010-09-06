@@ -4,7 +4,7 @@ def run()
   j = 0
   i = 0
 
-  while i < $iterations
+  while i < ITERATIONS
     i += 1
     k = 0
     while k < 1000

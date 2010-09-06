@@ -1,6 +1,5 @@
 require 'helpers'
 
-ITERATIONS = 100000
 
 def foo(i)
   k = 0
@@ -31,14 +30,8 @@ def run()
 end
 
 
-trace_time = time_with_tracing do
+time do
   run()
 end
-
-non_trace_time = time_without_tracing do
-  run()
-end
-
-puts "Tracing is #{non_trace_time / trace_time} times faster."
 
 

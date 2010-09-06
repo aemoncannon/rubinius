@@ -3,7 +3,7 @@ require 'helpers'
 def run()
   j = 0
   i = 0
-  while i < $iterations
+  while i < ITERATIONS
     i += 1
     j += Math.sqrt(4.0)
   end

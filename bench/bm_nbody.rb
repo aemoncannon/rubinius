@@ -133,7 +133,7 @@ nbodies = BODIES.size
 dt = 0.01
 
 time do
-  $iterations.times do
+  ITERATIONS.times do
     i = 0
     while i < nbodies
       b = BODIES[i]

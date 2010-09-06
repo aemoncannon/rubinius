@@ -1,5 +1,5 @@
 
-$iterations = ARGV[0].to_i
+ITERATIONS = ARGV[0].to_i
 
 
 def enable_tracing

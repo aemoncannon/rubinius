@@ -1,7 +1,7 @@
 require 'helpers'
 
 def foo(i)
-  if i < $iterations * 0.5
+  if i < ITERATIONS * 0.5
     2
   else
     1
@@ -20,7 +20,7 @@ end
 def run()
   j = 0
   i = 0
-  while i < $iterations
+  while i < ITERATIONS
     i += 1
     j += calc(i)
   end

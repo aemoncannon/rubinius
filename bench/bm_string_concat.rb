@@ -4,7 +4,7 @@ string = ""
 book = "So Long, and Thanks for All the Fish"
 
 time do
-  $iterations.times {
+  ITERATIONS.times {
     string << book 
   }
 end
