@@ -86,6 +86,13 @@ MRI:
 0.3680 seconds.
 
 
+The simplest case and the first thing I implemented. The more iterations are run,
+the better trace looks. Method JIT doesn't do well, I assume this is because it 
+(at least as of 1.0) didn't do hot stack frame replacement.
+
+-----------------------------------------------------------------
+
+
 
 
 
@@ -123,6 +130,14 @@ No JIT:
 
 MRI:
 49.3839 seconds.
+
+
+Simple nested trace example. Note that the outer trace is actually nested into
+the inner trace, since inner gets hot first. Same story with Method JIT, not
+really getting used.
+
+-------------------------------------------------------------
+
 
 
 
@@ -165,6 +180,10 @@ MRI:
 31.5706260204315 seconds.
 
 
+
+Nesting traces across call boundaries. See how the Method JIT kicks in.
+
+-------------------------------------------------------
 
 
 
@@ -217,7 +236,9 @@ MRI:
 16.85354 seconds.
 
 
+Miss prediction half the time. Tracing performance takes a dive.
 
+----------------------------------------------------------
 
 
 
@@ -269,7 +290,9 @@ No JIT:
 MRI:
 0.37597 seconds.
 
+Not totally sure why No JIT wins here. Might be a compile time things.
 
+---------------------------------------------------------------
 
 
 
@@ -303,6 +326,10 @@ MRI:
 0.005550 seconds.
 
 
+No trace happens, since we never really loop. Need to add special
+handling for this - but there may be a neat nested trace solution.
+
+-------------------------------------------
 
 
 
@@ -323,6 +350,9 @@ No JIT:
 MRI:
 0.104515 seconds.
 
+
+Suspect there's lots of exits here. Haven't really dug into it.
+But it runs! :)
 
 
 
