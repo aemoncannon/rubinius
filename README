@@ -19,11 +19,11 @@ http://ssllab.org/hotpath/files/NestedTT.pdf
 
 
 
-The interpreter is instrumented to count backward jumps. After a certain threshold 
-(I've played with 10-50), the interpreter begins recording a trace. A trace is a
-linear sequence of ops, annotated with contextual information. Trace recording can cross 
-method call and block yield boundaries, and does not stop until A) the inferred
-loop header is reached, or B) the trace gets too long (not yet implemented).
+The interpreter is instrumented to count backward jumps. After a certain threshold the 
+interpreter begins recording a trace. A trace is a linked sequence of ops, annotated 
+with contextual information. Trace recording can cross method call and block yield 
+boundaries, and does not stop until A) the recording returns to the inferred loop header,
+or B) the trace gets too long (not yet implemented).
 
 Traces are compiled using a modified version of the existing Rubinius JITing code. The
 inline method, inline block emitters were particularly useful.
