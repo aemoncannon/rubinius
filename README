@@ -59,6 +59,7 @@ the trace compilation is advantageous.
 
 
 # loop.rb
+ITERATIONS = 1_000_000
 
 def run()
   i = 0
@@ -90,6 +91,7 @@ MRI:
 
 
 # nest_simple.rb
+ITERATIONS = 100_000
 
 def run()
   j = 0
@@ -126,6 +128,7 @@ MRI:
 
 
 # nest_funcs.rb
+ITERATIONS = 100_000
 
 def foo()
   k = 0
@@ -168,6 +171,7 @@ MRI:
 
 
 # nest_funcs_and_exit.rb
+ITERATIONS = 100_000
 
 def foo(i)
   if i < ITERATIONS * 0.5
@@ -218,6 +222,7 @@ MRI:
 
 
 # if_exit_with_yield.rb
+ITERATIONS = 100_000
 
 def foo(i)
   k = 0
@@ -271,6 +276,7 @@ MRI:
 
 
 # bm_fact.rb
+ITERATIONS = 1_000
 
 def fact(n)
   if (n > 1)
@@ -302,6 +308,7 @@ MRI:
 
 
 # bm_nbody.rb
+# ITERATIONS = 1_000
 # See bm_nbody.rb in ./bench
 
 Trace JIT:
