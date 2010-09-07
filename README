@@ -17,11 +17,13 @@ http://portal.acm.org/citation.cfm?id=1542476.1542528
 Nested Trace Trees
 http://ssllab.org/hotpath/files/NestedTT.pdf
 
+
+
 The interpreter is instrumented to count backward jumps. After a certain threshold 
 (I've played with 10-50), the interpreter begins recording a trace. A trace is a
 linear sequence of ops, annotated with contextual information. Trace recording can cross 
 method call and block yield boundaries, and does not stop until A) the inferred
-loop header is reached, or the trace gets too long (not yet implemented).
+loop header is reached, or B) the trace gets too long (not yet implemented).
 
 Traces are compiled using a modified version of the existing Rubinius JITing code. The
 inline method, inline block emitters were particularly useful.
@@ -31,14 +33,14 @@ uncommon interpreter. Uncommon is slightly modified so that it will continue exe
 until all call_frames higher than the trace's 'home callframe' are popped. Then control
 is handed back to the normal interpreter.
 
-Traces can be nested so long as the nestee is well behaved during recording or the nester. 
-The nestee must not exit unexpectedly, and must conclude in its home callframe.
+Traces can be nested so long as the nestee is well behaved during recording.
+The nestee must not exit unexpectedly, and must conclude on its home callframe.
 
 
 Caveats:
 
-* I'm not currently handling missed trace exits due to mispredicted dispatch
-  (all benchmarks have fixed dispatch targets).
+* I'm not currently handling trace exits due to mispredicted dispatch
+  (all my benchmarks have fixed dispatch targets).
 
 * This work is branched from a 3-4 month old version of Rubinius (1.0)
 
@@ -76,7 +78,7 @@ Trace JIT:
 Method JIT:
 0.06085 seconds.
 
-Interpreted:
+No JIT:
 0.05253 seconds.
 
 MRI:
@@ -114,7 +116,7 @@ Trace JIT:
 Method JIT:
 7.0563 seconds.
 
-Interpreted:
+No JIT:
 7.5908 seconds.
 
 MRI:
@@ -153,7 +155,7 @@ Trace JIT:
 Method JIT:
 1.01100 seconds.
 
-Interpreted:
+No JIT:
 4.6909 seconds.
 
 MRI:
@@ -204,7 +206,7 @@ Trace JIT:
 Method JIT:
 1.89338 seconds.
 
-Interpreted:
+No JIT:
 2.14444 seconds.
 
 MRI:
@@ -256,7 +258,7 @@ Trace JIT:
 Method JIT:
 0.2230579 seconds.
 
-Interpreted:
+No JIT:
 0.112933 seconds.
 
 MRI:
@@ -288,11 +290,12 @@ Trace JIT:
 Method JIT:
 0.0021700 seconds.
 
-Interpreted:
+No JIT:
 0.0019800 seconds.
 
 MRI:
 0.005550 seconds.
+
 
 
 
@@ -307,7 +310,7 @@ Trace JIT:
 Method JIT:
 0.107136 seconds.
 
-Interpreted:
+No JIT:
 0.08390 seconds.
 
 MRI:
