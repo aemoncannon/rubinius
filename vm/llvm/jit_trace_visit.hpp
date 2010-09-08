@@ -275,6 +275,7 @@ namespace rubinius {
 
 			Value* nestable_pos = get_field(info()->trace_info(), offset::trace_info_nestable);
 			Value* exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_exit_ip);
+			Value* exit_trace_pc_pos = get_field(info()->trace_info(), offset::trace_info_exit_trace_pc);
 			Value* next_ip_pos = get_field(info()->trace_info(), offset::trace_info_next_ip);
 			Value* exit_stk_pos = get_field(info()->trace_info(), offset::trace_info_exit_stk);
 
@@ -283,6 +284,14 @@ namespace rubinius {
 
       Value* ip_cmp = b().CreateICmpEQ(actual_exit_ip, expected_exit_ip, "exiting_at_expected_ip_p");
       Value* cf_cmp = b().CreateICmpEQ(entry_call_frame, info()->call_frame(), "at_expected_call_frame_p");
+
+			// Store information about exit into TraceInfo
+			b().CreateStore(actual_exit_ip, exit_ip_pos);
+			b().CreateStore(next_ip, next_ip_pos);
+      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nestable_pos);
+			// So we know where in the trace we exited (useful for debugging)...
+      b().CreateStore(ConstantInt::get(ls_->Int32Ty, cur_trace_node_->trace_pc), exit_trace_pc_pos);
+      b().CreateStore(stack_ptr(), exit_stk_pos);
 
       BasicBlock* cont = new_block("continue");
       BasicBlock* exit = new_block("exit");
@@ -293,12 +302,7 @@ namespace rubinius {
       Value* anded = b().CreateAnd(recording, cf_cmp, "and");
       b().CreateCondBr(anded, exit, cont);
       set_block(exit);
-			b().CreateStore(actual_exit_ip, exit_ip_pos);
-			b().CreateStore(next_ip, next_ip_pos);
-      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nestable_pos);
-      b().CreateStore(stack_ptr(), exit_stk_pos);
 			return_value(constant(Qnil));
-
       set_block(cont);
 
 			// If we are not recording, and the current call_frame is this trace's home call_frame,
@@ -311,12 +315,7 @@ namespace rubinius {
       anded = b().CreateAnd(anded, not_nested, "and");
       b().CreateCondBr(anded, exit, cont);
 			set_block(exit);
-			b().CreateStore(actual_exit_ip, exit_ip_pos);
-			b().CreateStore(next_ip, next_ip_pos);
-      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nestable_pos);
-      b().CreateStore(stack_ptr(), exit_stk_pos);
 			return_value(constant(Qnil));
-
       set_block(cont);
 
 			// If we are not recording, and this was a nested trace, and the current call_frame is 
@@ -330,10 +329,6 @@ namespace rubinius {
       anded = b().CreateAnd(anded, ip_cmp, "and");
       b().CreateCondBr(anded, exit, cont);
 			set_block(exit);
-			b().CreateStore(actual_exit_ip, exit_ip_pos);
-			b().CreateStore(next_ip, next_ip_pos);
-      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nestable_pos);
-      b().CreateStore(stack_ptr(), exit_stk_pos);
 			return_value(constant(Qnil));
 
 

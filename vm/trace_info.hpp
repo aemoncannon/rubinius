@@ -25,6 +25,7 @@ namespace rubinius {
 		int recording;
 		int nested;
 		int next_ip;
+		int exit_trace_pc;
 
 
 		TraceInfo();

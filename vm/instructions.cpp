@@ -139,7 +139,7 @@ Object* VMMethod::interpreter(STATE,
 //#define DISPATCH goto **ip_ptr++;
 #define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
 		/***********************************************/ \
-		/* TODO: Find a way to remove this horror of a macro.*/				\
+		/* TODO: Find a way to remove this monster of a macro.*/				\
 		/***********************************************/ \
 	  op = vmm->opcodes[cur_ip];																					\
 		if(state->tracing_enabled) {																				\
@@ -149,13 +149,16 @@ Object* VMMethod::interpreter(STATE,
 				ti.entry_call_frame = call_frame;																\
 				ti.recording = false;																						\
 				ti.nested = false;																							\
+				std::cout << "Running trace.\n";																\
 				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
 				/* If traceinfo answers false to nestable, the trace must have bailed into */ \
 				/* uncommon interpreter, which will have already finished  */		\
 				/* interpreting this invocation, so we pop this frame. */				\
 				if(!(ti.nestable)){																							\
+					std::cout << "Unexpected exit.\n";															\
 					return ret;																										\
 				}																																\
+					std::cout << "Polite exit.\n";															\
 				/* Otherwise, we know that the */																\
 				/* trace exited politely, and we can keep rolling with the */		\
 				/* same call_frame. */																					\
@@ -192,7 +195,10 @@ Object* VMMethod::interpreter(STATE,
 			else if(state->recording_trace != NULL){													\
 				Trace::Status s = state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame); \
 				if(s == Trace::TRACE_FINISHED){																	\
+					std::cout << "Trace finished.\n"; \
 					state->recording_trace->compile(state);												\
+					std::cout << "Trace Compiled.\n"; \
+					state->recording_trace->pretty_print(state, std::cout); \
 					vmm->traces[cur_ip] = state->recording_trace;									\
 					state->recording_trace = NULL;																\
 				}																																\
@@ -211,6 +217,7 @@ Object* VMMethod::interpreter(STATE,
 			/* Start recording after threshold is hit..*/		\
 			else{																															\
 				if(vmm->trace_counters[cur_ip] > 50){														\
+					std::cout << "Start recording trace.\n"; \
 					state->recording_trace = new Trace(op, cur_ip, ip_ptr, vmm, call_frame); \
 				}																																\
 			}																																	\

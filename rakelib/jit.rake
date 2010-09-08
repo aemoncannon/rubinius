@@ -65,12 +65,17 @@ namespace :jit do
     types = []
 
     str.split("\n").each do |line|
+      line.gsub!(
+                 '%"struct.std::basic_string<char,std::char_traits<char>,std::allocator<char> >::_Alloc_hider"',
+                 '%"struct.rubinius::HeaderWord"')
+
       classes.each do |klass|
         if /%"?struct.#{klass}(::\$[^\s]+)?"? = type/.match(line)
           types << line
         end
       end
     end
+
 
     opaque = %w!VM TypeInfo VMMethod Fixnum Symbol Selector LookupTable MethodTable
                 jit::RuntimeDataHolder Inliners!
