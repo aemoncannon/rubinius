@@ -175,8 +175,8 @@ namespace rubinius {
 
     void visit_goto(opcode ip) {
 
-			// Skip useless unconditional jumps (artifacts of
-			// tracing).
+			// Skip useless unconditional jumps (not needed in
+			// trace).
 			if(cur_trace_node_->next->trace_pc == (int)ip &&
 				 cur_trace_node_->next != trace_->anchor){
 				return;
@@ -190,17 +190,13 @@ namespace rubinius {
 
    
     void visit_goto_if_false(opcode ip) {
-
       Value* cond = stack_pop();
-
       Value* i = b().CreatePtrToInt(
 				cond, ls_->IntPtrTy, "as_int");
-
       Value* anded = b().CreateAnd(
 				i,
 				ConstantInt::get(ls_->IntPtrTy, FALSE_MASK), 
 				"and");
-
       Value* cmp = b().CreateICmpEQ(
 				anded,
 				ConstantInt::get(ls_->IntPtrTy, cFalse), 
@@ -209,12 +205,41 @@ namespace rubinius {
       BasicBlock* cont = new_block("continue");
       BasicBlock* exit_stub = new_block("exit_stub");
 
-      b().CreateCondBr(cmp, exit_stub, cont);
-
-      set_block(exit_stub);
+			if(cur_trace_node_->jump_taken){
+				b().CreateCondBr(cmp, cont, exit_stub);
+			}
+			else{
+				b().CreateCondBr(cmp, exit_stub, cont);
+			}
+			set_block(exit_stub);
 			emit_uncommon(cur_trace_node_->interp_jump_target());
+			set_block(cont);
+    }
 
-      set_block(cont);
+    void visit_goto_if_true(opcode ip) {
+      Value* cond = stack_pop();
+      Value* i = b().CreatePtrToInt(
+				cond, ls_->IntPtrTy, "as_int");
+      Value* anded = b().CreateAnd(
+				i,
+				ConstantInt::get(ls_->IntPtrTy, FALSE_MASK), "and");
+
+      Value* cmp = b().CreateICmpNE(
+				anded,
+				ConstantInt::get(ls_->IntPtrTy, cFalse), "is_true");
+
+			BasicBlock* cont = new_block("continue");
+      BasicBlock* exit_stub = new_block("exit_stub");
+
+			if(cur_trace_node_->jump_taken){
+				b().CreateCondBr(cmp, cont, exit_stub);
+			}
+			else{
+				b().CreateCondBr(cmp, exit_stub, cont);
+			}
+			set_block(exit_stub);
+			emit_uncommon(cur_trace_node_->interp_jump_target());
+			set_block(cont);
     }
 
 

@@ -47,6 +47,7 @@ namespace rubinius {
 		int pc_base;
 		int call_depth;
 		Trace* nested_trace;
+		bool jump_taken;
 
 		int total_size;
 		int numargs;

@@ -21,3 +21,33 @@ vm/instructions.cpp defines the DISPATCH macro. vm/gen/instruction_implementatio
 
 1. trace start and end
 2. generate instructions?
+
+
+[
+run - 8(8): op_push_local 1
+run - 10(10): op_push_const_fast 0, 1
+run - 13(13): op_meta_send_op_lt 156553120
+run - 15(15): op_goto_if_false 43
+run - 17(17): op_push_local 1
+run - 19(19): op_meta_push_1 
+run - 20(20): op_meta_send_op_plus 156553180
+run - 22(22): op_set_local 1
+run - 24(24): op_pop 
+run - 25(25): op_push_local 0            106
+run - 27(27): op_push_const_fast 4, 5     106,Math
+run - 30(30): op_push_literal 6           106,Math,4.0 
+run - 32(32): op_send_stack 156553240, 1   106 
+  sqrt - 45(0): op_push_self  : active_send(32)     106,kernel
+  sqrt - 46(1): op_push_local 0 : active_send(32)    106,kernel,x
+  sqrt - 48(3): op_allow_private  : active_send(32)   106,kernel,x
+  sqrt - 49(4): op_send_stack 152182000, 1 : active_send(32)     106
+    Float - 79(0): op_push_local 0 : active_send(49) : parent(32)  106,x
+    Float - 81(2): op_send_method 150168832 : active_send(49) : parent(32)  106
+      nil? - 278(0): op_push_false  : active_send(81) : parent(49)    106,false
+      nil? - 279(1): op_ret  : active_send(81) : parent(49)   106,false
+    Float - 83(4): op_goto_if_false 98 : active_send(49) : parent(32)  106,false
+    Float - 98(19): op_push_nil  : active_send(49) : parent(32)
+    Float - 99(20): op_pop  : active_send(49) : parent(32)
+    Float - 100(21): op_push_local 0 : active_send(49) : parent(32)
+    Float - 102(23): op_push_const_fast 5, 6 : active_send(49) : parent(32)
+    Float - 105(26): op_send_stack 150168952, 1 : active_send(49) : parent(32)

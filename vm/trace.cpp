@@ -33,7 +33,8 @@ namespace rubinius {
 			trace_pc(0),
 			pc_base(pc_base),
 			call_depth(depth),
-			nested_trace(NULL)
+			nested_trace(NULL),
+			jump_taken(false)
 
 	{
 #include "vm/gen/instruction_trace_record.hpp"
@@ -120,6 +121,18 @@ namespace rubinius {
 					parent_send = prev->active_send;
 					active_send = prev;
 					call_depth += 1;
+				}
+			}
+			else{ // In the same callframe as last node..
+				if(prev->op == InstructionSequence::insn_goto_if_true ||
+					 prev->op == InstructionSequence::insn_goto_if_false){
+					if(pc == prev->interp_jump_target()){
+						std::cout << "Recorded Jump Taken.\n";
+						prev->jump_taken = true;
+					}
+					else{
+						std::cout << "Recorded Jump NOT Taken.\n";
+					}
 				}
 			}
 
