@@ -102,6 +102,9 @@ namespace rubinius {
 			Value* ip_mem = get_field(call_frame, offset::cf_ip);
 			b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), ip_mem);
 
+			// Allocate a shared counter, used for looping when initializing stack
+			// and locals at each send
+			info_->set_counter(b().CreateAlloca(ls_->Int32Ty, 0, "counter_alloca"));
 
 			allocate_call_structures();
 

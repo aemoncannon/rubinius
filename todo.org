@@ -6,3 +6,7 @@
 * Work on sqroot benchmark
 
 * what if we exit on home call_frame, but at a different ip? should be ok to continue
+
+* must be allocating something on each frame in trace, which eventually causes segfault
+
+* regression tests!!!

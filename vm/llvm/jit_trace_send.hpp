@@ -97,8 +97,6 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 		ConstantInt::get(ls_->Int32Ty, flags),
 		get_field(call_frame_, offset::cf_flags));
 
-	info()->set_counter(b().CreateAlloca(ls_->Int32Ty, 0, "counter_alloca"));
-
   // Store return ip in previous call_frame.
 	// (skip over the 2 stack_send args)
 	b().CreateStore(ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc + 3),
@@ -369,40 +367,40 @@ void setup_scope() {
 }
 
 
-void nil_stack(int size, Value* nil) {
-	if(size == 0) return;
-	// Stack size 5 or less, do 5 stores in a row rather than
-	// the loop.
-	if(size <= 5) {
-		for(int i = 0; i < size; i++) {
-			b().CreateStore(nil, b().CreateConstGEP1_32(info()->stack(), i, "stack_pos"));
-		}
-		return;
-	}
+// void nil_stack(int size, Value* nil) {
+// 	if(size == 0) return;
+// 	// Stack size 5 or less, do 5 stores in a row rather than
+// 	// the loop.
+// 	if(size <= 5) {
+// 		for(int i = 0; i < size; i++) {
+// 			b().CreateStore(nil, b().CreateConstGEP1_32(info()->stack(), i, "stack_pos"));
+// 		}
+// 		return;
+// 	}
 
-	Value* max = ConstantInt::get(ls_->Int32Ty, size);
-	Value* one = ConstantInt::get(ls_->Int32Ty, 1);
+// 	Value* max = ConstantInt::get(ls_->Int32Ty, size);
+// 	Value* one = ConstantInt::get(ls_->Int32Ty, 1);
 
-	BasicBlock* top = BasicBlock::Create(ls_->ctx(), "stack_nil", info()->function());
-	BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "bottom", info()->function());
+// 	BasicBlock* top = BasicBlock::Create(ls_->ctx(), "stack_nil", info()->function());
+// 	BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "bottom", info()->function());
 
-	b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), info()->counter());
+// 	b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), info()->counter());
 
-	b().CreateBr(top);
+// 	b().CreateBr(top);
 
-	b().SetInsertPoint(top);
+// 	b().SetInsertPoint(top);
 
-	Value* cur = b().CreateLoad(info()->counter(), "counter");
-	b().CreateStore(nil, b().CreateGEP(info()->stack(), cur, "stack_pos"));
+// 	Value* cur = b().CreateLoad(info()->counter(), "counter");
+// 	b().CreateStore(nil, b().CreateGEP(info()->stack(), cur, "stack_pos"));
 
-	Value* added = b().CreateAdd(cur, one, "added");
-	b().CreateStore(added, info()->counter());
+// 	Value* added = b().CreateAdd(cur, one, "added");
+// 	b().CreateStore(added, info()->counter());
 
-	Value* cmp = b().CreateICmpEQ(added, max, "loop_check");
-	b().CreateCondBr(cmp, cont, top);
+// 	Value* cmp = b().CreateICmpEQ(added, max, "loop_check");
+// 	b().CreateCondBr(cmp, cont, top);
 
-	b().SetInsertPoint(cont);
-}
+// 	b().SetInsertPoint(cont);
+// }
 
 void nil_locals() {
 	const llvm::Type* obj_type = ls_->ptr_type("Object");
