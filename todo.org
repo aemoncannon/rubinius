@@ -1,12 +1,33 @@
-* Publicize the project. 
-** Put it up on github, with simple benchmarks.
-** Tell Evan and co.
-** Ask for advice on what to try next.
 
-* Work on sqroot benchmark
+* What if we exit on home call_frame, but at a different ip? should be ok to continue
 
-* what if we exit on home call_frame, but at a different ip? should be ok to continue
 
-* must be allocating something on each frame in trace, which eventually causes segfault
 
-* regression tests!!!
+* Regression tests!!!
+
+* Exception handling
+  - Recording needs to bail if an exception is thrown!
+  - Exception handling code at jit_trace.cpp #377 - what is that?
+  - setup_unwind, pop_unwind (handlers are linked in PassOne)
+  - push_exception_state, pop_exception_state (for saving state to stack)
+** Plan
+   - What happens in method JIT:
+       - Instead of UnwindInfos, JITBasicBlocks hold info for exception handler
+       - Exception handling is handled entirely in JITed code (see visit_setup_unwind)
+       - If no handlers, jump to bail_out_fast, which returns nil to interp
+       - I _think_ current_unwind == 0 at this point, so interp exceptio handler just 
+	 returns to caller, handing over control of the exception to the caller
+
+   - So for Trace:
+     - Stop recording if you hit a raise_x operation
+     - When you record a setup_unwind, duplicate the interp behaviour:
+         UnwindInfo& info = unwinds[current_unwind++];
+         info.target_ip = ip;
+         info.stack_depth = stack_calculate_sp();
+         info.type = (UnwindType)type;
+
+     - Then if we unexpectedly hit a raise*, set the flag
+       and bail to uncommon. Let interpreter handle the chain of exception
+       handling.
+       
+
