@@ -200,6 +200,10 @@ namespace rubinius {
       return module_->getTypeByName(full_name.c_str());
     }
 
+		Value* int32(int i) {
+			return ConstantInt::get(ls_->Int32Ty, i);
+		}
+
     Value* ptr_gep(Value* ptr, int which, const char* name) {
       return b().CreateConstGEP2_32(ptr, 0, which, name);
     }

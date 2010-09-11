@@ -122,6 +122,7 @@ namespace rubinius {
 
     llvm::BasicBlock* return_pad_;
     llvm::PHINode* return_phi_;
+    llvm::BasicBlock* trace_exit_pad_;
 
   public:
     VMMethod* vmm;
@@ -135,10 +136,16 @@ namespace rubinius {
 
 		typedef std::map<int, llvm::Value*> ValMap;
 
-
     ValMap pre_allocated_args;
     ValMap pre_allocated_stacks;
     ValMap pre_allocated_vars;
+
+    llvm::PHINode* trace_ip_phi;
+    llvm::PHINode* next_ip_phi;
+    llvm::PHINode* exit_ip_phi;
+    llvm::PHINode* exit_stk_phi;
+    llvm::PHINode* exit_cf_phi;
+
 
     JITMethodInfo* root;
 
@@ -178,6 +185,14 @@ namespace rubinius {
 
     llvm::Value* trace_info() {
       return trace_info_;
+    }
+
+    void set_trace_exit_pad(llvm::BasicBlock* trace_exit_pad) {
+      trace_exit_pad_ = trace_exit_pad;
+    }
+
+    llvm::BasicBlock* trace_exit_pad() {
+      return trace_exit_pad_;
     }
 
     void set_block_env(llvm::Value* env) {
@@ -286,6 +301,8 @@ namespace rubinius {
 
 		void init_return_pad();
 
+		void init_trace_exit_pad();
+
     void set_parent_info(JITMethodInfo* info) {
       parent_info_ = info;
       vm_ = info->vm();
@@ -295,6 +312,7 @@ namespace rubinius {
 			trace_info_ = info->trace_info();
 			return_phi_ = info->return_phi();
 			return_pad_ = info->return_pad();
+			trace_exit_pad_ = info->trace_exit_pad();
 
       set_function(info->function());
     }
@@ -489,6 +507,9 @@ namespace rubinius {
     const llvm::Type* DoubleTy;
 
     const llvm::Type* Int8PtrTy;
+
+    const llvm::Type* ObjType;
+    const llvm::Type* ObjArrayTy;
 
     static LLVMState* get(STATE);
     static void shutdown(STATE);
