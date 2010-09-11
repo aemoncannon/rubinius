@@ -125,7 +125,7 @@ namespace rubinius {
       b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nested_pos);
 
 			// Call the nested trace
-			Signature sig(ls_, ls_->VoidTy);
+			Signature sig(ls_, "Object");
 			sig << "VM";
 			sig << "CallFrame";
 			sig << ObjArrayTy;
@@ -140,7 +140,7 @@ namespace rubinius {
 				ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc),
 				info()->trace_info()
 			};
-			sig.call("rbx_call_trace", call_args, 6, "", b());
+			Value* ret = sig.call("rbx_call_trace", call_args, 6, "", b());
 
 			// Restore the trace-info for the parent trace
       b().CreateStore(save_expected_exit_ip, exp_exit_ip_pos);
@@ -158,9 +158,10 @@ namespace rubinius {
       b().CreateCondBr(not_nestable, not_nestable_b, cont);
 
 			//  The nested trace must have bailed into the uncommon interpreter and has 
-			//  already popped its home call_frame.  This trace is no longer relavent.
+			//  already popped its home call_frame.  This trace is no longer relevant.
       set_block(not_nestable_b);
-			return_value(constant(Qnil));
+
+			return_value(ret);
 
 			// The nested trace exited on the expected_ip, on its home callframe.
 			// Continue on our merry way.
@@ -375,9 +376,8 @@ namespace rubinius {
 			sig << ObjArrayTy;
 
 			Value* call_args[] = { info()->vm(), info()->call_frame(), cint(target_pc), stk};
-			Value* call = sig.call("rbx_continue_uncommon", call_args, 4, "", b());
-			
-			return_value(call);
+			Value* ret = sig.call("rbx_continue_uncommon", call_args, 4, "", b());
+			return_value(ret);
     }
 
     void visit_push_has_block() {

@@ -56,7 +56,12 @@ extern "C" {
 
   void rbx_show_obj(STATE, Object* obj)
   {
-		obj->type_info(state)->show(state, obj, 1);
+		if(obj == NULL){
+			std::cout << "NULL Object pointer.\n";
+		}
+		else{
+			obj->type_info(state)->show(state, obj, 1);
+		}
   }
 
 

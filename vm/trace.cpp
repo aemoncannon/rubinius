@@ -127,11 +127,7 @@ namespace rubinius {
 				if(prev->op == InstructionSequence::insn_goto_if_true ||
 					 prev->op == InstructionSequence::insn_goto_if_false){
 					if(pc == prev->interp_jump_target()){
-						std::cout << "Recorded Jump Taken.\n";
 						prev->jump_taken = true;
-					}
-					else{
-						std::cout << "Recorded Jump NOT Taken.\n";
 					}
 				}
 			}

@@ -155,7 +155,7 @@ Object* VMMethod::interpreter(STATE,
 				/* uncommon interpreter, which will have already finished  */		\
 				/* interpreting this invocation, so we pop this frame. */				\
 				if(!(ti.nestable)){																							\
-					std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n";	\
+					std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n"; \
 					return ret;																										\
 				}																																\
 				std::cout << "Polite exit.\n";																	\
@@ -173,13 +173,14 @@ Object* VMMethod::interpreter(STATE,
 				TraceInfo ti;																										\
 				ti.entry_call_frame = call_frame;																\
 				ti.recording = true;																						\
-				std::cout << "Running nested trace while recording.\n";          \
+				std::cout << "Running nested trace while recording.\n";					\
 				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
 				/* If traceinfo answers false to nestable, the nested trace must have bailed into */ \
 				/* uncommon interpreter, we consider this recording invalidated.  */ \
 				/* Pop the frame  */																						\
 				if(!(ti.nestable)){																							\
-					std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n";	\
+					std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n"; \
+					std::cout << "Failed to record nested trace, throwing away recording\n"; \
 					delete state->recording_trace;																\
 					state->recording_trace = NULL;																\
 					return ret;																										\

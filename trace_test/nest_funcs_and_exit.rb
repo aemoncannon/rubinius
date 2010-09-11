@@ -16,7 +16,6 @@ def calc(i)
   k
 end
 
-
 def run()
   j = 0
   i = 0

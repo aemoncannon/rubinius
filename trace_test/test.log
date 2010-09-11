@@ -1,18 +1,17 @@
 
-0.0225288867950439 seconds.
+0.0209548473358154 seconds.
 .
 Start recording trace.
-Recorded Jump NOT Taken.
 Trace finished.
 Trace Compiled.
 [
 run - 4(4): op_push_local 0
 run - 6(6): op_push_const_fast 0, 1
-run - 9(9): op_meta_send_op_lt 183484072
+run - 9(9): op_meta_send_op_lt 184868520
 run - 11(11): op_goto_if_false 24
 run - 13(13): op_push_local 0
 run - 15(15): op_meta_push_1 
-run - 16(16): op_meta_send_op_plus 183484132
+run - 16(16): op_meta_send_op_plus 184868580
 run - 18(18): op_set_local 0
 run - 20(20): op_pop 
 run - 21(21): op_check_interrupts 
@@ -20,25 +19,24 @@ run - 22(22): op_goto 4
 ]
 Running trace.
 Polite exit.
-1.41255402565002 seconds.
+1.32525587081909 seconds.
 .
 Start recording trace.
-Recorded Jump NOT Taken.
 Trace finished.
 Trace Compiled.
 [
 run - 29(29): op_push_local 2
 run - 31(31): op_push_literal 4
-run - 33(33): op_meta_send_op_lt 168452480
+run - 33(33): op_meta_send_op_lt 164594048
 run - 35(35): op_goto_if_false 56
 run - 37(37): op_push_local 0
 run - 39(39): op_meta_push_1 
-run - 40(40): op_meta_send_op_plus 168452540
+run - 40(40): op_meta_send_op_plus 164594108
 run - 42(42): op_set_local 0
 run - 44(44): op_pop 
 run - 45(45): op_push_local 2
 run - 47(47): op_meta_push_1 
-run - 48(48): op_meta_send_op_plus 168452600
+run - 48(48): op_meta_send_op_plus 164594168
 run - 50(50): op_set_local 2
 run - 52(52): op_pop 
 run - 53(53): op_check_interrupts 
@@ -147,7 +145,6 @@ Polite exit.
 Running trace.
 Polite exit.
 Start recording trace.
-Recorded Jump NOT Taken.
 Running nested trace while recording.
 Polite exit.
 Trace finished.
@@ -155,11 +152,11 @@ Trace Compiled.
 [
 run - 8(8): op_push_local 1
 run - 10(10): op_push_const_fast 0, 1
-run - 13(13): op_meta_send_op_lt 168452360
+run - 13(13): op_meta_send_op_lt 164593928
 run - 15(15): op_goto_if_false 61
 run - 17(17): op_push_local 1
 run - 19(19): op_meta_push_1 
-run - 20(20): op_meta_send_op_plus 168452420
+run - 20(20): op_meta_send_op_plus 164593988
 run - 22(22): op_set_local 1
 run - 24(24): op_pop 
 run - 25(25): op_meta_push_0 
@@ -175,20 +172,19 @@ Running trace.
 Polite exit.
 Running trace.
 Polite exit.
-1.15468096733093 seconds.
+1.11966705322266 seconds.
 .
 Start recording trace.
-Recorded Jump NOT Taken.
 Trace finished.
 Trace Compiled.
 [
 foo - 4(4): op_push_local 0
 foo - 6(6): op_push_literal 0
-foo - 8(8): op_meta_send_op_lt 178785952
+foo - 8(8): op_meta_send_op_lt 184286880
 foo - 10(10): op_goto_if_false 23
 foo - 12(12): op_push_local 0
 foo - 14(14): op_meta_push_1 
-foo - 15(15): op_meta_send_op_plus 178786012
+foo - 15(15): op_meta_send_op_plus 184286940
 foo - 17(17): op_set_local 0
 foo - 19(19): op_pop 
 foo - 20(20): op_check_interrupts 
@@ -297,7 +293,6 @@ Polite exit.
 Running trace.
 Polite exit.
 Start recording trace.
-Recorded Jump NOT Taken.
 Running nested trace while recording.
 Polite exit.
 Trace finished.
@@ -305,17 +300,17 @@ Trace Compiled.
 [
 run - 8(8): op_push_local 1
 run - 10(10): op_push_const_fast 0, 1
-run - 13(13): op_meta_send_op_lt 178787024
+run - 13(13): op_meta_send_op_lt 184287952
 run - 15(15): op_goto_if_false 39
 run - 17(17): op_push_local 1
 run - 19(19): op_meta_push_1 
-run - 20(20): op_meta_send_op_plus 178787084
+run - 20(20): op_meta_send_op_plus 184288012
 run - 22(22): op_set_local 1
 run - 24(24): op_pop 
 run - 25(25): op_push_local 0
 run - 27(27): op_push_self 
 run - 28(28): op_allow_private 
-run - 29(29): op_send_method 178787144
+run - 29(29): op_send_method 184288072
   foo - 44(0): op_meta_push_0  : active_send(29)
   foo - 45(1): op_set_local 0 : active_send(29)
   foo - 47(3): op_pop  : active_send(29)
@@ -324,7 +319,7 @@ run - 29(29): op_send_method 178787144
   foo - 68(24): op_pop  : active_send(29)
   foo - 69(25): op_push_local 0 : active_send(29)
   foo - 71(27): op_ret  : active_send(29)
-run - 31(31): op_meta_send_op_plus 178787204
+run - 31(31): op_meta_send_op_plus 184288132
 run - 33(33): op_set_local 0
 run - 35(35): op_pop 
 run - 36(36): op_check_interrupts 
@@ -335,30 +330,28 @@ Polite exit.
 Running trace.
 Polite exit.
 Start recording trace.
-Recorded Jump NOT Taken.
-Recorded Jump NOT Taken.
 Trace finished.
 Trace Compiled.
 [
 calc - 4(4): op_push_local 1
 calc - 6(6): op_push_int 100
-calc - 8(8): op_meta_send_op_lt 158564824
+calc - 8(8): op_meta_send_op_lt 171647448
 calc - 10(10): op_goto_if_false 29
 calc - 12(12): op_push_local 1
 calc - 14(14): op_push_self 
 calc - 15(15): op_push_local 0
 calc - 17(17): op_allow_private 
-calc - 18(18): op_send_stack 158564884, 1
+calc - 18(18): op_send_stack 171647508, 1
   foo - 34(0): op_push_local 0 : active_send(18)
   foo - 36(2): op_push_const_fast 0, 1 : active_send(18)
   foo - 39(5): op_push_literal 2 : active_send(18)
-  foo - 41(7): op_send_stack 158563920, 1 : active_send(18)
-  foo - 44(10): op_meta_send_op_lt 158563980 : active_send(18)
+  foo - 41(7): op_send_stack 171646544, 1 : active_send(18)
+  foo - 44(10): op_meta_send_op_lt 171646604 : active_send(18)
   foo - 46(12): op_goto_if_false 51 : active_send(18)
   foo - 48(14): op_meta_push_2  : active_send(18)
   foo - 49(15): op_goto 52 : active_send(18)
   foo - 52(18): op_ret  : active_send(18)
-calc - 21(21): op_meta_send_op_plus 158564944
+calc - 21(21): op_meta_send_op_plus 171647568
 calc - 23(23): op_set_local 1
 calc - 25(25): op_pop 
 calc - 26(26): op_check_interrupts 
@@ -465,7 +458,6 @@ Polite exit.
 Running trace.
 Polite exit.
 Start recording trace.
-Recorded Jump NOT Taken.
 Running nested trace while recording.
 Polite exit.
 Trace finished.
@@ -473,18 +465,18 @@ Trace Compiled.
 [
 run - 8(8): op_push_local 1
 run - 10(10): op_push_const_fast 0, 1
-run - 13(13): op_meta_send_op_lt 158565936
+run - 13(13): op_meta_send_op_lt 171648560
 run - 15(15): op_goto_if_false 42
 run - 17(17): op_push_local 1
 run - 19(19): op_meta_push_1 
-run - 20(20): op_meta_send_op_plus 158565996
+run - 20(20): op_meta_send_op_plus 171648620
 run - 22(22): op_set_local 1
 run - 24(24): op_pop 
 run - 25(25): op_push_local 0
 run - 27(27): op_push_self 
 run - 28(28): op_push_local 1
 run - 30(30): op_allow_private 
-run - 31(31): op_send_stack 158566056, 1
+run - 31(31): op_send_stack 171648680, 1
   calc - 47(0): op_meta_push_0  : active_send(31)
   calc - 48(1): op_set_local 1 : active_send(31)
   calc - 50(3): op_pop  : active_send(31)
@@ -493,7 +485,7 @@ run - 31(31): op_send_stack 158566056, 1
   calc - 77(30): op_pop  : active_send(31)
   calc - 78(31): op_push_local 1 : active_send(31)
   calc - 80(33): op_ret  : active_send(31)
-run - 34(34): op_meta_send_op_plus 158566116
+run - 34(34): op_meta_send_op_plus 171648740
 run - 36(36): op_set_local 0
 run - 38(38): op_pop 
 run - 39(39): op_check_interrupts 
@@ -10313,12 +10305,13 @@ Exit at trace_pc: 46
 Running trace.
 Exit at trace_pc: 46
 Running trace.
-Exit at trace_pc: 0.312155961990356 seconds.
-46
-Running trace.
 Exit at trace_pc: 46
 Running trace.
 Exit at trace_pc: 46
+Running trace.
+Exit at trace_pc: 46
+0.448817014694214 seconds.
+.
 Running trace.
 Exit at trace_pc: 46
 Running trace.
@@ -10506,29 +10499,27 @@ Exit at trace_pc: 46
 Exit at trace_pc: 46
 Result: -2
 Start recording trace.
-Recorded Jump NOT Taken.
-Recorded Jump NOT Taken.
 Trace finished.
 Trace Compiled.
 [
 run - 8(8): op_push_local 1
 run - 10(10): op_push_const_fast 0, 1
-run - 13(13): op_meta_send_op_lt 160182664
+run - 13(13): op_meta_send_op_lt 179089800
 run - 15(15): op_goto_if_false 58
 run - 17(17): op_push_local 1
 run - 19(19): op_meta_push_1 
-run - 20(20): op_meta_send_op_plus 160182724
+run - 20(20): op_meta_send_op_plus 179089860
 run - 22(22): op_set_local 1
 run - 24(24): op_pop 
 run - 25(25): op_push_local 1
 run - 27(27): op_push_const_fast 0, 4
 run - 30(30): op_meta_push_2 
-run - 31(31): op_send_stack 160182784, 1
-run - 34(34): op_meta_send_op_lt 160182844
+run - 31(31): op_send_stack 179089920, 1
+run - 34(34): op_meta_send_op_lt 179089980
 run - 36(36): op_goto_if_false 47
 run - 38(38): op_push_local 0
 run - 40(40): op_meta_push_1 
-run - 41(41): op_meta_send_op_plus 160182904
+run - 41(41): op_meta_send_op_plus 179090040
 run - 43(43): op_set_local 0
 run - 45(45): op_goto 54
 run - 54(54): op_pop 
@@ -110532,42 +110523,36 @@ Polite exit.
 Running trace.
 Polite exit.
 Running trace.
-Polite exResult: -2
-0.039564847946167 seconds.
+Polite exit.
+Running trace.
+Polite exit.
+Running trace.
+PolResult: -2
+0.039503812789917 seconds.
 .
-it.
-Running trace.
-Polite exit.
-Running trace.
-Polite exit.
+ite exit.
 Running trace.
 Polite exit.
 Start recording trace.
-Recorded Jump Taken.
 Start recording trace.
-Recorded Jump NOT Taken.
-Recorded Jump NOT Taken.
-Recorded Jump NOT Taken.
-Recorded Jump NOT Taken.
-Recorded Jump Taken.
 Trace finished.
 Trace Compiled.
 [
 run - 8(8): op_push_local 1
 run - 10(10): op_push_const_fast 0, 1
-run - 13(13): op_meta_send_op_lt 166938432
+run - 13(13): op_meta_send_op_lt 180094784
 run - 15(15): op_goto_if_false 42
 run - 17(17): op_push_local 0
 run - 19(19): op_push_self 
 run - 20(20): op_push_local 1
 run - 22(22): op_allow_private 
-run - 23(23): op_send_stack 166938492, 1
+run - 23(23): op_send_stack 180094844, 1
   calc - 47(0): op_meta_push_0  : active_send(23)
   calc - 48(1): op_set_local 1 : active_send(23)
   calc - 50(3): op_pop  : active_send(23)
   calc - 51(4): op_meta_push_1  : active_send(23)
   calc - 52(5): op_create_block 0 : active_send(23)
-  calc - 54(7): op_send_stack_with_block 166937480, 0 : active_send(23)
+  calc - 54(7): op_send_stack_with_block 180093832, 0 : active_send(23)
     times - 61(0): op_push_has_block  : active_send(54) : parent(23)
     times - 62(1): op_goto_if_false 67 : active_send(54) : parent(23)
     times - 64(3): op_push_nil  : active_send(54) : parent(23)
@@ -110578,7 +110563,7 @@ run - 23(23): op_send_stack 166938492, 1
     times - 79(18): op_pop  : active_send(54) : parent(23)
     times - 80(19): op_push_local 0 : active_send(54) : parent(23)
     times - 82(21): op_push_self  : active_send(54) : parent(23)
-    times - 83(22): op_meta_send_op_lt 161282132 : active_send(54) : parent(23)
+    times - 83(22): op_meta_send_op_lt 174438484 : active_send(54) : parent(23)
     times - 85(24): op_goto_if_false 103 : active_send(54) : parent(23)
     times - 87(26): op_push_local 0 : active_send(54) : parent(23)
     times - 89(28): op_yield_stack 1 : active_send(54) : parent(23)
@@ -110586,15 +110571,15 @@ run - 23(23): op_send_stack 166938492, 1
       calc - 110(3): op_push_self  : active_send(89) : parent(54)
       calc - 111(4): op_push_local_depth 1, 0 : active_send(89) : parent(54)
       calc - 114(7): op_allow_private  : active_send(89) : parent(54)
-      calc - 115(8): op_send_stack 166936952, 1 : active_send(89) : parent(54)
+      calc - 115(8): op_send_stack 180093304, 1 : active_send(89) : parent(54)
         foo - 124(0): op_meta_push_0  : active_send(115) : parent(89)
         foo - 125(1): op_set_local 1 : active_send(115) : parent(89)
         foo - 127(3): op_pop  : active_send(115) : parent(89)
         foo - 128(4): op_push_local 0 : active_send(115) : parent(89)
         foo - 130(6): op_push_const_fast 0, 1 : active_send(115) : parent(89)
         foo - 133(9): op_meta_push_2  : active_send(115) : parent(89)
-        foo - 134(10): op_send_stack 166936336, 1 : active_send(115) : parent(89)
-        foo - 137(13): op_meta_send_op_lt 166936396 : active_send(115) : parent(89)
+        foo - 134(10): op_send_stack 180092688, 1 : active_send(115) : parent(89)
+        foo - 137(13): op_meta_send_op_lt 180092748 : active_send(115) : parent(89)
         foo - 139(15): op_goto_if_false 146 : active_send(115) : parent(89)
         foo - 141(17): op_meta_push_2  : active_send(115) : parent(89)
         foo - 142(18): op_set_local 1 : active_send(115) : parent(89)
@@ -110602,20 +110587,20 @@ run - 23(23): op_send_stack 166938492, 1
         foo - 150(26): op_pop  : active_send(115) : parent(89)
         foo - 151(27): op_push_local 1 : active_send(115) : parent(89)
         foo - 153(29): op_ret  : active_send(115) : parent(89)
-      calc - 118(11): op_meta_send_op_plus 166937012 : active_send(89) : parent(54)
+      calc - 118(11): op_meta_send_op_plus 180093364 : active_send(89) : parent(54)
       calc - 120(13): op_set_local_depth 1, 1 : active_send(89) : parent(54)
       calc - 123(16): op_ret  : active_send(89) : parent(54)
     times - 91(30): op_pop  : active_send(54) : parent(23)
     times - 92(31): op_push_local 0 : active_send(54) : parent(23)
     times - 94(33): op_meta_push_1  : active_send(54) : parent(23)
-    times - 95(34): op_meta_send_op_plus 161282192 : active_send(54) : parent(23)
+    times - 95(34): op_meta_send_op_plus 174438544 : active_send(54) : parent(23)
     times - 97(36): op_set_local 0 : active_send(54) : parent(23)
     times - 99(38): op_pop  : active_send(54) : parent(23)
     times - 100(39): op_check_interrupts  : active_send(54) : parent(23)
     times - 101(40): op_goto 80 : active_send(54) : parent(23)
     times - 80(19): op_push_local 0 : active_send(54) : parent(23)
     times - 82(21): op_push_self  : active_send(54) : parent(23)
-    times - 83(22): op_meta_send_op_lt 161282132 : active_send(54) : parent(23)
+    times - 83(22): op_meta_send_op_lt 174438484 : active_send(54) : parent(23)
     times - 85(24): op_goto_if_false 103 : active_send(54) : parent(23)
     times - 103(42): op_push_nil  : active_send(54) : parent(23)
     times - 104(43): op_pop  : active_send(54) : parent(23)
@@ -110624,26 +110609,24 @@ run - 23(23): op_send_stack 166938492, 1
   calc - 57(10): op_pop  : active_send(23)
   calc - 58(11): op_push_local 1 : active_send(23)
   calc - 60(13): op_ret  : active_send(23)
-run - 26(26): op_meta_send_op_plus 166938552
+run - 26(26): op_meta_send_op_plus 180094904
 run - 28(28): op_set_local 0
 run - 30(30): op_pop 
 run - 31(31): op_push_local 1
 run - 33(33): op_meta_push_1 
-run - 34(34): op_meta_send_op_plus 166938612
+run - 34(34): op_meta_send_op_plus 180094964
 run - 36(36): op_set_local 1
 run - 38(38): op_pop 
 run - 39(39): op_check_interrupts 
 run - 40(40): op_goto 8
 ]
 Start recording trace.
-Recorded Jump NOT Taken.
-Recorded Jump NOT Taken.
 Trace finished.
 Trace Compiled.
 [
 times - 19(19): op_push_local 0
 times - 21(21): op_push_self 
-times - 22(22): op_meta_send_op_lt 161282132
+times - 22(22): op_meta_send_op_lt 174438484
 times - 24(24): op_goto_if_false 42
 times - 26(26): op_push_local 0
 times - 28(28): op_yield_stack 1
@@ -110651,15 +110634,15 @@ times - 28(28): op_yield_stack 1
   calc - 49(3): op_push_self  : active_send(28)
   calc - 50(4): op_push_local_depth 1, 0 : active_send(28)
   calc - 53(7): op_allow_private  : active_send(28)
-  calc - 54(8): op_send_stack 166936952, 1 : active_send(28)
+  calc - 54(8): op_send_stack 180093304, 1 : active_send(28)
     foo - 63(0): op_meta_push_0  : active_send(54) : parent(28)
     foo - 64(1): op_set_local 1 : active_send(54) : parent(28)
     foo - 66(3): op_pop  : active_send(54) : parent(28)
     foo - 67(4): op_push_local 0 : active_send(54) : parent(28)
     foo - 69(6): op_push_const_fast 0, 1 : active_send(54) : parent(28)
     foo - 72(9): op_meta_push_2  : active_send(54) : parent(28)
-    foo - 73(10): op_send_stack 166936336, 1 : active_send(54) : parent(28)
-    foo - 76(13): op_meta_send_op_lt 166936396 : active_send(54) : parent(28)
+    foo - 73(10): op_send_stack 180092688, 1 : active_send(54) : parent(28)
+    foo - 76(13): op_meta_send_op_lt 180092748 : active_send(54) : parent(28)
     foo - 78(15): op_goto_if_false 85 : active_send(54) : parent(28)
     foo - 80(17): op_meta_push_2  : active_send(54) : parent(28)
     foo - 81(18): op_set_local 1 : active_send(54) : parent(28)
@@ -110667,13 +110650,13 @@ times - 28(28): op_yield_stack 1
     foo - 89(26): op_pop  : active_send(54) : parent(28)
     foo - 90(27): op_push_local 1 : active_send(54) : parent(28)
     foo - 92(29): op_ret  : active_send(54) : parent(28)
-  calc - 57(11): op_meta_send_op_plus 166937012 : active_send(28)
+  calc - 57(11): op_meta_send_op_plus 180093364 : active_send(28)
   calc - 59(13): op_set_local_depth 1, 1 : active_send(28)
   calc - 62(16): op_ret  : active_send(28)
 times - 30(30): op_pop 
 times - 31(31): op_push_local 0
 times - 33(33): op_meta_push_1 
-times - 34(34): op_meta_send_op_plus 161282192
+times - 34(34): op_meta_send_op_plus 174438544
 times - 36(36): op_set_local 0
 times - 38(38): op_pop 
 times - 39(39): op_check_interrupts 
@@ -210645,20 +210628,20 @@ Exit at trace_pc: 78
 Running trace.
 Exit at trace_pc: 78
 Running trace.
-Exit at tr0.179384231567383 seconds.
+Exit at trace_pc: 78
+Running trace.
+Exit at trace_pc: 78
+Running trace.
+Exit at trace_pc: 78
+Running trace.
+Exit at trace_pc: 78
+Running trace.
+Exit at trace_pc: 78
+Running trace.
+Exit at trace_pc: 78
+R0.178639888763428 seconds.
 .
-ace_pc: 78
-Running trace.
-Exit at trace_pc: 78
-Running trace.
-Exit at trace_pc: 78
-Running trace.
-Exit at trace_pc: 78
-Running trace.
-Exit at trace_pc: 78
-Running trace.
-Exit at trace_pc: 78
-Running trace.
+unning trace.
 Exit at trace_pc: 78
 Running trace.
 Exit at trace_pc: 78
@@ -210681,30 +210664,25 @@ Exit at trace_pc: 78
 Running trace.
 Exit at trace_pc: 78
 Exit at trace_pc: 139
-0.0905218124389648 seconds.
+0.0884017944335938 seconds.
 .
 Start recording trace.
-Recorded Jump Taken.
 Start recording trace.
-Recorded Jump NOT Taken.
-Recorded Jump NOT Taken.
-Recorded Jump NOT Taken.
-Recorded Jump Taken.
 Trace finished.
 Trace Compiled.
 [
 run - 8(8): op_push_local 1
 run - 10(10): op_push_const_fast 0, 1
-run - 13(13): op_meta_send_op_lt 187380216
+run - 13(13): op_meta_send_op_lt 172044792
 run - 15(15): op_goto_if_false 42
 run - 17(17): op_push_local 0
 run - 19(19): op_push_self 
 run - 20(20): op_push_local 1
 run - 22(22): op_allow_private 
-run - 23(23): op_send_stack 187380276, 1
+run - 23(23): op_send_stack 172044852, 1
   calc - 47(0): op_meta_push_1  : active_send(23)
   calc - 48(1): op_create_block 0 : active_send(23)
-  calc - 50(3): op_send_stack_with_block 187379264, 0 : active_send(23)
+  calc - 50(3): op_send_stack_with_block 172043840, 0 : active_send(23)
     times - 54(0): op_push_has_block  : active_send(50) : parent(23)
     times - 55(1): op_goto_if_false 60 : active_send(50) : parent(23)
     times - 57(3): op_push_nil  : active_send(50) : parent(23)
@@ -210715,7 +210693,7 @@ run - 23(23): op_send_stack 187380276, 1
     times - 72(18): op_pop  : active_send(50) : parent(23)
     times - 73(19): op_push_local 0 : active_send(50) : parent(23)
     times - 75(21): op_push_self  : active_send(50) : parent(23)
-    times - 76(22): op_meta_send_op_lt 181725268 : active_send(50) : parent(23)
+    times - 76(22): op_meta_send_op_lt 166389844 : active_send(50) : parent(23)
     times - 78(24): op_goto_if_false 96 : active_send(50) : parent(23)
     times - 80(26): op_push_local 0 : active_send(50) : parent(23)
     times - 82(28): op_yield_stack 1 : active_send(50) : parent(23)
@@ -210724,39 +210702,38 @@ run - 23(23): op_send_stack 187380276, 1
     times - 84(30): op_pop  : active_send(50) : parent(23)
     times - 85(31): op_push_local 0 : active_send(50) : parent(23)
     times - 87(33): op_meta_push_1  : active_send(50) : parent(23)
-    times - 88(34): op_meta_send_op_plus 181725328 : active_send(50) : parent(23)
+    times - 88(34): op_meta_send_op_plus 166389904 : active_send(50) : parent(23)
     times - 90(36): op_set_local 0 : active_send(50) : parent(23)
     times - 92(38): op_pop  : active_send(50) : parent(23)
     times - 93(39): op_check_interrupts  : active_send(50) : parent(23)
     times - 94(40): op_goto 73 : active_send(50) : parent(23)
     times - 73(19): op_push_local 0 : active_send(50) : parent(23)
     times - 75(21): op_push_self  : active_send(50) : parent(23)
-    times - 76(22): op_meta_send_op_lt 181725268 : active_send(50) : parent(23)
+    times - 76(22): op_meta_send_op_lt 166389844 : active_send(50) : parent(23)
     times - 78(24): op_goto_if_false 96 : active_send(50) : parent(23)
     times - 96(42): op_push_nil  : active_send(50) : parent(23)
     times - 97(43): op_pop  : active_send(50) : parent(23)
     times - 98(44): op_push_self  : active_send(50) : parent(23)
     times - 99(45): op_ret  : active_send(50) : parent(23)
   calc - 53(6): op_ret  : active_send(23)
-run - 26(26): op_meta_send_op_plus 187380336
+run - 26(26): op_meta_send_op_plus 172044912
 run - 28(28): op_set_local 0
 run - 30(30): op_pop 
 run - 31(31): op_push_local 1
 run - 33(33): op_meta_push_1 
-run - 34(34): op_meta_send_op_plus 187380396
+run - 34(34): op_meta_send_op_plus 172044972
 run - 36(36): op_set_local 1
 run - 38(38): op_pop 
 run - 39(39): op_check_interrupts 
 run - 40(40): op_goto 8
 ]
 Start recording trace.
-Recorded Jump NOT Taken.
 Trace finished.
 Trace Compiled.
 [
 times - 19(19): op_push_local 0
 times - 21(21): op_push_self 
-times - 22(22): op_meta_send_op_lt 181725268
+times - 22(22): op_meta_send_op_lt 166389844
 times - 24(24): op_goto_if_false 42
 times - 26(26): op_push_local 0
 times - 28(28): op_yield_stack 1
@@ -210765,7 +210742,7 @@ times - 28(28): op_yield_stack 1
 times - 30(30): op_pop 
 times - 31(31): op_push_local 0
 times - 33(33): op_meta_push_1 
-times - 34(34): op_meta_send_op_plus 181725328
+times - 34(34): op_meta_send_op_plus 166389904
 times - 36(36): op_set_local 0
 times - 38(38): op_pop 
 times - 39(39): op_check_interrupts 
@@ -210773,36 +210750,34 @@ times - 40(40): op_goto 19
 ]
 Running trace.
 Polite exit.
-0.254984855651855 seconds.
+0.241477012634277 seconds.
 .
 Start recording trace.
-Recorded Jump NOT Taken.
-Recorded Jump NOT Taken.
 Trace finished.
 Trace Compiled.
 [
 run - 8(8): op_push_local 1
 run - 10(10): op_push_const_fast 0, 1
-run - 13(13): op_meta_send_op_lt 186450696
+run - 13(13): op_meta_send_op_lt 170480392
 run - 15(15): op_goto_if_false 42
 run - 17(17): op_push_local 1
 run - 19(19): op_meta_push_1 
-run - 20(20): op_meta_send_op_plus 186450756
+run - 20(20): op_meta_send_op_plus 170480452
 run - 22(22): op_set_local 1
 run - 24(24): op_pop 
 run - 25(25): op_push_local 0
 run - 27(27): op_push_self 
 run - 28(28): op_push_local 1
 run - 30(30): op_allow_private 
-run - 31(31): op_send_stack 186450816, 1
+run - 31(31): op_send_stack 170480512, 1
   calc - 47(0): op_meta_push_0  : active_send(31)
   calc - 48(1): op_set_local 1 : active_send(31)
   calc - 50(3): op_pop  : active_send(31)
   calc - 51(4): op_push_local 0 : active_send(31)
   calc - 53(6): op_push_const_fast 0, 1 : active_send(31)
   calc - 56(9): op_meta_push_2  : active_send(31)
-  calc - 57(10): op_send_stack 186449680, 1 : active_send(31)
-  calc - 60(13): op_meta_send_op_lt 186449740 : active_send(31)
+  calc - 57(10): op_send_stack 170479376, 1 : active_send(31)
+  calc - 60(13): op_meta_send_op_lt 170479436 : active_send(31)
   calc - 62(15): op_goto_if_false 69 : active_send(31)
   calc - 64(17): op_meta_push_2  : active_send(31)
   calc - 65(18): op_set_local 1 : active_send(31)
@@ -210810,7 +210785,7 @@ run - 31(31): op_send_stack 186450816, 1
   calc - 73(26): op_pop  : active_send(31)
   calc - 74(27): op_push_local 1 : active_send(31)
   calc - 76(29): op_ret  : active_send(31)
-run - 34(34): op_meta_send_op_plus 186450876
+run - 34(34): op_meta_send_op_plus 170480572
 run - 36(36): op_set_local 0
 run - 38(38): op_pop 
 run - 39(39): op_check_interrupts 
@@ -210820,40 +210795,38 @@ Running trace.
 Exit at trace_pc: 62
 Result: -500005
 Result: -500005
-0.321853160858154 seconds.
+0.283622026443481 seconds.
 .
 Start recording trace.
-Recorded Jump NOT Taken.
-Recorded Jump NOT Taken.
 Trace finished.
 Trace Compiled.
 [
 run - 8(8): op_push_local 1
 run - 10(10): op_push_const_fast 0, 1
-run - 13(13): op_meta_send_op_lt 164562224
+run - 13(13): op_meta_send_op_lt 157844784
 run - 15(15): op_goto_if_false 42
 run - 17(17): op_push_local 1
 run - 19(19): op_meta_push_1 
-run - 20(20): op_meta_send_op_plus 164562284
+run - 20(20): op_meta_send_op_plus 157844844
 run - 22(22): op_set_local 1
 run - 24(24): op_pop 
 run - 25(25): op_push_local 0
 run - 27(27): op_push_self 
 run - 28(28): op_push_local 1
 run - 30(30): op_allow_private 
-run - 31(31): op_send_stack 164562344, 1
+run - 31(31): op_send_stack 157844904, 1
   calc - 59(0): op_push_self  : active_send(31)
   calc - 60(1): op_push_local 0 : active_send(31)
   calc - 62(3): op_allow_private  : active_send(31)
-  calc - 63(4): op_send_stack 164561072, 1 : active_send(31)
+  calc - 63(4): op_send_stack 157843632, 1 : active_send(31)
     foo - 67(0): op_meta_push_0  : active_send(63) : parent(31)
     foo - 68(1): op_set_local 1 : active_send(63) : parent(31)
     foo - 70(3): op_pop  : active_send(63) : parent(31)
     foo - 71(4): op_push_local 0 : active_send(63) : parent(31)
     foo - 73(6): op_push_const_fast 0, 1 : active_send(63) : parent(31)
     foo - 76(9): op_meta_push_2  : active_send(63) : parent(31)
-    foo - 77(10): op_send_stack 164560664, 1 : active_send(63) : parent(31)
-    foo - 80(13): op_meta_send_op_lt 164560724 : active_send(63) : parent(31)
+    foo - 77(10): op_send_stack 157843224, 1 : active_send(63) : parent(31)
+    foo - 80(13): op_meta_send_op_lt 157843284 : active_send(63) : parent(31)
     foo - 82(15): op_goto_if_false 89 : active_send(63) : parent(31)
     foo - 84(17): op_meta_push_2  : active_send(63) : parent(31)
     foo - 85(18): op_set_local 1 : active_send(63) : parent(31)
@@ -210862,7 +210835,7 @@ run - 31(31): op_send_stack 164562344, 1
     foo - 94(27): op_push_local 1 : active_send(63) : parent(31)
     foo - 96(29): op_ret  : active_send(63) : parent(31)
   calc - 66(7): op_ret  : active_send(31)
-run - 34(34): op_meta_send_op_plus 164562404
+run - 34(34): op_meta_send_op_plus 157844964
 run - 36(36): op_set_local 0
 run - 38(38): op_pop 
 run - 39(39): op_check_interrupts 
