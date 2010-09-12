@@ -77,7 +77,15 @@ namespace rubinius {
 			head = anchor;
 			return TRACE_FINISHED;
 		}
+		else if(op == InstructionSequence::insn_raise_exc || 
+						op == InstructionSequence::insn_raise_return ||
+						op == InstructionSequence::insn_raise_break ||
+						op == InstructionSequence::insn_reraise){
+			std::cout << "Canceling record due to exception condition.\n";
+			return TRACE_CANCEL;
+		}
 		else if(op == InstructionSequence::insn_ret && call_frame == anchor->call_frame){
+			std::cout << "Canceling record due to return from home frame.\n";
 			return TRACE_CANCEL;
 		}
 		else{
@@ -168,41 +176,6 @@ namespace rubinius {
 		}
 		out << "]" << "\n";
 	}
-
-
-
-
-
-	// while(!work_list_.empty()) {
-	// 	int ip = work_list_.back();
-	// 	work_list_.pop_back();
-
-	// 	iter.switch_to(ip);
-
-	// 	while(seen_[iter.ip()] == 0) {
-	// 		seen_[iter.ip()] = 1;
-
-	// 		each.call(iter);
-
-	// 		if(iter.goto_p()) {
-	// 			opcode target = iter.goto_target();
-	// 			assert(target >= 0 && target < vmm_->total);
-
-	// 			add_section(target);
-
-	// 			// Non-terminating goto's stop the current block and queue the code
-	// 			// right after them.
-	// 			if(!iter.terminator_p() && iter.next_p()) add_section(iter.next_ip());
-	// 			break;
-	// 		}
-
-	// 		if(iter.terminator_p()) break;
-
-	// 		if(!iter.next_p()) break;
-	// 		iter.advance();
-	// 	}
-	//		}
-
 
 
 
