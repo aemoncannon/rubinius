@@ -19,15 +19,24 @@
 	 returns to caller, handing over control of the exception to the caller
 
    - So for Trace:
-     - Stop recording if you hit a raise_x operation
-     - When you record a setup_unwind, duplicate the interp behaviour:
-         UnwindInfo& info = unwinds[current_unwind++];
-         info.target_ip = ip;
-         info.stack_depth = stack_calculate_sp();
-         info.type = (UnwindType)type;
 
-     - Then if we unexpectedly hit a raise*, set the flag
-       and bail to uncommon. Let interpreter handle the chain of exception
-       handling.
+     - We assume we won't hit a raise that wasn't recorded.
+
+     - During recording, keep track of all the setup_unwind targets (ip and call_frame). 
+       If we hit a raise, followed by a an instruction at one of the 
+       unwind targets, then we know it's been rescued 'on trace'. Continue 
+       recording.
+
+       Otherwise, if the next instruction is not on same call_frame, or not at
+       one of the recorded unwind targets, then throw away the recording.
+
+       - So, when we're emitting code, we can ignore the setup_unwind.
+	 Any raise conditions are by defintion rescued and handled on trace.
+	 BUT, we do need to setup the correct call_frame and variable structure 
+	 (similiar to a traced return, but might have popped more than one frame).
+
+     - So consider the raise to be like a long, unconditional jump.
+
+
        
 

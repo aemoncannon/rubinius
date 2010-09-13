@@ -390,9 +390,9 @@ namespace rubinius {
 					// because code creates now blocks always within the
 					// scope of the current handler and it's illegal for code
 					// to generate a goto across a handler boundary
-					// if(exception_handlers_.size() > 0) {
-					// jbb.exception_handler = exception_handlers_.back();
-					// }
+					if(exception_handlers_.size() > 0) {
+						jbb.exception_handler = exception_handlers_.back();
+					}
 
 					if(ip < current_ip_) {
 						jbb.end_ip = current_ip_;
