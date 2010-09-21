@@ -130,8 +130,8 @@ Object* VMMethod::interpreter(STATE,
     if(!state->process_async(call_frame)) return NULL;
   }
 
-		opcode op;
-		int cur_ip;
+	opcode op;
+	int cur_ip;
 
 
 	goto continue_to_run;
@@ -161,6 +161,54 @@ Object* VMMethod::interpreter(STATE,
 		goto continue_to_run;																						
 	}
 
+ record_op:
+	{
+		Trace::Status s = state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame); 
+		if(s == Trace::TRACE_FINISHED){																	
+			std::cout << "Trace finished.\n";															
+			state->recording_trace->compile(state);												
+			std::cout << "Trace Compiled.\n";															
+			state->recording_trace->pretty_print(state, std::cout);				
+			vmm->traces[cur_ip] = state->recording_trace;									
+			state->recording_trace = NULL;																
+		}																																
+		else if(s == Trace::TRACE_CANCEL){															
+			delete state->recording_trace;																
+			state->recording_trace = NULL;																
+		}
+		goto **ip_ptr++;
+	}
+
+ record_nested_trace:
+	{
+		/* Add a virtual op that will cause call of nested trace to be emitted */ 
+		state->recording_trace->add(InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); 
+		TraceInfo ti;																										
+		ti.entry_call_frame = call_frame;																
+		ti.recording = true;																						
+		std::cout << "Running nested trace while recording.\n";					
+		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); 
+		/* If traceinfo answers false to nestable, the nested trace must have bailed into */ 
+		/* uncommon interpreter, we consider this recording invalidated.  */ 
+		/* Pop the frame  */																						
+		if(!(ti.nestable)){																							
+			std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n"; 
+			std::cout << "Failed to record nested trace, throwing away recording\n"; 
+			delete state->recording_trace;																
+			state->recording_trace = NULL;																
+			return ret;																										
+		}																																
+		std::cout << "Polite exit.\n";																	
+		/* Otherwise, we know that the */																
+		/* trace exited politely, and A) we can keep rolling with the */ 
+		/* same call_frame, B) we've successfully recorded a call to  */ 
+		/* a nested trace. */																						
+		vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip;							
+		ip_ptr = vmm->addresses + ti.next_ip;														
+		stack_ptr = ti.exit_stack + 1;																	
+		goto continue_to_run;																						
+	}
+
 	
 
  continue_to_run:
@@ -177,48 +225,11 @@ Object* VMMethod::interpreter(STATE,
 			}																																	\
 			/*Recording. Hit an ip with a stored trace...*/										\
 			else if(state->recording_trace != NULL && vmm->traces[cur_ip] != NULL){ \
-				/* Add a virtual op that will cause call of nested trace to be emitted */ \
-				state->recording_trace->add(InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); \
-				TraceInfo ti;																										\
-				ti.entry_call_frame = call_frame;																\
-				ti.recording = true;																						\
-				std::cout << "Running nested trace while recording.\n";					\
-				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
-				/* If traceinfo answers false to nestable, the nested trace must have bailed into */ \
-				/* uncommon interpreter, we consider this recording invalidated.  */ \
-				/* Pop the frame  */																						\
-				if(!(ti.nestable)){																							\
-					std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n"; \
-					std::cout << "Failed to record nested trace, throwing away recording\n"; \
-					delete state->recording_trace;																\
-					state->recording_trace = NULL;																\
-					return ret;																										\
-				}																																\
-				std::cout << "Polite exit.\n";																	\
-				/* Otherwise, we know that the */																\
-				/* trace exited politely, and A) we can keep rolling with the */ \
-				/* same call_frame, B) we've successfully recorded a call to  */ \
-				/* a nested trace. */																						\
-				vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip;							\
-				ip_ptr = vmm->addresses + ti.next_ip;														\
-				stack_ptr = ti.exit_stack + 1;																	\
-				goto continue_to_run;																						\
+				goto record_nested_trace;																				\
 			}																																	\
 			/* Normal recording...*/																					\
 			else if(state->recording_trace != NULL){													\
-				Trace::Status s = state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame); \
-				if(s == Trace::TRACE_FINISHED){																	\
-					std::cout << "Trace finished.\n";															\
-					state->recording_trace->compile(state);												\
-					std::cout << "Trace Compiled.\n";															\
-					state->recording_trace->pretty_print(state, std::cout);				\
-					vmm->traces[cur_ip] = state->recording_trace;									\
-					state->recording_trace = NULL;																\
-				}																																\
-				else if(s == Trace::TRACE_CANCEL){															\
-					delete state->recording_trace;																\
-					state->recording_trace = NULL;																\
-				}																																\
+				goto record_op;																									\
 			}																																	\
 			/* Check for backward gotos, increment corresponding counter.*/		\
 			else if(op == InstructionSequence::insn_goto){										\
