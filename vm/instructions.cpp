@@ -139,41 +139,41 @@ Object* VMMethod::interpreter(STATE,
 
  run_trace:
 	{
-		TraceInfo ti;																										
-		ti.entry_call_frame = call_frame;																
-		ti.recording = false;																						
-		ti.nested = false;																							
-		std::cout << "Running trace.\n";																
+		TraceInfo ti; 
+		ti.entry_call_frame = call_frame; 
+		ti.recording = false; 
+		ti.nested = false; 
+		std::cout << "Running trace.\n"; 
 		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); 
 		/* If traceinfo answers false to nestable, the trace must have bailed into */ 
-		/* uncommon interpreter, which will have already finished  */		
-		/* interpreting this invocation, so we pop this frame. */				
-		if(!(ti.nestable)){																							
+		/* uncommon interpreter, which will have already finished  */ 
+		/* interpreting this invocation, so we pop this frame. */ 
+		if(!(ti.nestable)){
 			std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n"; 
-			return ret;																										
+			return ret; 
 		}																																
 		std::cout << "Polite exit.\n"; 
-		/* Otherwise, we know that the */																
-		/* trace exited politely, and we can keep rolling with the */		
-		/* same call_frame. */																					
+		/* Otherwise, we know that the */ 
+		/* trace exited politely, and we can keep rolling with the */ 
+		/* same call_frame. */ 
 		ip_ptr = vmm->addresses + ti.next_ip; 
-		stack_ptr = ti.exit_stack + 1;
-		goto continue_to_run;																						
+		stack_ptr = ti.exit_stack + 1; 
+		goto continue_to_run; 
 	}
 
  record_op:
 	{
 		Trace::Status s = state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame); 
-		if(s == Trace::TRACE_FINISHED){																	
-			std::cout << "Trace finished.\n";															
-			state->recording_trace->compile(state);												
-			std::cout << "Trace Compiled.\n";															
-			state->recording_trace->pretty_print(state, std::cout);				
-			vmm->traces[cur_ip] = state->recording_trace;									
-			state->recording_trace = NULL;																
+		if(s == Trace::TRACE_FINISHED){
+			std::cout << "Trace finished.\n"; 
+			state->recording_trace->compile(state); 
+			std::cout << "Trace Compiled.\n"; 
+			state->recording_trace->pretty_print(state, std::cout); 
+			vmm->traces[cur_ip] = state->recording_trace; 
+			state->recording_trace = NULL; 
 		}																																
-		else if(s == Trace::TRACE_CANCEL){															
-			delete state->recording_trace;																
+		else if(s == Trace::TRACE_CANCEL){
+			delete state->recording_trace; 
 			state->recording_trace = NULL;																
 		}
 		goto **ip_ptr++;
@@ -183,30 +183,30 @@ Object* VMMethod::interpreter(STATE,
 	{
 		/* Add a virtual op that will cause call of nested trace to be emitted */ 
 		state->recording_trace->add(InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); 
-		TraceInfo ti;																										
-		ti.entry_call_frame = call_frame;																
-		ti.recording = true;																						
-		std::cout << "Running nested trace while recording.\n";					
+		TraceInfo ti; 
+		ti.entry_call_frame = call_frame; 
+		ti.recording = true; 
+		std::cout << "Running nested trace while recording.\n"; 
 		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); 
 		/* If traceinfo answers false to nestable, the nested trace must have bailed into */ 
 		/* uncommon interpreter, we consider this recording invalidated.  */ 
-		/* Pop the frame  */																						
-		if(!(ti.nestable)){																							
+		/* Pop the frame  */ 
+		if(!(ti.nestable)){
 			std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n"; 
 			std::cout << "Failed to record nested trace, throwing away recording\n"; 
-			delete state->recording_trace;																
+			delete state->recording_trace; 
 			state->recording_trace = NULL;																
-			return ret;																										
+			return ret; 
 		}																																
-		std::cout << "Polite exit.\n";																	
-		/* Otherwise, we know that the */																
+		std::cout << "Polite exit.\n"; 
+		/* Otherwise, we know that the */ 
 		/* trace exited politely, and A) we can keep rolling with the */ 
 		/* same call_frame, B) we've successfully recorded a call to  */ 
-		/* a nested trace. */																						
-		vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip;							
-		ip_ptr = vmm->addresses + ti.next_ip;														
-		stack_ptr = ti.exit_stack + 1;																	
-		goto continue_to_run;																						
+		/* a nested trace. */ 
+		vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip; 
+		ip_ptr = vmm->addresses + ti.next_ip; 
+		stack_ptr = ti.exit_stack + 1; 
+		goto continue_to_run; 
 	}
 
 	
@@ -219,27 +219,27 @@ Object* VMMethod::interpreter(STATE,
 #define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
 	  op = vmm->opcodes[cur_ip];																					\
 		if(state->tracing_enabled) {																				\
-			/*Not currently recording. Hit an ip with a stored trace...*/			\
 			if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
+				/*Not currently recording. Hit an ip with a stored trace...*/		\
 				goto run_trace;																									\
 			}																																	\
-			/*Recording. Hit an ip with a stored trace...*/										\
 			else if(state->recording_trace != NULL && vmm->traces[cur_ip] != NULL){ \
+				/*Recording. Hit an ip with a stored trace...*/									\
 				goto record_nested_trace;																				\
 			}																																	\
-			/* Normal recording...*/																					\
 			else if(state->recording_trace != NULL){													\
+				/* Normal recording...*/																				\
 				goto record_op;																									\
 			}																																	\
-			/* Check for backward gotos, increment corresponding counter.*/		\
 			else if(op == InstructionSequence::insn_goto){										\
+				/* Check for backward gotos, increment corresponding counter.*/	\
 				intptr_t location = (intptr_t)(*(ip_ptr + 1));									\
 				if(location < cur_ip){																					\
 					vmm->trace_counters[location]++;															\
 				}																																\
 			}																																	\
-			/* Start recording after threshold is hit..*/											\
 			else{																															\
+				/* Start recording after threshold is hit..*/										\
 				if(vmm->trace_counters[cur_ip] > 50){														\
 					std::cout << "Start recording trace.\n";											\
 					state->recording_trace = new Trace(op, cur_ip, ip_ptr, vmm, call_frame); \
@@ -391,10 +391,7 @@ Object* VMMethod::uncommon_interpreter(STATE,
   }
 
   // std::cout << "Entering uncommon at " << entry_ip << " : " << call_frame->cm->name()->c_str(state) << "\n";
-
-
 	opcode op;
-
 
  continue_to_run:
   try {
