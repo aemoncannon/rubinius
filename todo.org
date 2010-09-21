@@ -1,8 +1,4 @@
 
-* What if we exit on home call_frame, but at a different ip? should be ok to continue
-
-
-
 * Regression tests!!!
 
 * Exception handling
@@ -40,3 +36,9 @@
 
        
 
+
+
+* Exiting to same call frame.
+  - Say we hit a trace from the interpreter, and run it. If we exit the trace on the same callframe, 
+    should be able to just continue at the exit ip, exit stack, right? We disallow raising exceptions
+    on traces... so the exception context should be ok.

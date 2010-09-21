@@ -130,41 +130,50 @@ Object* VMMethod::interpreter(STATE,
     if(!state->process_async(call_frame)) return NULL;
   }
 
- continue_to_run:
-  try {
 		opcode op;
 		int cur_ip;
+
+
+	goto continue_to_run;
+
+
+ run_trace:
+	{
+		TraceInfo ti;																										
+		ti.entry_call_frame = call_frame;																
+		ti.recording = false;																						
+		ti.nested = false;																							
+		std::cout << "Running trace.\n";																
+		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); 
+		/* If traceinfo answers false to nestable, the trace must have bailed into */ 
+		/* uncommon interpreter, which will have already finished  */		
+		/* interpreting this invocation, so we pop this frame. */				
+		if(!(ti.nestable)){																							
+			std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n"; 
+			return ret;																										
+		}																																
+		std::cout << "Polite exit.\n"; 
+		/* Otherwise, we know that the */																
+		/* trace exited politely, and we can keep rolling with the */		
+		/* same call_frame. */																					
+		ip_ptr = vmm->addresses + ti.next_ip; 
+		stack_ptr = ti.exit_stack + 1;
+		goto continue_to_run;																						
+	}
+
+	
+
+ continue_to_run:
+  try {
 
 #undef DISPATCH
 //#define DISPATCH goto **ip_ptr++;
 #define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
-		/***********************************************/										\
-		/* TODO: Find a way to remove this monster of a macro.*/						\
-		/***********************************************/										\
 	  op = vmm->opcodes[cur_ip];																					\
 		if(state->tracing_enabled) {																				\
 			/*Not currently recording. Hit an ip with a stored trace...*/			\
 			if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
-				TraceInfo ti;																										\
-				ti.entry_call_frame = call_frame;																\
-				ti.recording = false;																						\
-				ti.nested = false;																							\
-				std::cout << "Running trace.\n";																\
-				Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); \
-				/* If traceinfo answers false to nestable, the trace must have bailed into */ \
-				/* uncommon interpreter, which will have already finished  */		\
-				/* interpreting this invocation, so we pop this frame. */				\
-				if(!(ti.nestable)){																							\
-					std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n"; \
-					return ret;																										\
-				}																																\
-				std::cout << "Polite exit.\n";																	\
-				/* Otherwise, we know that the */																\
-				/* trace exited politely, and we can keep rolling with the */		\
-				/* same call_frame. */																					\
-				ip_ptr = vmm->addresses + ti.next_ip;														\
-				stack_ptr = ti.exit_stack + 1;																	\
-				goto continue_to_run;																						\
+				goto run_trace;																									\
 			}																																	\
 			/*Recording. Hit an ip with a stored trace...*/										\
 			else if(state->recording_trace != NULL && vmm->traces[cur_ip] != NULL){ \
@@ -370,7 +379,7 @@ Object* VMMethod::uncommon_interpreter(STATE,
     if(!state->process_async(call_frame)) return NULL;
   }
 
-//	std::cout << "Entering uncommon at " << entry_ip << " : " << call_frame->cm->name()->c_str(state) << "\n";
+  // std::cout << "Entering uncommon at " << entry_ip << " : " << call_frame->cm->name()->c_str(state) << "\n";
 
 
 	opcode op;

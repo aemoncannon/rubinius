@@ -164,7 +164,6 @@ namespace rubinius {
       set_block(cont);
 
 			// If we are not recording, and the current call_frame is this trace's home call_frame,
-			// and the ip we are exiting to is the ip that the caller was expecting,
 			// exit directly to the caller of the trace - setting nestable to true (this informs caller
 			// that the trace exited politely, so interpreter doesn't have to pop itself)
       cont = new_block("continue");
@@ -177,7 +176,7 @@ namespace rubinius {
       set_block(cont);
 
 			// If we are not recording, and this was a nested trace, and the current call_frame is 
-			// this trace's home call_frame, and the ip we are exiting to is the ip that the caller was expecting,
+			// this trace's home call_frame, and the ip we are exiting to is the ip that the calling trace was expecting,
 			// exit directly to the caller of the trace - setting nestable to true  (this informs caller
 			// that the trace exited politely, so parent trace doesn't have to pop itself)
       cont = new_block("continue");
