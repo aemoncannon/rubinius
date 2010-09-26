@@ -62,3 +62,8 @@ Because the get_field returns a pointer to the field location, which is
 is just what we want for the stack (we don't want object 0, we want a pointer
 to the head of the array), and for vars, get_field returns a pointer to the location
 of the vars pointer, which we need to load.
+
+* Why do we need the uncommon interpreter?
+  - How about we just set the trace info stuff, then return to the main interpreter?
+  - Hmmm, call_frames would have to be moved to the heap if we return from the trace...
+
