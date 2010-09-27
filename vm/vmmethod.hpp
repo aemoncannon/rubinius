@@ -192,10 +192,10 @@ namespace rubinius {
                                InterpreterCallFrame* const call_frame);
 
     static Object* resumable_interpreter(STATE, VMMethod* const vmm,
-                               InterpreterCallFrame* const call_frame,
-																	 bool resume,
-																	 Object** stack_ptr_
-															 );
+																				 CallFrame* const call_frame,
+																				 bool resume,
+																				 Object** stack_ptr_
+																				 );
 
     static Object* debugger_interpreter(STATE, VMMethod* const vmm,
                                         InterpreterCallFrame* const call_frame);

@@ -166,6 +166,7 @@ void initialize_yield_frame(int stack_size) {
 	b().CreateStore(flags, get_field(info()->call_frame(), offset::cf_flags));
 
 
+
 	// scope
 	b().CreateStore(info()->variables(), get_field(info()->call_frame(), offset::cf_scope));
 

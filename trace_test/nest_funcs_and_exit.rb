@@ -20,6 +20,7 @@ def run()
   j = 0
   i = 0
   while i < ITERATIONS
+    puts "j: #{j}"
     i += 1
     j += calc(i)
   end

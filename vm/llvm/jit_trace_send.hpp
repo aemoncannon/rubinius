@@ -106,6 +106,7 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 		ConstantInt::get(ls_->Int32Ty, flags),
 		get_field(call_frame_, offset::cf_flags));
 
+
 	// scope
 	b().CreateStore(vars_, get_field(call_frame_, offset::cf_scope));
 

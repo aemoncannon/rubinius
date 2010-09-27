@@ -101,11 +101,11 @@ Object* VMMethod::interpreter(STATE,
 
 
 Object* VMMethod::resumable_interpreter(STATE,
-																	 VMMethod* const vmm,
-																	 InterpreterCallFrame* const call_frame,
-																	 bool resume,
-																	 Object** stack_ptr_
-																	 )
+																				VMMethod* const vmm,
+																				CallFrame* const call_frame,
+																				bool resume,
+																				Object** stack_ptr_
+																				)
 {
 
 #include "vm/gen/instruction_locations.hpp"
@@ -125,12 +125,14 @@ Object* VMMethod::resumable_interpreter(STATE,
 #endif
 
 	if(resume){
+		std::cout << "Resuming.." << endl;
 		ip_ptr = vmm->addresses + call_frame->ip();
 		stack_ptr = stack_ptr_;
 	}
 	else{
 		stack_ptr = call_frame->stk - 1;
 	}
+
 
   int current_unwind = 0;
   UnwindInfo unwinds[kMaxUnwindInfos];
@@ -153,9 +155,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 	int cur_ip;
 	int sp;
 
-
 	goto continue_to_run;
-
 
  run_trace:
 	{
@@ -168,7 +168,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 		std::cout << "Run finished." << endl; 
 		/* If traceinfo answers false to nestable, the trace must have bailed into */ 
 		/* uncommon interpreter, which will have already finished  */ 
-		/* interpreting this invocation, so we pop this frame. */ 
+		/* interpreting this method, so we pop this frame. */ 
 		if(!(ti.nestable)){
 			std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << endl; 
 			return ret; 
@@ -188,13 +188,13 @@ Object* VMMethod::resumable_interpreter(STATE,
 		sp = stack_ptr - call_frame->stk;
 		Trace::Status s = state->recording_trace->add(op, cur_ip, sp, ip_ptr, vmm, call_frame); 
 		if(s == Trace::TRACE_FINISHED){
-			std::cout << "Trace finished.\n"; 
+			std::cout << "Trace Recorded.\n"; 
 			state->recording_trace->compile(state); 
 			std::cout << "Trace Compiled.\n"; 
 			state->recording_trace->pretty_print(state, std::cout); 
 			vmm->traces[cur_ip] = state->recording_trace; 
 			state->recording_trace = NULL; 
-		}																																
+		} 
 		else if(s == Trace::TRACE_CANCEL){
 			delete state->recording_trace; 
 			state->recording_trace = NULL;																
@@ -220,7 +220,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 			std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n"; 
 			std::cout << "Failed to record nested trace, throwing away recording\n"; 
 			delete state->recording_trace; 
-			state->recording_trace = NULL;																
+			state->recording_trace = NULL; 
 			return ret; 
 		}																																
 		std::cout << "Polite exit.\n"; 
@@ -241,8 +241,8 @@ Object* VMMethod::resumable_interpreter(STATE,
 #undef DISPATCH
 //#define DISPATCH goto **ip_ptr++;
 #define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
-	  op = vmm->opcodes[cur_ip];																					\
 		if(state->tracing_enabled) {																				\
+			op = vmm->opcodes[cur_ip];																				\
 			if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
 				/*Not currently recording. Hit an ip with a stored trace...*/		\
 				goto run_trace;																									\
@@ -382,157 +382,27 @@ Object* VMMethod::uncommon_interpreter(STATE,
                                        VMMethod* const vmm_,
                                        CallFrame* const call_frame_)
 {
-
-#include "vm/gen/instruction_locations.hpp"
-	
+	state->tracing_enabled = false;
 	VMMethod* vmm = vmm_;
 	CallFrame* call_frame = call_frame_;
-  opcode* stream = vmm->opcodes;
-  InterpreterState is;
-  Object** stack_ptr = call_frame->stk + call_frame->sp();
+  Object** stack_ptr = stack_ptr_;
 
-  int current_unwind = 0;
-  UnwindInfo unwinds[kMaxUnwindInfos];
+	// Finish up execution of the current call_frame
+	std::cout << "Resuming first: " << endl;
+	call_frame->dump();
+	Object* result = resumable_interpreter(state, vmm, call_frame, true, stack_ptr);
 
-  if(!state->check_stack(call_frame, &state)) return NULL;
-
-  if(unlikely(state->interrupts.check)) {
-    state->interrupts.checked();
-    if(state->interrupts.perform_gc) {
-      state->interrupts.perform_gc = false;
-      state->collect_maybe(call_frame);
-    }
-  }
-
-  if(unlikely(state->check_local_interrupts)) {
-    if(!state->process_async(call_frame)) return NULL;
-  }
-
-  std::cout << "Entering uncommon at." << endl;
-  std::cout << "Ip:" << call_frame->ip() << endl;
-  std::cout << "Stack:" << call_frame->sp() << endl;
-	opcode op;
-
- continue_to_run:
-  try {
-
-#undef DISPATCH
-#define DISPATCH op = stream[call_frame->inc_ip()];					\
-    if(op == InstructionSequence::insn_ret &&								\
-			 call_frame->is_traced_frame()) {											\
-			call_frame = call_frame->previous;										\
-			Object* ret = stack_top();														\
-			stack_ptr = call_frame->stk + call_frame->sp();				\
-			vmm = call_frame->cm->backend_method();				\
-			stream = vmm->opcodes;												\
-			stack_push(ret);																			\
-			goto continue_to_run;																	\
-		}																												\
-		goto *insn_locations[op];
-
-#undef next_int
-#undef cache_ip
-#undef flush_ip
-
-#define next_int ((opcode)(stream[call_frame->inc_ip()]))
-#define cache_ip(which)
-#define flush_ip()
-
-#include "vm/gen/instruction_implementations.hpp"
-
-} catch(TypeError& e) {
-	flush_ip();
-	Exception* exc =
-		Exception::make_type_error(state, e.type, e.object, e.reason);
-	exc->locations(state, System::vm_backtrace(state, Fixnum::from(0), call_frame));
-
-	state->thread_state()->raise_exception(exc);
-	call_frame->scope->flush_to_heap(state);
-	return NULL;
- } catch(const RubyException& exc) {
-	exc.exception->locations(state,
-													 System::vm_backtrace(state, Fixnum::from(0), call_frame));
-	state->thread_state()->raise_exception(exc.exception);
-	return NULL;
- }
-
-// No reason to be here!
-abort();
-
-exception:
-ThreadState* th = state->thread_state();
-//
-switch(th->raise_reason()) {
- case cException:
-	 if(current_unwind > 0) {
-		 UnwindInfo* info = &unwinds[--current_unwind];
-		 stack_position(info->stack_depth);
-		 call_frame->set_ip(info->target_ip);
-		 cache_ip(info->target_ip);
-		 goto continue_to_run;
-	 } else {
-		 call_frame->scope->flush_to_heap(state);
-		 return NULL;
-	 }
-
- case cBreak:
-	 // If we're trying to break to here, we're done!
-	 if(th->destination_scope() == call_frame->scope->on_heap()) {
-		 stack_push(th->raise_value());
-		 th->clear_break();
-		 goto continue_to_run;
-		 // Don't return here, because we want to loop back to the top
-		 // and keep running this method.
-	 }
-
-	 // Otherwise, fall through and run the unwinds
- case cReturn:
- case cCatchThrow:
-	 // Otherwise, we're doing a long return/break unwind through
-	 // here. We need to run ensure blocks.
-	 while(current_unwind > 0) {
-		 UnwindInfo* info = &unwinds[--current_unwind];
-		 if(info->for_ensure()) {
-			 stack_position(info->stack_depth);
-			 call_frame->set_ip(info->target_ip);
-			 cache_ip(info->target_ip);
-
-			 // Don't reset ep here, we're still handling the return/break.
-			 goto continue_to_run;
-		 }
-	 }
-
-	 // Ok, no ensures to run.
-	 if(th->raise_reason() == cReturn) {
-		 call_frame->scope->flush_to_heap(state);
-
-		 // If we're trying to return to here, we're done!
-		 if(th->destination_scope() == call_frame->scope->on_heap()) {
-			 Object* val = th->raise_value();
-			 th->clear_return();
-			 return val;
-		 } else {
-			 // Give control of this exception to the caller.
-			 return NULL;
-		 }
-
-	 } else { // It's cBreak thats not for us!
-		 call_frame->scope->flush_to_heap(state);
-		 // Give control of this exception to the caller.
-		 return NULL;
-	 }
-
- case cExit:
-	 call_frame->scope->flush_to_heap(state);
-	 return NULL;
- default:
-	 break;
- } // switch
-
-std::cout << "bug!\n";
-call_frame->print_backtrace(state);
-abort();
-return NULL;
+	while(call_frame->is_traced_frame()){
+		call_frame = call_frame->previous;
+		vmm = call_frame->cm->backend_method();
+		stack_push(result);
+		std::cout << "Resuming next: " << endl;
+		call_frame->dump();
+		result = resumable_interpreter(state, vmm, call_frame, true, stack_ptr);
+	}
+	std::cout << "Returning.." << endl;
+	state->tracing_enabled = true;
+	return result;
 }
 
 

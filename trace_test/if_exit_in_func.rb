@@ -1,8 +1,5 @@
 require 'helpers'
 
-ITERATIONS = 1000000
-
-
 def calc(i)
   k = 0
   if i < ITERATIONS/2
