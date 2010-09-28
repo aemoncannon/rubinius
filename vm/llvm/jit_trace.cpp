@@ -77,6 +77,7 @@ namespace rubinius {
 			valid_flag = b().CreateAlloca(ls_->Int1Ty, 0, "valid_flag");
 			
 			//stack
+
 			Value* stk_base = get_field(call_frame, offset::cf_stk);
 			stk_base = b().CreateBitCast(stk_base, obj_ary_type, "obj_ary_type");
 			info_->set_stack(stk_base);

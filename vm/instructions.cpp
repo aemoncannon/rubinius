@@ -164,9 +164,11 @@ Object* VMMethod::resumable_interpreter(STATE,
 		ti.entry_call_frame = call_frame; 
 		ti.recording = false; 
 		ti.nested = false; 
+
 		std::cout << "Running trace." << endl; 
 		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, &ti); 
 		std::cout << "Run finished." << endl; 
+
 		/* If traceinfo answers false to nestable, the trace must have bailed into */ 
 		/* uncommon interpreter, which will have already finished  */ 
 		/* interpreting this method, so we pop this frame. */ 
@@ -178,9 +180,11 @@ Object* VMMethod::resumable_interpreter(STATE,
 		/* Otherwise, we know that the */ 
 		/* trace exited politely, and we can keep rolling with the */ 
 		/* same call_frame. */ 
+
 		std::cout << "Resuming at: " << call_frame->ip() << endl; 
 		ip_ptr = vmm->addresses + call_frame->ip(); 
 		stack_ptr = call_frame->stk + call_frame->sp();
+
 		goto continue_to_run; 
 	}
 
@@ -206,6 +210,7 @@ Object* VMMethod::resumable_interpreter(STATE,
  record_nested_trace:
 	{
 		/* Add a virtual op that will cause call of nested trace to be emitted */ 
+
 		sp = stack_ptr - call_frame->stk;			 
 		state->recording_trace->add(
 			InstructionSequence::insn_nested_trace, cur_ip, sp, ip_ptr, vmm, call_frame); 
@@ -214,6 +219,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 		ti.recording = true; 
 		std::cout << "Running nested trace while recording.\n"; 
 		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, &ti); 
+
 		/* If traceinfo answers false to nestable, the nested trace must have bailed into */ 
 		/* uncommon interpreter, we consider this recording invalidated.  */ 
 		/* Pop the frame  */ 
@@ -383,7 +389,7 @@ Object* VMMethod::uncommon_interpreter(STATE,
                                        VMMethod* const vmm_,
                                        CallFrame* const call_frame_)
 {
-	state->tracing_enabled = false;
+
 	VMMethod* vmm = vmm_;
 	CallFrame* call_frame = call_frame_;
   Object** stack_ptr = stack_ptr_;
@@ -391,10 +397,11 @@ Object* VMMethod::uncommon_interpreter(STATE,
 	// Finish up execution of the current call_frame
 	std::cout << "Resuming first ";
 	call_frame->dump();
+	std::cout << "Vars:" << call_frame->scope << "\n";
 	std::cout << "\n";
 	Object* result = resumable_interpreter(state, vmm, call_frame, true, &stack_ptr);
 
-	std::cout << "return: ";	
+	std::cout << "return: ";
 	result->type_info(state)->show(state, result, 1);
 	std::cout << "\n";	
 
@@ -405,6 +412,7 @@ Object* VMMethod::uncommon_interpreter(STATE,
 
 		std::cout << "Resuming next ";
 		call_frame->dump();
+		std::cout << "Vars:" << call_frame->scope << "\n"; 
 		std::cout << "\n";
 
 		state->debug_traces = true;
@@ -418,7 +426,6 @@ Object* VMMethod::uncommon_interpreter(STATE,
 	std::cout << "Returning.." << endl;
 	call_frame->dump();
 
-	state->tracing_enabled = true;
 	return result;
 }
 
