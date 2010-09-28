@@ -95,7 +95,8 @@ Object* VMMethod::interpreter(STATE,
                               VMMethod* const vmm,
                               InterpreterCallFrame* const call_frame)
 { 
-	return resumable_interpreter(state, vmm, call_frame, false, NULL);
+	Object* result = resumable_interpreter(state, vmm, call_frame, false, NULL);
+	return result;
 }
 
 
@@ -227,7 +228,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 		/* Otherwise, we know that the */ 
 		/* trace exited politely, and A) we can keep rolling with the */ 
 		/* same call_frame, B) we've successfully recorded a call to  */ 
-		/* a nested trace. */ 
+		/* a nested trace. */
 		vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip; 
 		ip_ptr = vmm->addresses + call_frame->ip(); 
 		stack_ptr = call_frame->stk + call_frame->sp();
@@ -388,22 +389,39 @@ Object* VMMethod::uncommon_interpreter(STATE,
   Object** stack_ptr = stack_ptr_;
 
 	// Finish up execution of the current call_frame
-	std::cout << "Resuming first: " << endl;
+	std::cout << "Resuming first ";
 	call_frame->dump();
+	std::cout << "\n";
 	Object* result = resumable_interpreter(state, vmm, call_frame, true, stack_ptr);
+
+	std::cout << "return: ";	
+	result->type_info(state)->show(state, result, 1);
+	std::cout << "\n";	
 
 	while(call_frame->is_traced_frame()){
 		call_frame = call_frame->previous;
 		vmm = call_frame->cm->backend_method();
 		stack_push(result);
-		std::cout << "Resuming next: " << endl;
+
+		std::cout << "Resuming next ";
 		call_frame->dump();
+		std::cout << "\n";
+
+		state->debug_traces = true;
 		result = resumable_interpreter(state, vmm, call_frame, true, stack_ptr);
+		state->debug_traces = false;
+
+		std::cout << "return: ";	
+		result->type_info(state)->show(state, result, 1);
+		std::cout << "\n";	
 	}
 	std::cout << "Returning.." << endl;
+	call_frame->dump();
+
 	state->tracing_enabled = true;
 	return result;
 }
+
 
 
 /* The debugger interpreter loop is used to run a method when a breakpoint

@@ -132,6 +132,7 @@ namespace rubinius {
 
     std::cout << ">\n";
 
+<<<<<<< HEAD
 		StackVariables* vars = scope;
 		VMMethod* vmm = cm->backend_method();
 		int number_of_locals = vmm->number_of_locals;

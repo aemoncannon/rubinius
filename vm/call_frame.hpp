@@ -18,6 +18,7 @@ namespace rubinius {
   class Module;
   class VMMethod;
   class VariableScope;
+	class String;
 
   namespace jit {
     class RuntimeData;
