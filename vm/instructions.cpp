@@ -125,7 +125,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 #endif
 
 	if(resume){
-		std::cout << "Resuming.." << endl;
+		std::cout << "Resuming at " << call_frame->ip() << endl;
 		ip_ptr = vmm->addresses + call_frame->ip();
 		stack_ptr = stack_ptr_;
 	}

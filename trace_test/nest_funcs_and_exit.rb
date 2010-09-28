@@ -9,6 +9,7 @@ def foo(i)
 end
 
 def calc(i)
+  puts "calc(#{i})"
   k = 0
   while k < 100
     k += foo(i)
@@ -24,6 +25,7 @@ def run()
     i += 1
     j += calc(i)
   end
+  puts "finising."
   j
 end
 
