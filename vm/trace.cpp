@@ -63,11 +63,12 @@ namespace rubinius {
 		}
 	}
 
-	Trace::Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
+	Trace::Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
 		anchor = new TraceNode(0, 0, op, pc, ip_ptr, vmm, call_frame);
 		head = anchor;
 		pc_base_counter = 0;
 		expected_exit_ip = -1;
+		entry_sp = sp;
 	}
 
 

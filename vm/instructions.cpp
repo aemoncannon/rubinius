@@ -144,7 +144,8 @@ Object* VMMethod::interpreter(STATE,
 		ti.recording = false; 
 		ti.nested = false; 
 		std::cout << "Running trace.\n"; 
-		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); 
+		call_frame->dump();
+		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, &ti); 
 		/* If traceinfo answers false to nestable, the trace must have bailed into */ 
 		/* uncommon interpreter, which will have already finished  */ 
 		/* interpreting this invocation, so we pop this frame. */ 
@@ -187,7 +188,7 @@ Object* VMMethod::interpreter(STATE,
 		ti.entry_call_frame = call_frame; 
 		ti.recording = true; 
 		std::cout << "Running nested trace while recording.\n"; 
-		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, stack_ptr, call_frame->scope, &ti); 
+		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, &ti); 
 		/* If traceinfo answers false to nestable, the nested trace must have bailed into */ 
 		/* uncommon interpreter, we consider this recording invalidated.  */ 
 		/* Pop the frame  */ 
@@ -242,7 +243,8 @@ Object* VMMethod::interpreter(STATE,
 				/* Start recording after threshold is hit..*/										\
 				if(vmm->trace_counters[cur_ip] > 50){														\
 					std::cout << "Start recording trace.\n";											\
-					state->recording_trace = new Trace(op, cur_ip, ip_ptr, vmm, call_frame); \
+					int sp = stack_ptr - call_frame->stk;													\
+					state->recording_trace = new Trace(op, cur_ip, sp, ip_ptr, vmm, call_frame); \
 				}																																\
 			}																																	\
 		}																																		\

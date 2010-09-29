@@ -1,6 +1,8 @@
 
 void emit_traced_send(opcode which, opcode args, bool with_block){
 
+	const llvm::Type* obj_type = ls_->ptr_type("Object");
+
 	// Emit setup code for new call.
 	// Stores into args Values.
 	if(with_block){
@@ -17,7 +19,11 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 	JITMethodInfo* parent_info = info();
 	new_info->is_block = false;
 	new_info->set_parent_info(parent_info);
+	new_info->set_saved_sp(sp());
+	new_info->set_saved_last_sp(last_sp());
 	method_info_ = new_info;
+	sp_ = 0;
+	last_sp_ = 0;
 
 	new_info->set_traced_block_supplied(with_block);
 
@@ -36,38 +42,37 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 	vm_->setName("vm");
 	info()->set_vm(vm_);
 
-	info()->set_stack(parent_info->stack());
+	std::cout << "1\n";
 
 	Value* prev_call_frame = parent_info->call_frame();
 	prev_call_frame->setName("prev_call_frame");
 	info()->set_previous(prev_call_frame);
 
+	std::cout << "2\n";
 	info()->set_args(out_args_);
-	info()->set_out_args(info()->root_info()->pre_allocated_args[cur_trace_node_->trace_pc]);
+	info()->set_out_args(info()->root_info()->pre_allocated_args[
+												 cur_trace_node_->trace_pc]);
 	init_out_args();
 
-	Value* cfstk = info()->root_info()->pre_allocated_stacks[cur_trace_node_->trace_pc];
-
-	Value* var_mem = info()->root_info()->pre_allocated_vars[cur_trace_node_->trace_pc];
-
-	check_arity();
-
-	call_frame_ = b().CreateBitCast(cfstk,
-																	PointerType::getUnqual(cf_type), "call_frame");
-
+	std::cout << "3\n";
+	Value* cfstk = info()->root_info()->pre_allocated_call_frames[
+		cur_trace_node_->trace_pc];
+	call_frame_ = b().CreateBitCast(
+		cfstk,
+		PointerType::getUnqual(cf_type), "call_frame");
 	info()->set_call_frame(call_frame_);
 
-	// Value* stk = b().CreateConstGEP1_32(cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
-	// info()->set_stack(stk);
+	Value* stk_base = b().CreateConstGEP1_32(
+		cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
+	info()->set_stack(stk_base);
 
+	Value* var_mem = info()->root_info()->pre_allocated_vars[cur_trace_node_->trace_pc];
 	vars_ = b().CreateBitCast(
 		var_mem,
 		PointerType::getUnqual(stack_vars_type), "vars");
-
 	info()->set_variables(vars_);
 
 	// Pasting code from initialize_frame
-
 	Value* exec = b().CreateLoad(get_field(info()->msg(), 2), "msg.exec");
 	Value* cm_gep = get_field(call_frame_, offset::cf_cm);
 	Value* method = b().CreateBitCast(
@@ -111,7 +116,7 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 	// scope
 	b().CreateStore(vars_, get_field(call_frame_, offset::cf_scope));
 
-//		nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
+  nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
 
 	import_args();
 
@@ -366,41 +371,42 @@ void setup_scope() {
 	nil_locals();
 }
 
+void nil_stack(int size, Value* nil) {
 
-// void nil_stack(int size, Value* nil) {
-// 	if(size == 0) return;
-// 	// Stack size 5 or less, do 5 stores in a row rather than
-// 	// the loop.
-// 	if(size <= 5) {
-// 		for(int i = 0; i < size; i++) {
-// 			b().CreateStore(nil, b().CreateConstGEP1_32(info()->stack(), i, "stack_pos"));
-// 		}
-// 		return;
-// 	}
+	if(size == 0) return;
+	// Stack size 5 or less, do 5 stores in a row rather than
+	// the loop.
+	if(size <= 5) {
+		for(int i = 0; i < size; i++) {
+			b().CreateStore(nil, b().CreateConstGEP1_32(info()->stack(), i, "stack_pos"));
+		}
+		return;
+	}
 
-// 	Value* max = ConstantInt::get(ls_->Int32Ty, size);
-// 	Value* one = ConstantInt::get(ls_->Int32Ty, 1);
+	Value* max = ConstantInt::get(ls_->Int32Ty, size);
+	Value* one = ConstantInt::get(ls_->Int32Ty, 1);
 
-// 	BasicBlock* top = BasicBlock::Create(ls_->ctx(), "stack_nil", info()->function());
-// 	BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "bottom", info()->function());
+	BasicBlock* top = BasicBlock::Create(ls_->ctx(), "stack_nil", info()->function());
+	BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "bottom", info()->function());
 
-// 	b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), info()->counter());
+	b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), info()->counter());
 
-// 	b().CreateBr(top);
+	b().CreateBr(top);
 
-// 	b().SetInsertPoint(top);
+	b().SetInsertPoint(top);
 
-// 	Value* cur = b().CreateLoad(info()->counter(), "counter");
-// 	b().CreateStore(nil, b().CreateGEP(info()->stack(), cur, "stack_pos"));
+	Value* cur = b().CreateLoad(info()->counter(), "counter");
+	b().CreateStore(nil, b().CreateGEP(info()->stack(), cur, "stack_pos"));
 
-// 	Value* added = b().CreateAdd(cur, one, "added");
-// 	b().CreateStore(added, info()->counter());
+	Value* added = b().CreateAdd(cur, one, "added");
+	b().CreateStore(added, info()->counter());
 
-// 	Value* cmp = b().CreateICmpEQ(added, max, "loop_check");
-// 	b().CreateCondBr(cmp, cont, top);
+	Value* cmp = b().CreateICmpEQ(added, max, "loop_check");
+	b().CreateCondBr(cmp, cont, top);
 
-// 	b().SetInsertPoint(cont);
-// }
+	b().SetInsertPoint(cont);
+}
+
 
 void nil_locals() {
 	const llvm::Type* obj_type = ls_->ptr_type("Object");

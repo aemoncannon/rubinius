@@ -42,3 +42,23 @@
   - Say we hit a trace from the interpreter, and run it. If we exit the trace on the same callframe, 
     should be able to just continue at the exit ip, exit stack, right? We disallow raising exceptions
     on traces... so the exception context should be ok.
+
+
+* Learnings
+
+Why does the following work?
+//stack
+Value* stk_base = get_field(call_frame, offset::cf_stk);
+stk_base = b().CreateBitCast(stk_base, obj_ary_type, "obj_ary_type");
+info_->set_stack(stk_base);
+
+//vars
+Value* vars_pos = get_field(call_frame, offset::cf_scope);
+Value* vars = b().CreateLoad(vars_pos, "vars");
+vars = b().CreateBitCast(vars, ls_->ptr_type("StackVariables"), "vars");
+info_->set_variables(vars);
+
+Because the get_field returns a pointer to the field location, which is
+is just what we want for the stack (we don't want object 0, we want a pointer
+to the head of the array), and for vars, get_field returns a pointer to the location
+of the vars pointer, which we need to load.

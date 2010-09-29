@@ -27,13 +27,14 @@ namespace rubinius {
   }
 
   class JITOperations {
+
+  protected:
     llvm::Value* stack_;
     int sp_;
     int last_sp_;
-
     llvm::IRBuilder<> builder_;
 
-  protected:
+
     JITMethodInfo* method_info_;
     LLVMState* ls_;
 

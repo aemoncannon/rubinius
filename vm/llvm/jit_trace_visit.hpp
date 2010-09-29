@@ -20,7 +20,10 @@ namespace rubinius {
     JITTraceVisit(LLVMState* ls, Trace* trace, JITMethodInfo* info, BlockMap& bm, llvm::BasicBlock* start)
       : JITVisit(ls, info, bm, start)
       , trace_(trace)
-    {}
+    {
+			sp_ = trace->entry_sp;
+			last_sp_ = trace->entry_sp;
+		}
 
 
 		void at_trace_node(TraceNode* node){
@@ -28,12 +31,10 @@ namespace rubinius {
 		}
 
     void at_ip(int ip) {
-
       BlockMap::iterator i = block_map_.find(ip);
       if(i != block_map_.end()) {
         JITBasicBlock& jbb = i->second;
         current_jbb_ = &jbb;
-
 
 				// Might need this stuff if we ever have branches in our
 				// traces..
@@ -56,10 +57,12 @@ namespace rubinius {
 
 
     void initialize() {
+
 			info()->init_return_pad();
 			info()->init_trace_exit_pad();
 
       BasicBlock* start = current_block();
+
 
 			set_block(info()->trace_exit_pad());
 
@@ -107,13 +110,14 @@ namespace rubinius {
 				PointerType::getUnqual(ls_->IntPtrTy), "cast_to_intptr");
 
       init_out_args();
+
     }
 
     void emit_trace_exit_pad() {
 			// Emit code for entering the uncommon interpreter.
 			// This is used in exit stubs, when the trace bails for some reason.
-
 			// Inputs to the exit pad
+			
 			Value* trace_ip = info()->root_info()->trace_ip_phi;
 			Value* next_ip = info()->root_info()->next_ip_phi;
 			Value* actual_exit_ip = info()->root_info()->exit_ip_phi;
@@ -206,6 +210,7 @@ namespace rubinius {
 			Value* ret = sig.call("rbx_continue_uncommon", call_args, 4, "", b());
 			return_value(ret);
 
+
     }
 
 
@@ -237,19 +242,15 @@ namespace rubinius {
 			Signature sig(ls_, "Object");
 			sig << "VM";
 			sig << "CallFrame";
-			sig << ObjArrayTy;
-			sig << "StackVariables";
 			sig << ls_->Int32Ty;
 			sig << "TraceInfo";
 			Value* call_args[] = {
 				info()->vm(),
 				info()->call_frame(),
-				stack_ptr(),
-				info()->variables(),
 				ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc),
 				info()->trace_info()
 			};
-			Value* ret = sig.call("rbx_call_trace", call_args, 6, "", b());
+			Value* ret = sig.call("rbx_call_trace", call_args, 4, "", b());
 
 			// Restore the trace-info for the parent trace
       b().CreateStore(save_expected_exit_ip, exp_exit_ip_pos);
@@ -427,6 +428,11 @@ namespace rubinius {
 			vm_ = info()->vm();
 			call_frame_ = info()->call_frame();
 			vars_ = info()->variables();
+
+			stack_ = info()->stack();
+			sp_ = info()->saved_sp();
+			last_sp_ = info()->saved_last_sp();
+
 			// Info has changed, setup out_args stuff again.
 			init_out_args();
 		}
@@ -615,6 +621,17 @@ namespace rubinius {
 				return_value(stack_top());
 			}
     }
+
+    void visit_push_local(opcode which) {
+      Value* idx2[] = {
+        ConstantInt::get(ls_->Int32Ty, 0),
+        ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+        ConstantInt::get(ls_->Int32Ty, which)
+      };
+      Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
+      stack_push(b().CreateLoad(pos, "local"));
+    }
+
 
     void visit_meta_send_op_plus(opcode name) {
       InlineCache* cache = reinterpret_cast<InlineCache*>(name);

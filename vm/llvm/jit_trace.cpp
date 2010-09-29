@@ -38,8 +38,6 @@ namespace rubinius {
 			std::vector<const Type*> ftypes;
 			ftypes.push_back(ls_->ptr_type("VM"));
 			ftypes.push_back(ls_->ptr_type("CallFrame"));
-			ftypes.push_back(obj_ary_type);
-			ftypes.push_back(ls_->ptr_type("StackVariables"));
 			ftypes.push_back(ls_->ptr_type("TraceInfo"));
 
 			FunctionType* ft = FunctionType::get(ls_->ptr_type("Object"), ftypes, false);
@@ -56,14 +54,6 @@ namespace rubinius {
 			// For the trace, this is the current and active CallFrame
 			call_frame = ai++; 
 			call_frame->setName("call_frame");
-
-			// Get the stack pointer
-			Value* stk_ptr = ai++; 
-			stk_ptr->setName("stk_ptr");
-
-			// Get the vars pointer
-			Value* vars = ai++; 
-			vars->setName("vars");
 
 			// Get the vars pointer
 			Value* trace_info = ai++;
@@ -87,17 +77,18 @@ namespace rubinius {
 			valid_flag = b().CreateAlloca(ls_->Int1Ty, 0, "valid_flag");
 			
 			//stack
-//			stk = b().CreateAlloca(obj_ary_type, ConstantInt::get(ls_->Int32Ty, sizeof(Object**)), "valid_flag");
-//			b().CreateStore(stk_ptr, stk);
-			info_->set_stack(stk_ptr);
+			Value* stk_base = get_field(call_frame, offset::cf_stk);
+			stk_base = b().CreateBitCast(stk_base, obj_ary_type, "obj_ary_type");
+			info_->set_stack(stk_base);
 
 			//vars
-			// Value* var_mem = get_field(call_frame, offset::cf_scope);
-			// vars = b().CreateBitCast(var_mem, PointerType::getUnqual(stack_vars_type), "vars");
+			Value* vars_pos = get_field(call_frame, offset::cf_scope);
+			Value* vars = b().CreateLoad(vars_pos, "vars");
+			vars = b().CreateBitCast(vars, ls_->ptr_type("StackVariables"), "vars");
 			info_->set_variables(vars);
 
 			info_->set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
-
+			
 			// ip
 			Value* ip_mem = get_field(call_frame, offset::cf_ip);
 			b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), ip_mem);
@@ -107,7 +98,6 @@ namespace rubinius {
 			info_->set_counter(b().CreateAlloca(ls_->Int32Ty, 0, "counter_alloca"));
 
 			allocate_call_structures();
-
 
 			b().CreateBr(body);
 			b().SetInsertPoint(body);
@@ -123,7 +113,7 @@ namespace rubinius {
 					info_->pre_allocated_args[tmp->trace_pc] = 
 						b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
 
-					info_->pre_allocated_stacks[tmp->trace_pc] = 
+					info_->pre_allocated_call_frames[tmp->trace_pc] = 
 						b().CreateAlloca(obj_type,
 														 ConstantInt::get(ls_->Int32Ty,
 																							(sizeof(CallFrame) / sizeof(Object*)) + 
@@ -160,6 +150,9 @@ namespace rubinius {
 			{}
 
 			void call(Trace* trace, TraceNode* node){
+				std::cout << "Compiling:\n";
+				node->pretty_print(VM::current_state(), std::cout);
+				std::cout << endl;
 				trace->dispatch(v_, node);
 
 				// if(v_.b().GetInsertBlock()->getTerminator() == NULL) {

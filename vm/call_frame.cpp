@@ -131,6 +131,22 @@ namespace rubinius {
     std::cout << "line=" << line(state);
 
     std::cout << ">\n";
+
+		StackVariables* vars = scope;
+		VMMethod* vmm = cm->backend_method();
+		int number_of_locals = vmm->number_of_locals;
+		std::cout << "<Vars: ";
+		for(int i = 0; i < number_of_locals; i++){
+			Object* obj = vars->get_local(i);
+			if(obj == NULL){
+				std::cout << "NULL Object pointer.\n";
+			}
+			else{
+				obj->type_info(state)->show(state, obj, 1);
+			}
+			std::cout << ", ";
+		}
+		std::cout << ">" << endl;
   }
 
   /* For debugging. */

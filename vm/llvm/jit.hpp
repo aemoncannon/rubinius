@@ -106,7 +106,8 @@ namespace rubinius {
     llvm::Value* msg_;
     llvm::Value* arg_total_;
     llvm::Value* trace_result_;
-    int saved_sp_;;
+    int saved_sp_;
+    int saved_last_sp_;
 
     JITMethodInfo* parent_info_;
     JITMethodInfo* creator_info_;
@@ -137,7 +138,7 @@ namespace rubinius {
 		typedef std::map<int, llvm::Value*> ValMap;
 
     ValMap pre_allocated_args;
-    ValMap pre_allocated_stacks;
+    ValMap pre_allocated_call_frames;
     ValMap pre_allocated_vars;
 
     llvm::PHINode* trace_ip_phi;
@@ -225,6 +226,14 @@ namespace rubinius {
 
     int saved_sp() {
       return saved_sp_;
+    }
+
+    void set_saved_last_sp(int sp) {
+      saved_last_sp_ = sp;
+    }
+
+    int saved_last_sp() {
+      return saved_last_sp_;
     }
 
     void set_previous(llvm::Value* prev) {

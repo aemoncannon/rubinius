@@ -34,7 +34,7 @@ namespace rubinius {
       cBlockAsMethod =      1 << 5,
       cJITed =              1 << 6,
       cBlock =              1 << 7,
-      cTracedFrame =        1 << 8,
+      cTracedFrame =        1 << 8
     };
 
     CallFrame* previous;
@@ -49,10 +49,7 @@ namespace rubinius {
     void* optional_jit_data;
     VariableScope* top_scope_;
     StackVariables* scope;
-
     Arguments* arguments;
-
-    Object* flush_stk[];
 
     // Stack
     Object* stk[];

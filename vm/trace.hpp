@@ -26,7 +26,7 @@ namespace rubinius {
 
 	typedef uintptr_t opcode;
   typedef map<int, JITBasicBlock> BlockMap;
-  typedef Object* (*trace_executor)(VM*, CallFrame*, Object**, StackVariables*, TraceInfo*);
+  typedef Object* (*trace_executor)(VM*, CallFrame*, TraceInfo*);
 
 
 	class TraceNode {
@@ -76,10 +76,11 @@ namespace rubinius {
 		trace_executor  executor;
 		int pc_base_counter;
 		int expected_exit_ip;
+		int entry_sp;
 
 		enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
 
-		Trace(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+		Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		Status add(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
