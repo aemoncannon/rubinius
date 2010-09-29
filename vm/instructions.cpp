@@ -130,6 +130,7 @@ Object* VMMethod::interpreter(STATE,
 
 	opcode op;
 	int cur_ip;
+	int sp;
 
 
 	goto continue_to_run;
@@ -164,7 +165,8 @@ Object* VMMethod::interpreter(STATE,
 
  record_op:
 	{
-		Trace::Status s = state->recording_trace->add(op, cur_ip, ip_ptr, vmm, call_frame); 
+		sp = stack_ptr - call_frame->stk;
+		Trace::Status s = state->recording_trace->add(op, cur_ip, sp, ip_ptr, vmm, call_frame); 
 		if(s == Trace::TRACE_FINISHED){
 			std::cout << "Trace finished.\n"; 
 			state->recording_trace->compile(state); 
@@ -183,8 +185,9 @@ Object* VMMethod::interpreter(STATE,
  record_nested_trace:
 	{
 		/* Add a virtual op that will cause call of nested trace to be emitted */ 
+		sp = stack_ptr - call_frame->stk;			 
 		state->recording_trace->add(
-			InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); 
+			InstructionSequence::insn_nested_trace, cur_ip, sp, ip_ptr, vmm, call_frame); 
 		TraceInfo ti; 
 		ti.entry_call_frame = call_frame; 
 		ti.recording = true; 
@@ -244,7 +247,7 @@ Object* VMMethod::interpreter(STATE,
 				/* Start recording after threshold is hit..*/										\
 				if(vmm->trace_counters[cur_ip] > 50){														\
 					std::cout << "Start recording trace.\n";											\
-					int sp = stack_ptr - call_frame->stk;													\
+					sp = stack_ptr - call_frame->stk;													\
 					state->recording_trace = new Trace(op, cur_ip, sp, ip_ptr, vmm, call_frame); \
 				}																																\
 			}																																	\
@@ -387,6 +390,8 @@ Object* VMMethod::uncommon_interpreter(STATE,
   }
 
   std::cout << "Entering uncommon at " << call_frame->cm->name()->c_str(state) << endl;
+  std::cout << "Ip at " << call_frame->ip() << endl;
+  std::cout << "Stack at " << call_frame->sp() << endl;
 	opcode op;
 
  continue_to_run:
@@ -397,6 +402,9 @@ Object* VMMethod::uncommon_interpreter(STATE,
     if(op == InstructionSequence::insn_ret &&				\
 			 call_frame->is_traced_frame()) {							\
 			call_frame = call_frame->previous;						\
+			stack_ptr = call_frame->stk + call_frame->sp(); \
+			std::cout << "Ip at " << call_frame->ip() << endl;		\
+			std::cout << "Stack at " << call_frame->sp() << endl; \
 			vmm = call_frame->cm->backend_method();				\
 			stream = vmm->opcodes;												\
 			goto continue_to_run;													\

@@ -33,6 +33,7 @@ namespace rubinius {
 	public:
 		opcode op;
 		int pc;
+		int sp;
 		CallFrame* const call_frame;
 		CompiledMethod* const cm;
 		CompiledMethod* send_cm;
@@ -55,7 +56,7 @@ namespace rubinius {
 		intptr_t arg2;
 
 
-		TraceNode(int depth, int pc_base, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+		TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		void pretty_print(STATE, std::ostream& out);
 
@@ -82,7 +83,7 @@ namespace rubinius {
 
 		Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
-		Status add(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+		Status add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		void pretty_print(STATE, std::ostream& out);
 

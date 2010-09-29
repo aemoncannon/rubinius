@@ -164,16 +164,6 @@ void initialize_yield_frame(int stack_size) {
 	b().CreateStore(flags, get_field(info()->call_frame(), offset::cf_flags));
 
 
-  // Store return ip in previous call_frame.
-	// (skip over the 2 stack_send args)
-	b().CreateStore(ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc + 2),
-									get_field(info()->previous(), offset::cf_ip));
-
-
-	// ip
-	b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0),
-									get_field(info()->call_frame(), offset::cf_ip));
-
 	// scope
 	b().CreateStore(info()->variables(), get_field(info()->call_frame(), offset::cf_scope));
 

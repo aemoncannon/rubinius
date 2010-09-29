@@ -119,9 +119,7 @@ namespace rubinius {
 			// Inputs to the exit pad
 			
 			Value* trace_ip = info()->root_info()->trace_ip_phi;
-			Value* next_ip = info()->root_info()->next_ip_phi;
 			Value* actual_exit_ip = info()->root_info()->exit_ip_phi;
-			Value* exit_sp = info()->root_info()->exit_sp_phi;
 			Value* exit_cf = info()->root_info()->exit_cf_phi;
 
 
@@ -149,15 +147,8 @@ namespace rubinius {
 			// Store information about exit into TraceInfo
 			b().CreateStore(actual_exit_ip, exit_ip_pos);
       b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nestable_pos);
-
 			// So we know where in the trace we exited (useful for debugging)...
       b().CreateStore(trace_ip, exit_trace_pc_pos);
-
-			// TODO: need to loop over all frames and flush this info
-			Value* next_ip_pos = get_field(exit_cf, offset::cf_ip);
-			b().CreateStore(next_ip, next_ip_pos);
-			Value* exit_sp_pos = get_field(exit_cf, offset::cf_sp);
-      b().CreateStore(exit_sp, exit_sp_pos);
 
       BasicBlock* cont = new_block("continue");
       BasicBlock* exit = new_block("exit");
@@ -203,6 +194,7 @@ namespace rubinius {
       set_block(cont);
       b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), nestable_pos);
 
+
 			Signature sig(ls_, "Object");
 			sig << "VM";
 			sig << "CallFrame";
@@ -210,7 +202,6 @@ namespace rubinius {
 			Value* call_args[] = { info()->vm(), exit_cf};
 			Value* ret = sig.call("rbx_continue_uncommon", call_args, 2, "", b());
 			return_value(ret);
-
 
     }
 
@@ -454,330 +445,362 @@ namespace rubinius {
 
 		void exit_trace(int next_ip){
 			BasicBlock* cur = current_block();
-			info()->root_info()->next_ip_phi->addIncoming(int32(next_ip), cur);
 			info()->root_info()->exit_ip_phi->addIncoming(int32(cur_trace_node_->pc), cur);
-			info()->root_info()->trace_ip_phi->addIncoming(
-				int32(cur_trace_node_->trace_pc), cur);
-			Value* stckp = ConstantInt::get(ls_->Int32Ty, sp());
-			info()->root_info()->exit_sp_phi->addIncoming(stckp, cur);
+			info()->root_info()->trace_ip_phi->addIncoming(int32(cur_trace_node_->trace_pc), 
+																										 cur);
 			info()->root_info()->exit_cf_phi->addIncoming(info()->call_frame(), cur);
+
+			// Flush ip and sp of active current frame
+			Value* cf = info()->call_frame();
+			Value* next_ip_pos = get_field(cf, offset::cf_ip);
+			b().CreateStore(ConstantInt::get(ls_->Int32Ty, next_ip), next_ip_pos);
+			Value* stckp = ConstantInt::get(ls_->Int32Ty, sp());
+			Value* exit_sp_pos = get_field(cf, offset::cf_sp);
+      b().CreateStore(stckp, exit_sp_pos);
+
+			// Flush ip and sp of any stacked frames
+			TraceNode* node = cur_trace_node_->active_send;
+			while(node != NULL){
+				Value* cf = info()->root_info()->pre_allocated_call_frames[node->trace_pc];
+				cf = b().CreateBitCast(cf, CallFrameTy, "call_frame");
+				assert(cf);
+
+				Value* stckp = ConstantInt::get(ls_->Int32Ty, node->sp);
+				Value* next_ip = NULL;
+
+				assert(node->traced_send || node->traced_yield);
+				if(node->traced_send){
+					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
+				}
+				else if(node->traced_yield){
+					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
+				}
+
+				Value* next_ip_pos = get_field(cf, offset::cf_ip);
+				b().CreateStore(next_ip, next_ip_pos);
+
+				Value* exit_sp_pos = get_field(cf, offset::cf_sp);
+				b().CreateStore(stckp, exit_sp_pos);
+
+				node = node->active_send;
+			}
 
 			b().CreateBr(info()->trace_exit_pad());
 		}
 
-    void visit_push_has_block() {
-      // We're in a traced method, so we know if there is a block staticly.
-      if(info()->traced_block_supplied()) {
+		void visit_push_has_block() {
+			// We're in a traced method, so we know if there is a block staticly.
+			if(info()->traced_block_supplied()) {
 				stack_push(constant(Qtrue));
 			}
 			else{
 				stack_push(constant(Qfalse));
 			}
-    }
+		}
 
-    void visit_push_self() {
-      stack_push(get_self());
-    }
+		void visit_push_self() {
+			stack_push(get_self());
+		}
 
-    void visit_send_method(opcode which) {
-      visit_send_stack(which, 0);
-    }
+		void visit_send_method(opcode which) {
+			visit_send_stack(which, 0);
+		}
 
 #include "vm/llvm/jit_trace_send.hpp"
-    void visit_send_stack(opcode which, opcode args) {
+		void visit_send_stack(opcode which, opcode args) {
 			if(cur_trace_node_->traced_send){
 				emit_traced_send(which, args, false);
 			}
 			else{
 				InlineCache* cache = reinterpret_cast<InlineCache*>(which);
-			set_has_side_effects();
-			Value* ret = inline_cache_send(args, cache);
-			stack_remove(args + 1);
-			check_for_exception(ret);
-			stack_push(ret);
-			allow_private_ = false;
+				set_has_side_effects();
+				Value* ret = inline_cache_send(args, cache);
+				stack_remove(args + 1);
+				check_for_exception(ret);
+				stack_push(ret);
+				allow_private_ = false;
+			}
 		}
-	}
 
 
 		void emit_create_block(opcode which) {
-      // if we're inside an inlined method that has a block
-      // visible, that means that we've note yet emited the code to
-      // actually create the block for this inlined block.
-      //
-      // But, because we're about to create a block here, it might
-      // want to yield (ie, inlining Enumerable#find on an Array, but
-      // not inlining the call to each inside find).
-      //
-      // So at this point, we have to create the block object
-      // for this parent block.
+			// if we're inside an inlined method that has a block
+			// visible, that means that we've note yet emited the code to
+			// actually create the block for this inlined block.
+			//
+			// But, because we're about to create a block here, it might
+			// want to yield (ie, inlining Enumerable#find on an Array, but
+			// not inlining the call to each inside find).
+			//
+			// So at this point, we have to create the block object
+			// for this parent block.
 
-      //emit_delayed_create_block();
+			//emit_delayed_create_block();
 
-      std::vector<const Type*> types;
-      types.push_back(VMTy);
-      types.push_back(CallFrameTy);
-      types.push_back(ls_->Int32Ty);
+			std::vector<const Type*> types;
+			types.push_back(VMTy);
+			types.push_back(CallFrameTy);
+			types.push_back(ls_->Int32Ty);
 
-      FunctionType* ft = FunctionType::get(ObjType, types, false);
-      Function* func = cast<Function>(
+			FunctionType* ft = FunctionType::get(ObjType, types, false);
+			Function* func = cast<Function>(
 				module_->getOrInsertFunction("rbx_create_block", ft));
-
-      Value* call_args[] = {
-        vm_,
-        call_frame_,
-        ConstantInt::get(ls_->Int32Ty, which)
-      };
-
-      stack_set_top(b().CreateCall(func, call_args, call_args+3, "create_block"));
-    }
-
-	void visit_send_stack_with_block(opcode which, opcode args) {
-
-		InlineCache* cache = reinterpret_cast<InlineCache*>(which);
-		bool has_literal_block = (current_block_ >= 0);
-		bool block_on_stack = !has_literal_block;
-
-		if(cur_trace_node_->traced_send){
-
-			if(!block_on_stack) {
-				emit_create_block(current_block_);
-			}
-
-			emit_traced_send(which, args, true);
-
-		}
-		else{
-			set_has_side_effects();
-
-			// Detect a literal block being created and passed here.
-			if(!block_on_stack) {
-				emit_create_block(current_block_);
-			}
-
-			Value* ret = block_send(cache, args, allow_private_);
-			stack_remove(args + 2);
-			check_for_return(ret);
-			allow_private_ = false;
-
-			// Clear the current block
-			current_block_ = -1;
-		}
-	}
-
-
-#include "vm/llvm/jit_trace_yield.hpp"
-	void visit_yield_stack(opcode count) {
-		if(cur_trace_node_->traced_yield){
-			emit_traced_yield_stack(count);
-		}
-		else{
-			set_has_side_effects();
-			Value* vars = vars_;
-			if(JITMethodInfo* home = info()->home_info()) {
-				vars = home->variables();
-			}
-			Signature sig(ls_, ObjType);
-			sig << VMTy;
-			sig << CallFrameTy;
-			sig << "Object";
-			sig << ls_->Int32Ty;
-			sig << ObjArrayTy;
-			Value* block_obj = b().CreateLoad(
-				b().CreateConstGEP2_32(vars, 0, offset::vars_block),
-				"block");
 
 			Value* call_args[] = {
 				vm_,
 				call_frame_,
-				block_obj,
-				ConstantInt::get(ls_->Int32Ty, count),
-				stack_objects(count)
+				ConstantInt::get(ls_->Int32Ty, which)
 			};
-			flush_ip();
-			Value* val = sig.call("rbx_yield_stack", call_args, 5, "ys", b());
-			stack_remove(count);
-			check_for_exception(val);
-			stack_push(val);
+
+			stack_set_top(b().CreateCall(func, call_args, call_args+3, "create_block"));
 		}
-	}
 
-	void visit_ret() {
-		if(use_full_scope_) flush_scope_to_heap(info()->variables());
-		if(cur_trace_node_->active_send){
-			emit_traced_return();
+		void visit_send_stack_with_block(opcode which, opcode args) {
+
+			InlineCache* cache = reinterpret_cast<InlineCache*>(which);
+			bool has_literal_block = (current_block_ >= 0);
+			bool block_on_stack = !has_literal_block;
+
+			if(cur_trace_node_->traced_send){
+
+				if(!block_on_stack) {
+					emit_create_block(current_block_);
+				}
+
+				emit_traced_send(which, args, true);
+
+			}
+			else{
+				set_has_side_effects();
+
+				// Detect a literal block being created and passed here.
+				if(!block_on_stack) {
+					emit_create_block(current_block_);
+				}
+
+				Value* ret = block_send(cache, args, allow_private_);
+				stack_remove(args + 2);
+				check_for_return(ret);
+				allow_private_ = false;
+
+				// Clear the current block
+				current_block_ = -1;
+			}
 		}
-		else{
-			return_value(stack_top());
+
+
+#include "vm/llvm/jit_trace_yield.hpp"
+		void visit_yield_stack(opcode count) {
+			if(cur_trace_node_->traced_yield){
+				emit_traced_yield_stack(count);
+			}
+			else{
+				set_has_side_effects();
+				Value* vars = vars_;
+				if(JITMethodInfo* home = info()->home_info()) {
+					vars = home->variables();
+				}
+				Signature sig(ls_, ObjType);
+				sig << VMTy;
+				sig << CallFrameTy;
+				sig << "Object";
+				sig << ls_->Int32Ty;
+				sig << ObjArrayTy;
+				Value* block_obj = b().CreateLoad(
+					b().CreateConstGEP2_32(vars, 0, offset::vars_block),
+					"block");
+
+				Value* call_args[] = {
+					vm_,
+					call_frame_,
+					block_obj,
+					ConstantInt::get(ls_->Int32Ty, count),
+					stack_objects(count)
+				};
+				flush_ip();
+				Value* val = sig.call("rbx_yield_stack", call_args, 5, "ys", b());
+				stack_remove(count);
+				check_for_exception(val);
+				stack_push(val);
+			}
 		}
-	}
 
-	void visit_push_local(opcode which) {
-		Value* idx2[] = {
-			ConstantInt::get(ls_->Int32Ty, 0),
-			ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-			ConstantInt::get(ls_->Int32Ty, which)
-		};
-		Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
-		stack_push(b().CreateLoad(pos, "local"));
-	}
-
-
-	void visit_meta_send_op_plus(opcode name) {
-		InlineCache* cache = reinterpret_cast<InlineCache*>(name);
-		if(cache->classes_seen() == 0) {
-			set_has_side_effects();
-			Value* recv = stack_back(1);
-			Value* arg =  stack_top();
-
-			BasicBlock* fast = new_block("fast");
-			BasicBlock* dispatch = new_block("dispatch");
-			BasicBlock* tagnow = new_block("tagnow");
-			BasicBlock* cont = new_block("cont");
-
-			check_fixnums(recv, arg, fast, dispatch);
-
-			set_block(dispatch);
-
-			Value* called_value = simple_send(ls_->symbol("+"), 1);
-
-			check_for_exception_then(called_value, cont);
-
-			set_block(fast);
-
-			std::vector<const Type*> types;
-			types.push_back(FixnumTy);
-			types.push_back(FixnumTy);
-
-			std::vector<const Type*> struct_types;
-			struct_types.push_back(FixnumTy);
-			struct_types.push_back(ls_->Int1Ty);
-
-			StructType* st = StructType::get(ls_->ctx(), struct_types);
-
-			FunctionType* ft = FunctionType::get(st, types, false);
-			Function* func = cast<Function>(
-				module_->getOrInsertFunction(ADD_WITH_OVERFLOW, ft));
-
-			Value* recv_int = tag_strip(recv);
-			Value* arg_int = tag_strip(arg);
-			Value* call_args[] = { recv_int, arg_int };
-			Value* res = b().CreateCall(func, call_args, call_args+2, "add.overflow");
-
-			Value* sum = b().CreateExtractValue(res, 0, "sum");
-			Value* dof = b().CreateExtractValue(res, 1, "did_overflow");
-
-			b().CreateCondBr(dof, dispatch, tagnow);
-
-			set_block(tagnow);
-
-
-			Value* imm_value = fixnum_tag(sum);
-
-			b().CreateBr(cont);
-
-			set_block(cont);
-
-			PHINode* phi = b().CreatePHI(ObjType, "addition");
-			phi->addIncoming(called_value, dispatch);
-			phi->addIncoming(imm_value, tagnow);
-
-
-			stack_remove(2);
-			stack_push(phi);
-		} else {
-			visit_send_stack(name, 1);
+		void visit_ret() {
+			if(use_full_scope_) flush_scope_to_heap(info()->variables());
+			if(cur_trace_node_->active_send){
+				emit_traced_return();
+			}
+			else{
+				return_value(stack_top());
+			}
 		}
-	}
 
-	void print_debug(){
-		Signature sig(ls_, ls_->VoidTy);
-		Value* call_args[] = {};
-		sig.call("rbx_print_debug", call_args, 0, "", b());
-	}
-
-	void dump_vm_state(){
-		Signature sig(ls_, ls_->VoidTy);
-		sig << "VM";
-		sig << "CallFrame";
-
-		Value* call_args[] = {
-			vm_,
-			call_frame_
-		};
-		sig.call("rbx_show_state", call_args, 2, "", b());
-	}
-
-	void dump_obj(Value* val){
-		Signature sig(ls_, ls_->VoidTy);
-		sig << "VM";
-		sig << "Object";
-
-		Value* call_args[] = {
-			vm_,
-			val
-		};
-		sig.call("rbx_show_obj", call_args, 2, "", b());
-	}
-
-	void dump_vars(Value* val){
-		Signature sig(ls_, ls_->VoidTy);
-		sig << "VM";
-		sig << "CallFrame";
-		sig << "StackVariables";
-
-		Value* call_args[] = {
-			vm_,
-			call_frame_,
-			val
-		};
-
-		sig.call("rbx_show_vars", call_args, 3, "", b());
-	}
-
-	void dump_local(opcode which){
-		Value* idx2[] = {
-			ConstantInt::get(ls_->Int32Ty, 0),
-			ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-			ConstantInt::get(ls_->Int32Ty, which)
-		};
-		Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
-		dump_obj(b().CreateLoad(pos, "local"));
-	}
-
-	void dump_int(int i){
-
-		Value* val = ConstantInt::get(ls_->Int32Ty, i);
-
-		Signature sig(ls_, ls_->VoidTy);
-		sig << ls_->Int32Ty;
-
-		Value* call_args[] = {
-			val
-		};
-		sig.call("rbx_show_int", call_args, 1, "", b());
-	}
-
-	void dump_int1(Value* val){
-		Signature sig(ls_, ls_->VoidTy);
-		sig << ls_->Int1Ty;
-		Value* call_args[] = {
-			val
-		};
-		sig.call("rbx_show_int", call_args, 1, "", b());
-	}
-
-	void dump_int32(Value* val){
-		Signature sig(ls_, ls_->VoidTy);
-		sig << ls_->Int32Ty;
-		Value* call_args[] = {
-			val
-		};
-		sig.call("rbx_show_int", call_args, 1, "", b());
-	}
+		void visit_push_local(opcode which) {
+			Value* idx2[] = {
+				ConstantInt::get(ls_->Int32Ty, 0),
+				ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+				ConstantInt::get(ls_->Int32Ty, which)
+			};
+			Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
+			stack_push(b().CreateLoad(pos, "local"));
+		}
 
 
+		void visit_meta_send_op_plus(opcode name) {
+			InlineCache* cache = reinterpret_cast<InlineCache*>(name);
+			if(cache->classes_seen() == 0) {
+				set_has_side_effects();
+				Value* recv = stack_back(1);
+				Value* arg =  stack_top();
+
+				BasicBlock* fast = new_block("fast");
+				BasicBlock* dispatch = new_block("dispatch");
+				BasicBlock* tagnow = new_block("tagnow");
+				BasicBlock* cont = new_block("cont");
+
+				check_fixnums(recv, arg, fast, dispatch);
+
+				set_block(dispatch);
+
+				Value* called_value = simple_send(ls_->symbol("+"), 1);
+
+				check_for_exception_then(called_value, cont);
+
+				set_block(fast);
+
+				std::vector<const Type*> types;
+				types.push_back(FixnumTy);
+				types.push_back(FixnumTy);
+
+				std::vector<const Type*> struct_types;
+				struct_types.push_back(FixnumTy);
+				struct_types.push_back(ls_->Int1Ty);
+
+				StructType* st = StructType::get(ls_->ctx(), struct_types);
+
+				FunctionType* ft = FunctionType::get(st, types, false);
+				Function* func = cast<Function>(
+					module_->getOrInsertFunction(ADD_WITH_OVERFLOW, ft));
+
+				Value* recv_int = tag_strip(recv);
+				Value* arg_int = tag_strip(arg);
+				Value* call_args[] = { recv_int, arg_int };
+				Value* res = b().CreateCall(func, call_args, call_args+2, "add.overflow");
+
+				Value* sum = b().CreateExtractValue(res, 0, "sum");
+				Value* dof = b().CreateExtractValue(res, 1, "did_overflow");
+
+				b().CreateCondBr(dof, dispatch, tagnow);
+
+				set_block(tagnow);
 
 
-};
+				Value* imm_value = fixnum_tag(sum);
+
+				b().CreateBr(cont);
+
+				set_block(cont);
+
+				PHINode* phi = b().CreatePHI(ObjType, "addition");
+				phi->addIncoming(called_value, dispatch);
+				phi->addIncoming(imm_value, tagnow);
+
+
+				stack_remove(2);
+				stack_push(phi);
+			} else {
+				visit_send_stack(name, 1);
+			}
+		}
+
+		void print_debug(){
+			Signature sig(ls_, ls_->VoidTy);
+			Value* call_args[] = {};
+			sig.call("rbx_print_debug", call_args, 0, "", b());
+		}
+
+		void dump_vm_state(){
+			Signature sig(ls_, ls_->VoidTy);
+			sig << "VM";
+			sig << "CallFrame";
+
+			Value* call_args[] = {
+				vm_,
+				call_frame_
+			};
+			sig.call("rbx_show_state", call_args, 2, "", b());
+		}
+
+		void dump_obj(Value* val){
+			Signature sig(ls_, ls_->VoidTy);
+			sig << "VM";
+			sig << "Object";
+
+			Value* call_args[] = {
+				vm_,
+				val
+			};
+			sig.call("rbx_show_obj", call_args, 2, "", b());
+		}
+
+		void dump_vars(Value* val){
+			Signature sig(ls_, ls_->VoidTy);
+			sig << "VM";
+			sig << "CallFrame";
+			sig << "StackVariables";
+
+			Value* call_args[] = {
+				vm_,
+				call_frame_,
+				val
+			};
+
+			sig.call("rbx_show_vars", call_args, 3, "", b());
+		}
+
+		void dump_local(opcode which){
+			Value* idx2[] = {
+				ConstantInt::get(ls_->Int32Ty, 0),
+				ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+				ConstantInt::get(ls_->Int32Ty, which)
+			};
+			Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
+			dump_obj(b().CreateLoad(pos, "local"));
+		}
+
+		void dump_int(int i){
+
+			Value* val = ConstantInt::get(ls_->Int32Ty, i);
+
+			Signature sig(ls_, ls_->VoidTy);
+			sig << ls_->Int32Ty;
+
+			Value* call_args[] = {
+				val
+			};
+			sig.call("rbx_show_int", call_args, 1, "", b());
+		}
+
+		void dump_int1(Value* val){
+			Signature sig(ls_, ls_->VoidTy);
+			sig << ls_->Int1Ty;
+			Value* call_args[] = {
+				val
+			};
+			sig.call("rbx_show_int", call_args, 1, "", b());
+		}
+
+		void dump_int32(Value* val){
+			Signature sig(ls_, ls_->VoidTy);
+			sig << ls_->Int32Ty;
+			Value* call_args[] = {
+				val
+			};
+			sig.call("rbx_show_int", call_args, 1, "", b());
+		}
+
+
+
+
+	};
 }

@@ -17,9 +17,10 @@
 namespace rubinius {
 
 
-	TraceNode::TraceNode(int depth, int pc_base, opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
+	TraceNode::TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
 		: op(op),
 		  pc(pc),
+		  sp(sp),
 		  call_frame(call_frame),
 		  cm(call_frame->cm),
 		  send_cm(NULL),
@@ -64,7 +65,7 @@ namespace rubinius {
 	}
 
 	Trace::Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
-		anchor = new TraceNode(0, 0, op, pc, ip_ptr, vmm, call_frame);
+		anchor = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
 		head = anchor;
 		pc_base_counter = 0;
 		expected_exit_ip = -1;
@@ -72,7 +73,7 @@ namespace rubinius {
 	}
 
 
-	Trace::Status Trace::add(opcode op, int pc, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
+	Trace::Status Trace::add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
 		if(pc == anchor->pc && call_frame->cm == anchor->cm){
 			head->next = anchor;
 			head = anchor;
@@ -141,7 +142,7 @@ namespace rubinius {
 				}
 			}
 
-			head = new TraceNode(call_depth, pc_base, op, pc, ip_ptr, vmm, call_frame);
+			head = new TraceNode(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
 			head->active_send = active_send;
 			head->parent_send = parent_send;
 			head->prev = prev;

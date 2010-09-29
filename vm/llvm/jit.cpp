@@ -105,9 +105,7 @@ namespace rubinius {
 	void JITMethodInfo::init_trace_exit_pad(){
 		trace_exit_pad_ = llvm::BasicBlock::Create(context_.state()->ctx(), "trace_exit_pad", function_);
 		exit_ip_phi = llvm::PHINode::Create(context_.state()->Int32Ty, "trace_exit_ip_phi", trace_exit_pad_);
-		next_ip_phi = llvm::PHINode::Create(context_.state()->Int32Ty, "trace_next_ip_phi", trace_exit_pad_);
 		trace_ip_phi = llvm::PHINode::Create(context_.state()->Int32Ty, "trace_trace_ip_phi", trace_exit_pad_);
-		exit_sp_phi = llvm::PHINode::Create(context_.state()->Int32Ty, "trace_exit_stk_phi", trace_exit_pad_);
 		exit_cf_phi = llvm::PHINode::Create(context_.state()->ptr_type("CallFrame"), "trace_exit_cf_phi", trace_exit_pad_);
 	}
 

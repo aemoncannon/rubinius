@@ -142,9 +142,7 @@ namespace rubinius {
     ValMap pre_allocated_vars;
 
     llvm::PHINode* trace_ip_phi;
-    llvm::PHINode* next_ip_phi;
     llvm::PHINode* exit_ip_phi;
-    llvm::PHINode* exit_sp_phi;
     llvm::PHINode* exit_cf_phi;
 
 
