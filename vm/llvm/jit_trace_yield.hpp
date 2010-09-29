@@ -1,15 +1,20 @@
 void emit_traced_yield_stack(opcode args) {
 
-	// Emit setup code for new call.
-	// Stores into args Values.
+	const llvm::Type* obj_type = ls_->ptr_type("Object");
 
+	// copy things from caller stack into args
 	setup_out_args(args);
+	// pop things off caller stack
+	stack_remove(args);
 	
 	CompiledMethod* cm = cur_trace_node_->send_cm;
 	VMMethod* vmm = cm->backend_method();
 	jit::Context ctx(ls_);
-	JITMethodInfo* new_info = new JITMethodInfo(ctx, cm, vmm);
 	JITMethodInfo* parent_info = info();
+	parent_info->set_saved_sp(sp_);
+	parent_info->set_saved_last_sp(last_sp_);
+
+	JITMethodInfo* new_info = new JITMethodInfo(ctx, cm, vmm);
 	new_info->is_block = true;
 	new_info->set_parent_info(parent_info);
 	method_info_ = new_info;
@@ -30,42 +35,41 @@ void emit_traced_yield_stack(opcode args) {
 																"block_env");
 
 
-	info()->set_call_frame(call_frame_);
-
 	info()->set_block_env(block_env);
 
 	Value* prev_call_frame = parent_info->call_frame();
 	prev_call_frame->setName("prev_call_frame");
 	info()->set_previous(prev_call_frame);
 
-	info()->set_stack(parent_info->stack());
-
 	info()->set_args(out_args_);
 	info()->set_out_args(info()->root_info()->pre_allocated_args[cur_trace_node_->trace_pc]);
 	init_out_args();
 
 	Value* cfstk = info()->root_info()->pre_allocated_call_frames[cur_trace_node_->trace_pc];
-	Value* var_mem = info()->root_info()->pre_allocated_vars[cur_trace_node_->trace_pc];
-
 	call_frame_ = b().CreateBitCast(
 		cfstk,
 		PointerType::getUnqual(cf_type), "call_frame");
 	info()->set_call_frame(call_frame_);
 
+	stack_ = b().CreateConstGEP1_32(
+ 		cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
+	info()->set_stack(stack_);
+
+	Value* var_mem = info()->root_info()->pre_allocated_vars[cur_trace_node_->trace_pc];
 	vars_ = b().CreateBitCast(
 		var_mem,
 		PointerType::getUnqual(stack_vars_type), "vars");
 	info()->set_variables(vars_);
 
-
 	initialize_yield_frame(info()->vmm->stack_size);
 
 	setup_yield_scope();
 
-	stack_remove(args);
-
+  nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
 
 }
+
+
 
 void setup_yield_scope() {
 

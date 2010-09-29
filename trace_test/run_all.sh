@@ -31,6 +31,11 @@ echo "-------------------"
 $RBX nest_funcs.rb 10000 trace >> $LOG
 
 echo ""
+echo "nest_funcs_with_yield.rb"
+echo "-------------------"
+$RBX nest_funcs_with_yield.rb 10000 trace >> $LOG
+
+echo ""
 echo "nest_funcs_and_exit.rb"
 echo "-------------------"
 $RBX nest_funcs_and_exit.rb 10000 trace >> $LOG
