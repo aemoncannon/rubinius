@@ -45,6 +45,7 @@ namespace rubinius {
 
     int flags;
     int ip_;
+    int sp_;
 
     void* optional_jit_data;
     VariableScope* top_scope_;
@@ -58,6 +59,10 @@ namespace rubinius {
 
     int ip() {
       return ip_;
+    }
+
+    int sp() {
+      return sp_;
     }
 
     bool block_as_method_p() {

@@ -95,6 +95,8 @@ namespace rubinius {
 
     bool tracing_enabled;
 	Trace* recording_trace;
+    bool debug_traces;
+
 
     ThreadState thread_state_;
 

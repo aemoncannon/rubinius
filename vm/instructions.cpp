@@ -96,8 +96,6 @@ Object* VMMethod::interpreter(STATE,
 
 #include "vm/gen/instruction_locations.hpp"
 
-
-
   if(unlikely(state == 0)) {
     VMMethod::instructions = const_cast<void**>(insn_locations);
     return NULL;
@@ -143,22 +141,24 @@ Object* VMMethod::interpreter(STATE,
 		ti.entry_call_frame = call_frame; 
 		ti.recording = false; 
 		ti.nested = false; 
-		std::cout << "Running trace.\n"; 
 		call_frame->dump();
+		std::cout << "Running trace." << endl; 
 		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, &ti); 
+		std::cout << "Run finished." << endl; 
 		/* If traceinfo answers false to nestable, the trace must have bailed into */ 
 		/* uncommon interpreter, which will have already finished  */ 
 		/* interpreting this invocation, so we pop this frame. */ 
 		if(!(ti.nestable)){
-			std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << "\n"; 
+			std::cout << "Exit at trace_pc: " << ti.exit_trace_pc << endl; 
 			return ret; 
-		}																																
-		std::cout << "Polite exit.\n"; 
+		} 
+		std::cout << "Polite exit." << endl; 
 		/* Otherwise, we know that the */ 
 		/* trace exited politely, and we can keep rolling with the */ 
 		/* same call_frame. */ 
-		ip_ptr = vmm->addresses + ti.next_ip; 
-		stack_ptr = ti.exit_stack + 1; 
+		std::cout << "Resuming at: " << call_frame->ip() << endl; 
+		ip_ptr = vmm->addresses + call_frame->ip(); 
+		stack_ptr = call_frame->stk + call_frame->sp();
 		goto continue_to_run; 
 	}
 
@@ -183,7 +183,8 @@ Object* VMMethod::interpreter(STATE,
  record_nested_trace:
 	{
 		/* Add a virtual op that will cause call of nested trace to be emitted */ 
-		state->recording_trace->add(InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); 
+		state->recording_trace->add(
+			InstructionSequence::insn_nested_trace, cur_ip, ip_ptr, vmm, call_frame); 
 		TraceInfo ti; 
 		ti.entry_call_frame = call_frame; 
 		ti.recording = true; 
@@ -205,8 +206,8 @@ Object* VMMethod::interpreter(STATE,
 		/* same call_frame, B) we've successfully recorded a call to  */ 
 		/* a nested trace. */ 
 		vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip; 
-		ip_ptr = vmm->addresses + ti.next_ip; 
-		stack_ptr = ti.exit_stack + 1; 
+		ip_ptr = vmm->addresses + call_frame->ip(); 
+		stack_ptr = call_frame->stk + call_frame->sp();
 		goto continue_to_run; 
 	}
 
@@ -357,23 +358,16 @@ Object* VMMethod::interpreter(STATE,
 
 Object* VMMethod::uncommon_interpreter(STATE,
                                        VMMethod* const vmm_,
-                                       CallFrame* const call_frame_,
-                                       int32_t entry_ip,
-                                       Object** stack_ptr_)
+                                       CallFrame* const call_frame_)
 {
 
 #include "vm/gen/instruction_locations.hpp"
 	
-
 	VMMethod* vmm = vmm_;
-
 	CallFrame* call_frame = call_frame_;
-
   opcode* stream = vmm->opcodes;
-
   InterpreterState is;
-
-  Object** stack_ptr = stack_ptr_;
+  Object** stack_ptr = call_frame->stk + call_frame->sp();
 
   int current_unwind = 0;
   UnwindInfo unwinds[kMaxUnwindInfos];
@@ -392,7 +386,7 @@ Object* VMMethod::uncommon_interpreter(STATE,
     if(!state->process_async(call_frame)) return NULL;
   }
 
-  // std::cout << "Entering uncommon at " << entry_ip << " : " << call_frame->cm->name()->c_str(state) << "\n";
+  std::cout << "Entering uncommon at " << call_frame->cm->name()->c_str(state) << endl;
 	opcode op;
 
  continue_to_run:

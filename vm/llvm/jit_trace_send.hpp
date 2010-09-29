@@ -3,24 +3,28 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 
 	const llvm::Type* obj_type = ls_->ptr_type("Object");
 
-	// Emit setup code for new call.
-	// Stores into args Values.
 	if(with_block){
+		// copy things from caller stack into args
 		setup_out_args_with_block(args);
+		// pop things off caller stack
+		stack_remove(args + 2);
 	}
 	else{
+		// copy things from caller stack into args
 		setup_out_args(args);
+		// pop things off caller stack
+		stack_remove(args + 1);
 	}
 
 	CompiledMethod* cm = cur_trace_node_->send_cm;
 	VMMethod* vmm = cm->backend_method();
 	jit::Context ctx(ls_);
-	JITMethodInfo* new_info = new JITMethodInfo(ctx, cm, vmm);
 	JITMethodInfo* parent_info = info();
+	parent_info->set_saved_sp(sp_);
+	parent_info->set_saved_last_sp(last_sp_);
+	JITMethodInfo* new_info = new JITMethodInfo(ctx, cm, vmm);
 	new_info->is_block = false;
 	new_info->set_parent_info(parent_info);
-	new_info->set_saved_sp(sp());
-	new_info->set_saved_last_sp(last_sp());
 	method_info_ = new_info;
 	sp_ = 0;
 	last_sp_ = 0;
@@ -42,19 +46,15 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 	vm_->setName("vm");
 	info()->set_vm(vm_);
 
-	std::cout << "1\n";
 
 	Value* prev_call_frame = parent_info->call_frame();
 	prev_call_frame->setName("prev_call_frame");
 	info()->set_previous(prev_call_frame);
 
-	std::cout << "2\n";
 	info()->set_args(out_args_);
-	info()->set_out_args(info()->root_info()->pre_allocated_args[
-												 cur_trace_node_->trace_pc]);
+	info()->set_out_args(info()->root_info()->pre_allocated_args[cur_trace_node_->trace_pc]);
 	init_out_args();
 
-	std::cout << "3\n";
 	Value* cfstk = info()->root_info()->pre_allocated_call_frames[
 		cur_trace_node_->trace_pc];
 	call_frame_ = b().CreateBitCast(
@@ -62,9 +62,9 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 		PointerType::getUnqual(cf_type), "call_frame");
 	info()->set_call_frame(call_frame_);
 
-	Value* stk_base = b().CreateConstGEP1_32(
+	stack_ = b().CreateConstGEP1_32(
 		cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
-	info()->set_stack(stk_base);
+	info()->set_stack(stack_);
 
 	Value* var_mem = info()->root_info()->pre_allocated_vars[cur_trace_node_->trace_pc];
 	vars_ = b().CreateBitCast(
@@ -119,14 +119,6 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
   nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
 
 	import_args();
-
-
-	if(with_block){
-		stack_remove(args + 2);
-	}
-	else{
-		stack_remove(args + 1);
-	}
 
 	// b().CreateBr(body);
 	// b().SetInsertPoint(body);

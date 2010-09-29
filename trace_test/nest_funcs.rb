@@ -20,7 +20,7 @@ def run()
 end
 
 
-expect(ITERATIONS * 1000) do
+expect(run()) do
   run()
 end
 

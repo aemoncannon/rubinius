@@ -28,7 +28,7 @@ $RBX nest_simple.rb 100000 trace >> $LOG
 echo ""
 echo "nest_funcs.rb"
 echo "-------------------"
-$RBX nest_funcs.rb 100000 trace >> $LOG
+$RBX nest_funcs.rb 10000 trace >> $LOG
 
 echo ""
 echo "nest_funcs_and_exit.rb"

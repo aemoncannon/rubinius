@@ -150,9 +150,6 @@ namespace rubinius {
 			{}
 
 			void call(Trace* trace, TraceNode* node){
-				std::cout << "Compiling:\n";
-				node->pretty_print(VM::current_state(), std::cout);
-				std::cout << endl;
 				trace->dispatch(v_, node);
 
 				// if(v_.b().GetInsertBlock()->getTerminator() == NULL) {

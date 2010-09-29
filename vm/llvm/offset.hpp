@@ -19,11 +19,12 @@ namespace offset {
   const static int cf_cm = 3;
   const static int cf_flags = 4;
   const static int cf_ip = 5;
-  const static int cf_jit_data = 6;
-  const static int cf_top_scope = 7;
-  const static int cf_scope = 8;
-  const static int cf_arguments = 9;
-  const static int cf_stk = 10;
+  const static int cf_sp = 6;
+  const static int cf_jit_data = 7;
+  const static int cf_top_scope = 8;
+  const static int cf_scope = 9;
+  const static int cf_arguments = 10;
+  const static int cf_stk = 11;
 
   const static int args_recv = 0;
   const static int args_block = 1;

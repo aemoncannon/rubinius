@@ -158,6 +158,7 @@ PATypeHolder PointerTy_14_fwd = OpaqueType::get(mod->getContext());
 StructTy_struct_rubinius__CallFrame_fields.push_back(PointerTy_14_fwd);
 StructTy_struct_rubinius__CallFrame_fields.push_back(IntegerType::get(mod->getContext(), 32));
 StructTy_struct_rubinius__CallFrame_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__CallFrame_fields.push_back(IntegerType::get(mod->getContext(), 32));
 StructTy_struct_rubinius__CallFrame_fields.push_back(PointerTy_2);
 PATypeHolder PointerTy_13_fwd = OpaqueType::get(mod->getContext());
 StructTy_struct_rubinius__CallFrame_fields.push_back(PointerTy_13_fwd);

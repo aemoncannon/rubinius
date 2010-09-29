@@ -949,8 +949,7 @@ extern "C" {
     self->set_table_ivar(state, name, val);
   }
 
-  Object* rbx_continue_uncommon(STATE, CallFrame* call_frame,
-                                int32_t entry_ip, Object** stack_ptr)
+  Object* rbx_continue_uncommon(STATE, CallFrame* call_frame)
   {
     LLVMState::get(state)->add_uncommons_taken();
 
@@ -988,7 +987,7 @@ extern "C" {
       }
     }
 
-    return VMMethod::uncommon_interpreter(state, vmm, call_frame, entry_ip, stack_ptr);
+    return VMMethod::uncommon_interpreter(state, vmm, call_frame);
   }
 
   Object* rbx_restart_interp(STATE, CallFrame* call_frame, Dispatch& msg, Arguments& args) {

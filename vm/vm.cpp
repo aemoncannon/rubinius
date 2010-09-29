@@ -58,6 +58,7 @@ namespace rubinius {
     , check_local_interrupts(false)
     , tracing_enabled(false)
     , recording_trace(NULL)
+    , debug_traces(false)
     , thread_state_(this)
     , thread(this, (Thread*)Qnil)
     , current_fiber(this, (Fiber*)Qnil)
