@@ -41,6 +41,7 @@ namespace rubinius {
 #include "vm/gen/instruction_trace_record.hpp"
 	}
 
+
 	void TraceNode::pretty_print(STATE, std::ostream& out) {
 		if(state != NULL){
 			out << cm->name()->c_str(state) << " - " << trace_pc  <<  "(" << pc << "): ";

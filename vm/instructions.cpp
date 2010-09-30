@@ -389,7 +389,8 @@ Object* VMMethod::uncommon_interpreter(STATE,
     if(!state->process_async(call_frame)) return NULL;
   }
 
-  std::cout << "Entering uncommon at " << call_frame->cm->name()->c_str(state) << endl;
+	call_frame->dump();
+  std::cout << "Entering uncommon at." << endl;
   std::cout << "Ip at " << call_frame->ip() << endl;
   std::cout << "Stack at " << call_frame->sp() << endl;
 	opcode op;
@@ -401,10 +402,21 @@ Object* VMMethod::uncommon_interpreter(STATE,
 #define DISPATCH op = stream[call_frame->inc_ip()];	\
     if(op == InstructionSequence::insn_ret &&				\
 			 call_frame->is_traced_frame()) {							\
+			std::cout << "synthetic return" << endl;					\
 			call_frame = call_frame->previous;						\
+			Object* ret = stack_top(); \
+			ret->type_info(state)->show(state, ret, 1); \
 			stack_ptr = call_frame->stk + call_frame->sp(); \
+			call_frame->dump();																		\
 			std::cout << "Ip at " << call_frame->ip() << endl;		\
 			std::cout << "Stack at " << call_frame->sp() << endl; \
+			stack_push(ret);																			\
+			Object* top = stack_top(); \
+			top->type_info(state)->show(state, top, 1); \
+			Object* back = stack_back(1); \
+			back->type_info(state)->show(state, back, 1); \
+			Object* back2 = stack_back(1); \
+			back2->type_info(state)->show(state, back2, 1); \
 			vmm = call_frame->cm->backend_method();				\
 			stream = vmm->opcodes;												\
 			goto continue_to_run;													\

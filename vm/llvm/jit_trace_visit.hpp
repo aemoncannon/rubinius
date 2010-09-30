@@ -207,7 +207,6 @@ namespace rubinius {
 
 
 
-
     void visit_nested_trace() {
 			
 			// Save away current trace info
@@ -229,6 +228,11 @@ namespace rubinius {
 
 			// Yes, this trace invocation is 'nested' (being called from a parent trace)
       b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nested_pos);
+
+
+			// Flush info just in case nested trace side-exits. 
+			// Have to do this before we call, since we don't know if we'll need it...
+			flush_call_stack();
 
 			// Call the nested trace
 			Signature sig(ls_, "Object");
@@ -450,29 +454,65 @@ namespace rubinius {
 																										 cur);
 			info()->root_info()->exit_cf_phi->addIncoming(info()->call_frame(), cur);
 
+
 			// Flush ip and sp of active current frame
 			Value* cf = info()->call_frame();
+			Value* next_ip_val = ConstantInt::get(ls_->Int32Ty, next_ip);
 			Value* next_ip_pos = get_field(cf, offset::cf_ip);
-			b().CreateStore(ConstantInt::get(ls_->Int32Ty, next_ip), next_ip_pos);
+			b().CreateStore(next_ip_val, next_ip_pos);
 			Value* stckp = ConstantInt::get(ls_->Int32Ty, sp());
 			Value* exit_sp_pos = get_field(cf, offset::cf_sp);
       b().CreateStore(stckp, exit_sp_pos);
 
+			flush_call_stack();
+
+			b().CreateBr(info()->trace_exit_pad());
+		}
+
+
+		void flush_call_stack(){
+				std::cout << "\n\nFLUSHING CALL STACK\n" << endl;
 			// Flush ip and sp of any stacked frames
 			TraceNode* node = cur_trace_node_->active_send;
 			while(node != NULL){
-				Value* cf = info()->root_info()->pre_allocated_call_frames[node->trace_pc];
+				std::cout << "NODE_DUMP{" << endl;
+				node->pretty_print(VM::current_state(), std::cout);
+				std::cout << "}" << endl;
+
+				assert(node->traced_send || node->traced_yield);
+				Value* cf = NULL;
+				TraceNode* cf_creator_node = node->active_send;
+				if(cf_creator_node != NULL){
+					cf = info()->root_info()->pre_allocated_call_frames[cf_creator_node->trace_pc];	
+				}
+				else{
+					cf = info()->root_info()->call_frame();
+				}
+
 				cf = b().CreateBitCast(cf, CallFrameTy, "call_frame");
 				assert(cf);
 
-				Value* stckp = ConstantInt::get(ls_->Int32Ty, node->sp);
+				Value* stckp = NULL;
 				Value* next_ip = NULL;
 
-				assert(node->traced_send || node->traced_yield);
-				if(node->traced_send){
+				if(node->op == InstructionSequence::insn_send_stack){
+					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 1);
+					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
+				}
+				else if(node->op == InstructionSequence::insn_send_stack_with_block){
+					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 2);
+					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
+				}
+				else if(node->op == InstructionSequence::insn_yield_stack){
+					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg1);
 					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
 				}
-				else if(node->traced_yield){
+				else if(node->op == InstructionSequence::insn_send_method){
+					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - 1);
+					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
+				}
+				else{
+					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 1);
 					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
 				}
 
@@ -484,8 +524,6 @@ namespace rubinius {
 
 				node = node->active_send;
 			}
-
-			b().CreateBr(info()->trace_exit_pad());
 		}
 
 		void visit_push_has_block() {
