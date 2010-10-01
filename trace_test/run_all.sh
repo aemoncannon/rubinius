@@ -38,7 +38,7 @@ $RBX nest_funcs_with_yield.rb 10000 trace >> $LOG
 echo ""
 echo "nest_funcs_and_exit.rb"
 echo "-------------------"
-$RBX nest_funcs_and_exit.rb 10000 trace >> $LOG
+$RBX nest_funcs_and_exit.rb 100 trace >> $LOG
 
 echo ""
 echo "if_exit.rb"
@@ -53,16 +53,16 @@ $RBX if_exit_with_yield.rb 100000 trace >> $LOG
 echo ""
 echo "if_exit_with_yield_simple.rb"
 echo "-------------------"
-$RBX if_exit_with_yield_simple.rb 100000 trace >> $LOG
+$RBX if_exit_with_yield_simple.rb 10000 trace >> $LOG
 
 echo ""
 echo "if_exit_in_func.rb"
 echo "-------------------"
-$RBX if_exit_in_func.rb 100000 trace >> $LOG
+$RBX if_exit_in_func.rb 10000 trace >> $LOG
 
 echo ""
 echo "if_exit_in_two_funcs.rb"
 echo "-------------------"
-$RBX if_exit_in_two_funcs.rb 100000 trace >> $LOG
+$RBX if_exit_in_two_funcs.rb 10000 trace >> $LOG
 
 
