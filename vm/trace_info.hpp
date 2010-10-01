@@ -14,6 +14,7 @@ namespace rubinius {
 	class Symbol;
 	class JITVisit;
 
+
 	class TraceInfo {
 	public:
 		int exit_ip;
@@ -26,7 +27,6 @@ namespace rubinius {
 		int nested;
 		int next_ip;
 		int exit_trace_pc;
-
 
 		TraceInfo();
 	};

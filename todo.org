@@ -72,3 +72,10 @@ of the vars pointer, which we need to load.
 * Questions
  - How to stitch two llvm funcs together?
  - What about writing stuff to disk 
+
+
+* Branching todo
+ - Need to setup traceinfo with trace pointer for nested traces
+ - What about branches that pop frames? Hmmm traces need to be able to go backwards, up the call-stack?
+- allocating wrong type in pre-allocation of call_frames?
+- what's to stop a branch trace from calling it's parent?

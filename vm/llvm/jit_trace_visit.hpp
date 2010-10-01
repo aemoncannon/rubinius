@@ -93,13 +93,13 @@ namespace rubinius {
         flush_scope_to_heap(vars_);
       }
 
-			return_value(Constant::getNullValue(ObjType));
+			return_value(int32(-1));
 
       set_block(ret_raise_val);
-      Value* crv = f.clear_raise_value.call(&vm_, 1, "crv", b());
+//      Value* crv = f.clear_raise_value.call(&vm_, 1, "crv", b());
       if(use_full_scope_) flush_scope_to_heap(vars_);
 
-			return_value(crv);
+			return_value(int32(-1));
 
       set_block(start);
 
@@ -118,146 +118,52 @@ namespace rubinius {
 			// This is used in exit stubs, when the trace bails for some reason.
 			// Inputs to the exit pad
 			
-			Value* trace_ip = info()->root_info()->trace_ip_phi;
+			// Value* trace_ip = info()->root_info()->trace_ip_phi;
+			Value* next_ip = info()->root_info()->next_ip_phi;
 			Value* actual_exit_ip = info()->root_info()->exit_ip_phi;
 			Value* exit_cf = info()->root_info()->exit_cf_phi;
 
+			// constant for this trace
+			Value* expected_exit_pc = int32(trace_->anchor->pc);
 
-			Value* recording_pos = get_field(info()->trace_info(), offset::trace_info_recording);
-			Value* recording = b().CreateIntCast(b().CreateLoad(recording_pos, "recording"), ls_->Int1Ty, "recording");
-			Value* not_recording = b().CreateNot(recording, "not_recording");
+			emit_call_nested_trace(exit_cf, next_ip, actual_exit_ip, expected_exit_pc);
 
-			Value* nested_pos = get_field(info()->trace_info(), offset::trace_info_nested);
-			Value* nested = b().CreateIntCast(b().CreateLoad(nested_pos, "nested"), ls_->Int1Ty, "nested");
-			Value* not_nested = b().CreateNot(nested, "not_nested");
-
-			Value* entry_cf_pos = get_field(info()->trace_info(), offset::trace_info_entry_cf);
-			Value* entry_call_frame = b().CreateLoad(entry_cf_pos, "save_entry_call_frame");
-
-			Value* exp_exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_expected_exit_ip);
-			Value* expected_exit_ip = b().CreateLoad(exp_exit_ip_pos, "save_expected_exit_ip");
-
-			Value* nestable_pos = get_field(info()->trace_info(), offset::trace_info_nestable);
-			Value* exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_exit_ip);
-			Value* exit_trace_pc_pos = get_field(info()->trace_info(), offset::trace_info_exit_trace_pc);
-
-      Value* ip_cmp = b().CreateICmpEQ(actual_exit_ip, expected_exit_ip, "exiting_at_expected_ip_p");
-      Value* cf_cmp = b().CreateICmpEQ(entry_call_frame, exit_cf, "at_expected_call_frame_p");
-
-			// Store information about exit into TraceInfo
-			b().CreateStore(actual_exit_ip, exit_ip_pos);
-      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nestable_pos);
-			// So we know where in the trace we exited (useful for debugging)...
-      b().CreateStore(trace_ip, exit_trace_pc_pos);
-
-      BasicBlock* cont = new_block("continue");
-      BasicBlock* exit = new_block("exit");
-
-			// If we are recording, and the current call_frame is this trace's home call_frame,
-			// return directly to the caller of the trace - setting nestable to true. Result will
-			// be that this trace will be recorded as a nested trace.
-      Value* anded = b().CreateAnd(recording, cf_cmp, "and");
-      b().CreateCondBr(anded, exit, cont);
-      set_block(exit);
-			return_value(constant(Qnil));
-      set_block(cont);
-
-			// If we are not recording, and the current call_frame is this trace's home call_frame,
-			// exit directly to the caller of the trace - setting nestable to true (this informs caller
-			// that the trace exited politely, so interpreter doesn't have to pop itself)
-      cont = new_block("continue");
-      exit = new_block("exit");
-      anded = b().CreateAnd(not_recording, cf_cmp, "and");
-      anded = b().CreateAnd(anded, not_nested, "and");
-      b().CreateCondBr(anded, exit, cont);
-			set_block(exit);
-			return_value(constant(Qnil));
-      set_block(cont);
-
-			// If we are not recording, and this was a nested trace, and the current call_frame is 
-			// this trace's home call_frame, and the ip we are exiting to is the ip that the calling trace was expecting,
-			// exit directly to the caller of the trace - setting nestable to true  (this informs caller
-			// that the trace exited politely, so parent trace doesn't have to pop itself)
-      cont = new_block("continue");
-      exit = new_block("exit");
-      anded = b().CreateAnd(not_recording, cf_cmp, "and");
-      anded = b().CreateAnd(anded, nested, "and");
-      anded = b().CreateAnd(anded, ip_cmp, "and");
-      b().CreateCondBr(anded, exit, cont);
-			set_block(exit);
-			return_value(constant(Qnil));
-
-
-			// Otherwise, we exit to the uncommon interpreter,
-			// setting 'nestable' to false so the caller of this trace will know that
-			// this trace run did not exit politely.
-      set_block(cont);
-      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), nestable_pos);
-
-
-			Signature sig(ls_, "Object");
-			sig << "VM";
-			sig << "CallFrame";
-
-			Value* call_args[] = { info()->vm(), exit_cf};
-			Value* ret = sig.call("rbx_continue_uncommon", call_args, 2, "", b());
-			return_value(ret);
-
+			// If we got to here, that means that a branch trace was
+			// run successfully, which by definition must have looped
+			// back to the anchor.
+			goto_anchor();
     }
 
 
-
     void visit_nested_trace() {
-			
-			// Save away current trace info
-			Value* exp_exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_expected_exit_ip);
-			Value* save_expected_exit_ip = b().CreateLoad(exp_exit_ip_pos, "save_expected_exit_ip");
-
-			Value* entry_cf_pos = get_field(info()->trace_info(), offset::trace_info_entry_cf);
-			Value* save_entry_call_frame = b().CreateLoad(entry_cf_pos, "save_entry_call_frame");
-
-			Value* nested_pos = get_field(info()->trace_info(), offset::trace_info_nested);
-			Value* save_nested = b().CreateLoad(nested_pos, "save_nested");
-
-			// Write new trace info for this nested trace
-			// The ip where the trace should exit, if all goes as planned
-			b().CreateStore(ConstantInt::get(ls_->Int32Ty, cur_trace_node_->nested_trace->expected_exit_ip), exp_exit_ip_pos);
-
-			// The active callframe. 'home' call_frame from the nested trace's perspective.
-      b().CreateStore(info()->call_frame(), entry_cf_pos);
-
-			// Yes, this trace invocation is 'nested' (being called from a parent trace)
-      b().CreateStore(ConstantInt::get(ls_->Int32Ty, 1), nested_pos);
-
-
-			// Flush info just in case nested trace side-exits. 
-			// Have to do this before we call, since we don't know if we'll need it...
 			flush_call_stack();
+			emit_call_nested_trace(
+				info()->call_frame(), 
+				int32(cur_trace_node_->pc),
+				int32(cur_trace_node_->pc),
+				int32(cur_trace_node_->nested_trace->expected_exit_ip));
+		}
 
-			// Call the nested trace
-			Signature sig(ls_, "Object");
+
+    void emit_call_nested_trace(Value* exit_cf, Value* start_pc, Value* exit_pc, Value* expected_exit_pc) {
+
+			Signature sig(ls_, ls_->Int32Ty);
 			sig << "VM";
 			sig << "CallFrame";
+			sig << ls_->Int32Ty;
+			sig << ls_->Int32Ty;
 			sig << ls_->Int32Ty;
 			sig << "TraceInfo";
 			Value* call_args[] = {
 				info()->vm(),
 				info()->call_frame(),
-				ConstantInt::get(ls_->Int32Ty, cur_trace_node_->pc),
+				start_pc,
+				exit_pc,
+				expected_exit_pc,
 				info()->trace_info()
 			};
-			Value* ret = sig.call("rbx_call_trace", call_args, 4, "", b());
-
-			// Restore the trace-info for the parent trace
-      b().CreateStore(save_expected_exit_ip, exp_exit_ip_pos);
-      b().CreateStore(save_entry_call_frame, entry_cf_pos);
-      b().CreateStore(save_nested, nested_pos);
-
-			// Check if the result of the nested trace is 'nestable'. That is, check if
-			// the trace run exited in a polite way.
-			Value* nestable_pos = get_field(info()->trace_info(), offset::trace_info_nestable);
-			Value* nestable = b().CreateIntCast(b().CreateLoad(nestable_pos, ""), ls_->Int1Ty, "nestable");
-			Value* not_nestable = b().CreateNot(nestable, "not_nestable");
+			Value* ret = sig.call("rbx_call_trace", call_args, 6, "", b());
+			Value* not_nestable = b().CreateICmpEQ(ret, int32(-1), "nestable_p");
 
       BasicBlock* cont = new_block("continue");
       BasicBlock* not_nestable_b = new_block("not_nestable");
@@ -266,7 +172,6 @@ namespace rubinius {
 			//  The nested trace must have bailed into the uncommon interpreter and has 
 			//  already popped its home call_frame.  This trace is no longer relevant.
       set_block(not_nestable_b);
-
 			return_value(ret);
 
 			// The nested trace exited on the expected_ip, on its home callframe.
@@ -447,13 +352,20 @@ namespace rubinius {
 			b().CreateBr(info()->return_pad());
 		}
 
+    void goto_anchor() {
+			BasicBlock* bb = block_map_[trace_->anchor->trace_pc].block;
+			assert(bb);
+			b().CreateBr(bb);
+			set_block(new_block("continue"));
+    }
+
 		void exit_trace(int next_ip){
 			BasicBlock* cur = current_block();
 			info()->root_info()->exit_ip_phi->addIncoming(int32(cur_trace_node_->pc), cur);
+			info()->root_info()->next_ip_phi->addIncoming(int32(next_ip), cur);
 			info()->root_info()->trace_ip_phi->addIncoming(int32(cur_trace_node_->trace_pc), 
 																										 cur);
 			info()->root_info()->exit_cf_phi->addIncoming(info()->call_frame(), cur);
-
 
 			// Flush ip and sp of active current frame
 			Value* cf = info()->call_frame();
@@ -665,12 +577,8 @@ namespace rubinius {
 
 		void visit_ret() {
 			if(use_full_scope_) flush_scope_to_heap(info()->variables());
-			if(cur_trace_node_->active_send){
-				emit_traced_return();
-			}
-			else{
-				return_value(stack_top());
-			}
+			assert(cur_trace_node_->active_send);
+			emit_traced_return();
 		}
 
 		void visit_push_local(opcode which) {

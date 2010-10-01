@@ -166,14 +166,16 @@ Object* VMMethod::resumable_interpreter(STATE,
 		ti.entry_call_frame = call_frame; 
 		ti.recording = false; 
 		ti.nested = false; 
+		Trace* trace = vmm->traces[cur_ip];
+		assert(trace);
 
 		logln("Running trace.");
-		vmm->traces[cur_ip]->executor(state, call_frame, &ti); 
+		int result = trace->executor(state, call_frame, &ti); 
 		logln("Run finished.");
 
 		/* If traceinfo answers false to nestable, the trace must have bailed into */ 
 		/* uncommon interpreter.*/
-		if(!(ti.nestable)){
+		if(result == -1){
 			logln("Exit at trace_pc: " << ti.exit_trace_pc);
 		} 
 		else{
@@ -217,12 +219,13 @@ Object* VMMethod::resumable_interpreter(STATE,
 		TraceInfo ti; 
 		ti.entry_call_frame = call_frame; 
 		ti.recording = true; 
+		Trace* trace = vmm->traces[cur_ip];
 		logln("Running nested trace while recording.\n"); 
-		vmm->traces[cur_ip]->executor(state, call_frame, &ti); 
+		int result = trace->executor(state, call_frame, &ti); 
 
 		/* If traceinfo answers false to nestable, the nested trace must have bailed into */ 
 		/* uncommon interpreter, we consider this recording invalidated.  */ 
-		if(!(ti.nestable)){
+		if(result == -1){
 			logln("Exit at trace_pc: " << ti.exit_trace_pc << "\n"); 
 			logln("Failed to record nested trace, throwing away recording\n"); 
 			delete state->recording_trace; 

@@ -26,7 +26,7 @@ namespace rubinius {
 
 	typedef uintptr_t opcode;
   typedef map<int, JITBasicBlock> BlockMap;
-  typedef Object* (*trace_executor)(VM*, CallFrame*, TraceInfo*);
+  typedef int (*trace_executor)(VM*, CallFrame*, TraceInfo*);
 
 
 	class TraceNode {

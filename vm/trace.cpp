@@ -74,7 +74,6 @@ namespace rubinius {
 	}
 
 
-
 	Trace::Status Trace::add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
 		if(pc == anchor->pc && call_frame->cm == anchor->cm){
 			head->next = anchor;

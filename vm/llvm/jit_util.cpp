@@ -5,6 +5,7 @@
 #include "llvm/jit.hpp"
 #include "call_frame.hpp"
 #include "trace.hpp"
+#include "trace_info.hpp"
 #include "builtin/object.hpp"
 #include "builtin/symbol.hpp"
 #include "builtin/system.hpp"
@@ -99,17 +100,7 @@ extern "C" {
 		std::cout << "trace debug!" << "\n";
   }
 
-  Object* rbx_call_trace(STATE, CallFrame* call_frame, int pc, TraceInfo* ti)
-  {
-		Trace* trace = call_frame->cm->backend_method()->traces[pc];
-		if(trace != NULL){
-			return trace->executor(state, call_frame, ti);
-		}
-		else{
-			std::cout << "Failed to find nested trace!" << "\n";
-			return Qnil;
-		}
-  }
+
 
   Object* rbx_write_barrier(STATE, Object* obj, Object* val) {
     if(obj->zone() == UnspecifiedZone) return val;
@@ -989,6 +980,40 @@ extern "C" {
 
     return VMMethod::uncommon_interpreter(state, vmm, call_frame);
   }
+
+
+  // 0 = trace found at start_pc, ran, success
+  // -1 = trace found at start_pc, ran, failed
+  // -2 = trace not found at start_pc, ran, did not exit at expected_exit_pc
+  int rbx_call_trace(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, TraceInfo* ti)
+  {
+		bool save_expected = ti->expected_exit_ip;
+		bool save_nested = ti->nested;
+		CallFrame* save_entry = ti->entry_call_frame;
+		Trace* trace = call_frame->cm->backend_method()->traces[start_pc];
+
+		if(trace != NULL){
+			ti->expected_exit_ip = expected_exit_pc;
+			ti->nested = true;
+			ti->entry_call_frame = call_frame;
+			int result = trace->executor(state, call_frame, ti);
+			ti->expected_exit_ip = save_expected;
+			ti->exit_ip = exit_pc;
+			ti->nested = save_nested;
+			ti->entry_call_frame = save_entry;
+			return result;
+		}
+		else{
+			if(call_frame == ti->entry_call_frame){
+				return -1;
+			}
+			else{
+				rbx_continue_uncommon(state, call_frame);
+				return -1;
+			}
+		}
+  }
+
 
   Object* rbx_restart_interp(STATE, CallFrame* call_frame, Dispatch& msg, Arguments& args) {
     return VMMethod::execute(state, call_frame, msg, args);

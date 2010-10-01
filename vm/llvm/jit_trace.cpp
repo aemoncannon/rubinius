@@ -40,7 +40,7 @@ namespace rubinius {
 			ftypes.push_back(ls_->ptr_type("CallFrame"));
 			ftypes.push_back(ls_->ptr_type("TraceInfo"));
 
-			FunctionType* ft = FunctionType::get(ls_->ptr_type("Object"), ftypes, false);
+			FunctionType* ft = FunctionType::get(ls_->Int32Ty, ftypes, false);
 
 			std::string name = trace->trace_name();
 
