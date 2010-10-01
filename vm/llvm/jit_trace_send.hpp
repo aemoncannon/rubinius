@@ -3,18 +3,22 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 
 	const llvm::Type* obj_type = ls_->ptr_type("Object");
 
+	std::cout << "sp in send is now " << sp() << endl;
 	if(with_block){
+		std::cout << "without block" << endl;
 		// copy things from caller stack into args
 		setup_out_args_with_block(args);
 		// pop things off caller stack
 		stack_remove(args + 2);
 	}
 	else{
+		std::cout << "without block" << endl;
 		// copy things from caller stack into args
 		setup_out_args(args);
 		// pop things off caller stack
 		stack_remove(args + 1);
 	}
+	std::cout << "sp in send is now " << sp() << endl;
 
 	CompiledMethod* cm = cur_trace_node_->send_cm;
 	VMMethod* vmm = cm->backend_method();
@@ -26,8 +30,8 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 	new_info->is_block = false;
 	new_info->set_parent_info(parent_info);
 	method_info_ = new_info;
-	sp_ = 0;
-	last_sp_ = 0;
+	sp_ = -1;
+	last_sp_ = -1;
 
 	new_info->set_traced_block_supplied(with_block);
 

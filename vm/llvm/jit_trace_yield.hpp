@@ -1,7 +1,5 @@
 void emit_traced_yield_stack(opcode args) {
 
-	const llvm::Type* obj_type = ls_->ptr_type("Object");
-
 	// copy things from caller stack into args
 	setup_out_args(args);
 	// pop things off caller stack
@@ -18,6 +16,8 @@ void emit_traced_yield_stack(opcode args) {
 	new_info->is_block = true;
 	new_info->set_parent_info(parent_info);
 	method_info_ = new_info;
+	sp_ = -1;
+	last_sp_ = -1;
 
 	llvm::Module* mod = ls_->module();
 	const llvm::Type* cf_type = mod->getTypeByName("struct.rubinius::CallFrame");
@@ -65,7 +65,9 @@ void emit_traced_yield_stack(opcode args) {
 
 	setup_yield_scope();
 
+	const llvm::Type* obj_type = ls_->ptr_type("Object");
   nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
+
 
 }
 

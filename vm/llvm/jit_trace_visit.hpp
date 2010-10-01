@@ -471,13 +471,10 @@ namespace rubinius {
 
 
 		void flush_call_stack(){
-				std::cout << "\n\nFLUSHING CALL STACK\n" << endl;
+			std::cout << "\n\nFLUSHING CALL STACK\n" << endl;
 			// Flush ip and sp of any stacked frames
 			TraceNode* node = cur_trace_node_->active_send;
 			while(node != NULL){
-				std::cout << "NODE_DUMP{" << endl;
-				node->pretty_print(VM::current_state(), std::cout);
-				std::cout << "}" << endl;
 
 				assert(node->traced_send || node->traced_yield);
 				Value* cf = NULL;
@@ -496,7 +493,10 @@ namespace rubinius {
 				Value* next_ip = NULL;
 
 				if(node->op == InstructionSequence::insn_send_stack){
-					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 1);
+					int sp = node->sp - node->arg2 - 1;
+					std::cout << "node sp at send: " << node->sp << endl;
+					std::cout << "sp at send: " << sp << endl;
+					stckp = ConstantInt::get(ls_->Int32Ty, sp);
 					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
 				}
 				else if(node->op == InstructionSequence::insn_send_stack_with_block){
@@ -837,7 +837,16 @@ namespace rubinius {
 			sig.call("rbx_show_int", call_args, 1, "", b());
 		}
 
-
+		// void dump_str(string& str){
+		// 	Type* char_star = Type.pointer(Type::Int8Ty);
+		// 	Value* val = b().create_global_string_ptr(str.c_str());
+		// 	Signature sig(ls_, ls_->Int32Ty);
+		// 	sig << char_str;
+		// 	Value* call_args[] = {
+		// 		val
+		// 	};
+		// 	sig.call("printf", call_args, 1, "", b());
+		// }
 
 
 	};

@@ -12,7 +12,7 @@ def foo(i)
 end
 
 def calc(i)
-  k = 0
+  k = 666
   1.times do
     k += foo(i)
   end

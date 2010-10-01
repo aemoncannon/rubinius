@@ -44,10 +44,10 @@ namespace rubinius {
 
 	void TraceNode::pretty_print(STATE, std::ostream& out) {
 		if(state != NULL){
-			out << cm->name()->c_str(state) << " - " << trace_pc  <<  "(" << pc << "): ";
+			out << cm->name()->c_str(state) << " - " << trace_pc  <<  "(" << pc << ") " << "sp=" << sp << ": ";
 		}
 		else{
-			out << "____" << " - " << trace_pc  <<  "(" << pc << "): ";
+			out << "____" << " - " << trace_pc  <<  "(" << pc << ") " << "sp=" << sp << ": ";
 		}
 		out << InstructionSequence::get_instruction_name(op);
 		out << " ";

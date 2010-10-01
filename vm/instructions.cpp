@@ -47,6 +47,8 @@ using namespace rubinius;
 #define stack_pop() *STACK_PTR--
 #define stack_set_top(val) *STACK_PTR = (val)
 
+#define GDB_BREAK __asm__("int3")
+
 #define USE_JUMP_TABLE
 
 #define stack_top() *STACK_PTR
@@ -142,7 +144,6 @@ Object* VMMethod::interpreter(STATE,
 		ti.entry_call_frame = call_frame; 
 		ti.recording = false; 
 		ti.nested = false; 
-		call_frame->dump();
 		std::cout << "Running trace." << endl; 
 		Object* ret = vmm->traces[cur_ip]->executor(state, call_frame, &ti); 
 		std::cout << "Run finished." << endl; 
@@ -247,7 +248,7 @@ Object* VMMethod::interpreter(STATE,
 				/* Start recording after threshold is hit..*/										\
 				if(vmm->trace_counters[cur_ip] > 50){														\
 					std::cout << "Start recording trace.\n";											\
-					sp = stack_ptr - call_frame->stk;													\
+					sp = stack_ptr - call_frame->stk;															\
 					state->recording_trace = new Trace(op, cur_ip, sp, ip_ptr, vmm, call_frame); \
 				}																																\
 			}																																	\
@@ -389,38 +390,26 @@ Object* VMMethod::uncommon_interpreter(STATE,
     if(!state->process_async(call_frame)) return NULL;
   }
 
-	call_frame->dump();
   std::cout << "Entering uncommon at." << endl;
-  std::cout << "Ip at " << call_frame->ip() << endl;
-  std::cout << "Stack at " << call_frame->sp() << endl;
+  std::cout << "Ip:" << call_frame->ip() << endl;
+  std::cout << "Stack:" << call_frame->sp() << endl;
 	opcode op;
 
  continue_to_run:
   try {
 
 #undef DISPATCH
-#define DISPATCH op = stream[call_frame->inc_ip()];	\
-    if(op == InstructionSequence::insn_ret &&				\
-			 call_frame->is_traced_frame()) {							\
-			std::cout << "synthetic return" << endl;					\
-			call_frame = call_frame->previous;						\
-			Object* ret = stack_top(); \
-			ret->type_info(state)->show(state, ret, 1); \
-			stack_ptr = call_frame->stk + call_frame->sp(); \
-			call_frame->dump();																		\
-			std::cout << "Ip at " << call_frame->ip() << endl;		\
-			std::cout << "Stack at " << call_frame->sp() << endl; \
-			stack_push(ret);																			\
-			Object* top = stack_top(); \
-			top->type_info(state)->show(state, top, 1); \
-			Object* back = stack_back(1); \
-			back->type_info(state)->show(state, back, 1); \
-			Object* back2 = stack_back(1); \
-			back2->type_info(state)->show(state, back2, 1); \
+#define DISPATCH op = stream[call_frame->inc_ip()];					\
+    if(op == InstructionSequence::insn_ret &&								\
+			 call_frame->is_traced_frame()) {											\
+			call_frame = call_frame->previous;										\
+			Object* ret = stack_top();														\
+			stack_ptr = call_frame->stk + call_frame->sp();				\
 			vmm = call_frame->cm->backend_method();				\
 			stream = vmm->opcodes;												\
-			goto continue_to_run;													\
-		}																								\
+			stack_push(ret);																			\
+			goto continue_to_run;																	\
+		}																												\
 		goto *insn_locations[op];
 
 #undef next_int
