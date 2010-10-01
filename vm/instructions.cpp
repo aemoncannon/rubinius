@@ -47,7 +47,7 @@ using namespace rubinius;
 #define stack_pop() *STACK_PTR--
 #define stack_set_top(val) *STACK_PTR = (val)
 
-#define DEBUG false
+#define DEBUG true
 
 #define logln(str) if(DEBUG) std::cout << str << endl
 
@@ -136,7 +136,6 @@ Object* VMMethod::resumable_interpreter(STATE,
 	else{
 		stack_ptr = call_frame->stk - 1;
 	}
-
 
   int current_unwind = 0;
   UnwindInfo unwinds[kMaxUnwindInfos];

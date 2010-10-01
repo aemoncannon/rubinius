@@ -67,3 +67,8 @@ of the vars pointer, which we need to load.
   - How about we just set the trace info stuff, then return to the main interpreter?
   - Hmmm, call_frames would have to be moved to the heap if we return from the trace...
 
+
+
+* Questions
+ - How to stitch two llvm funcs together?
+ - What about writing stuff to disk 
