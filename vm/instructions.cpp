@@ -387,16 +387,16 @@ Object* VMMethod::resumable_interpreter(STATE,
 	return NULL;
 }
 
+
 Object* VMMethod::uncommon_interpreter(STATE,
                                        VMMethod* const vmm_,
                                        CallFrame* const call_frame_)
 {
 
+	logln("Entering uncommon...");
+
 	VMMethod* vmm = vmm_;
 	CallFrame* call_frame = call_frame_;
-	// Finish up execution of the current call_frame
-
-	logln("Entering uncommon...");
 	Object* result = NULL;
 	
 	// otherwise why are we in uncommon?
