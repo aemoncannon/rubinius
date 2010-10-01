@@ -193,8 +193,7 @@ namespace rubinius {
 
     static Object* resumable_interpreter(STATE, VMMethod* const vmm,
 																				 CallFrame* const call_frame,
-																				 bool synthetic,
-																				 Object*** stack_ptr_
+																				 bool synthetic
 																				 );
 
     static Object* debugger_interpreter(STATE, VMMethod* const vmm,

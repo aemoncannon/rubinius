@@ -95,7 +95,7 @@ Object* VMMethod::interpreter(STATE,
                               VMMethod* const vmm,
                               InterpreterCallFrame* const call_frame)
 { 
-	Object* result = resumable_interpreter(state, vmm, call_frame, false, NULL);
+	Object* result = resumable_interpreter(state, vmm, call_frame, false);
 	return result;
 }
 
@@ -104,8 +104,7 @@ Object* VMMethod::interpreter(STATE,
 Object* VMMethod::resumable_interpreter(STATE,
 																				VMMethod* const vmm,
 																				CallFrame* const call_frame,
-																				bool synthetic,
-																				Object*** stack_ptr_
+																				bool synthetic
 																				)
 {
 
@@ -128,7 +127,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 	if(synthetic){
 		std::cout << "Resuming at " << call_frame->ip() << endl;
 		ip_ptr = vmm->addresses + call_frame->ip();
-		stack_ptr = *stack_ptr_;
+		stack_ptr = call_frame->stk + call_frame->sp();
 	}
 	else{
 		stack_ptr = call_frame->stk - 1;
@@ -392,23 +391,20 @@ Object* VMMethod::uncommon_interpreter(STATE,
 
 	VMMethod* vmm = vmm_;
 	CallFrame* call_frame = call_frame_;
-  Object** stack_ptr = stack_ptr_;
+	Object** stack_ptr = call_frame->stk + call_frame->sp();
 
 	// Finish up execution of the current call_frame
 	std::cout << "Resuming first ";
 	call_frame->dump();
 	std::cout << "Vars:" << call_frame->scope << "\n";
 	std::cout << "\n";
-	Object* result = resumable_interpreter(state, vmm, call_frame, true, &stack_ptr);
-
-	std::cout << "return: ";
-	result->type_info(state)->show(state, result, 1);
-	std::cout << "\n";	
+	Object* result = resumable_interpreter(state, vmm, call_frame, true);
 
 	while(call_frame->is_traced_frame()){
 		call_frame = call_frame->previous;
+		stack_ptr = call_frame->stk + call_frame->sp();
 		vmm = call_frame->cm->backend_method();
-		//stack_push(result);
+		call_frame->stk_push(result);
 
 		std::cout << "Resuming next ";
 		call_frame->dump();
@@ -416,13 +412,10 @@ Object* VMMethod::uncommon_interpreter(STATE,
 		std::cout << "\n";
 
 		state->debug_traces = true;
-		result = resumable_interpreter(state, vmm, call_frame, true, &stack_ptr);
+		result = resumable_interpreter(state, vmm, call_frame, true);
 		state->debug_traces = false;
-
-		std::cout << "return: ";	
-		result->type_info(state)->show(state, result, 1);
-		std::cout << "\n";	
 	}
+
 	std::cout << "Returning.." << endl;
 	call_frame->dump();
 
@@ -442,11 +435,6 @@ Object* VMMethod::debugger_interpreter(STATE,
 {
 
 #include "vm/gen/instruction_locations.hpp"
-
-	// Need these because theyre referred to from 
-	// instruction impls.
-	bool synthetic = false;
-	Object*** stack_ptr_;
 
   opcode* stream = vmm->opcodes;
   InterpreterState is;

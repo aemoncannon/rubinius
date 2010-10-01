@@ -256,7 +256,6 @@ instruction ret() [ -- ] => return
   if(call_frame->scope->made_alias_p()) {
     call_frame->scope->flush_to_heap(state);
   }
-  if(synthetic){ *stack_ptr_ = stack_ptr; }
   return stack_top();
 end
 

@@ -66,6 +66,11 @@ namespace rubinius {
       return sp_;
     }
 
+    void stk_push(Object* obj) {
+      sp_++;
+			*(stk + sp_) = obj;
+    }
+
     bool block_as_method_p() {
       return flags & cBlockAsMethod;
     }
