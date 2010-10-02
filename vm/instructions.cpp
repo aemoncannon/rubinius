@@ -177,11 +177,12 @@ Object* VMMethod::resumable_interpreter(STATE,
 
 		TraceNode* exit_node = trace->node_at(ti.exit_trace_pc);
 		assert(exit_node);
-		// if(exit_node->bump_exit_hotness()){
-		// 	logln("Exit node at " << ti.exit_ip << " got hot!");
-		// 	state->recording_trace = new Trace(trace);
-		// 	exit_node->clear_hotness();
-		// }
+
+		if(exit_node->bump_exit_hotness()){
+			logln("Exit node at " << ti.exit_ip << " got hot!");
+			state->recording_trace = new Trace(trace);
+			exit_node->clear_hotness();
+		}
 
 		ip_ptr = vmm->addresses + call_frame->ip(); 
 		stack_ptr = call_frame->stk + call_frame->sp();
