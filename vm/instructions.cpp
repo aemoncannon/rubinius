@@ -194,10 +194,11 @@ Object* VMMethod::resumable_interpreter(STATE,
 		sp = stack_ptr - call_frame->stk;
 		Trace::Status s = state->recording_trace->add(op, cur_ip, sp, ip_ptr, vmm, call_frame); 
 		if(s == Trace::TRACE_FINISHED){
-			logln("Trace Recorded.\n"); 
-			state->recording_trace->compile(state); 
-			logln("Trace Compiled.\n"); 
+
+			logln("Trace Recorded.\n--------------------------\n"); 
 			state->recording_trace->pretty_print(state, std::cout);
+			state->recording_trace->compile(state); 
+			logln("\nTrace Compiled.\n"); 
 			vmm->traces[state->recording_trace->entry->pc] = state->recording_trace; 
 			state->recording_trace = NULL; 
 		} 

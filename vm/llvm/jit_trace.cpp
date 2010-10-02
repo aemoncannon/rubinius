@@ -152,6 +152,7 @@ namespace rubinius {
 			{}
 
 			void call(Trace* trace, TraceNode* node){
+
 				std::cout << "\n\n\nCompiling node: " << endl;
 				std::cout << "sp is: " << v_.sp() << endl;
 				node->pretty_print(VM::current_state(), std::cout);
@@ -189,6 +190,8 @@ namespace rubinius {
 			} catch(JITVisit::Unsupported &e) {
 				return false;
 			}
+
+			visitor.visit_end();
 
 			info_->return_pad()->moveAfter(visitor.current_block());
 			info_->fin_block = visitor.current_block();

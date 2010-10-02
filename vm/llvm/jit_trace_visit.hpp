@@ -242,20 +242,23 @@ namespace rubinius {
 
 			// Omit unconditional jump if this is a branch trace
 			// and we're at the last node before the terminator.
-
-			// The exit stub code will automatically do a jump
-			// to the anchor if the branch trace finishishes
-			// successfully.
 			if(trace_->is_branch() && cur_trace_node_->next == trace_->anchor){
-				return_value(int32(0));
 				return;
 			}
-				
+
 			BasicBlock* bb = block_map_[ip].block;
 			assert(bb);
 			b().CreateBr(bb);
 			set_block(new_block("continue"));
     }
+
+
+    void visit_end() {
+			if(trace_->is_branch()){
+				return_value(int32(0));
+			}
+    }
+
 
    
     void visit_goto_if_false(opcode ip) {
