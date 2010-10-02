@@ -118,34 +118,13 @@ namespace rubinius {
 			// This is used in exit stubs, when the trace bails for some reason.
 			// Inputs to the exit pad
 			
-			// Value* trace_ip = info()->root_info()->trace_ip_phi;
-			Value* next_ip = info()->root_info()->next_ip_phi;
-			Value* actual_exit_ip = info()->root_info()->exit_ip_phi;
+			Value* exit_trace_pc = info()->root_info()->trace_ip_phi;
+			Value* next_pc = info()->root_info()->next_ip_phi;
+			Value* exit_pc = info()->root_info()->exit_ip_phi;
 			Value* exit_cf = info()->root_info()->exit_cf_phi;
 
 			// constant for this trace
 			Value* expected_exit_pc = int32(trace_->anchor->pc);
-
-			emit_call_nested_trace(exit_cf, next_ip, actual_exit_ip, expected_exit_pc);
-
-			// If we got to here, that means that a branch trace was
-			// run successfully, which by definition must have looped
-			// back to the anchor.
-			goto_anchor();
-    }
-
-
-    void visit_nested_trace() {
-			flush_call_stack();
-			emit_call_nested_trace(
-				info()->call_frame(), 
-				int32(cur_trace_node_->pc),
-				int32(cur_trace_node_->pc),
-				int32(cur_trace_node_->nested_trace->expected_exit_ip));
-		}
-
-
-    void emit_call_nested_trace(Value* exit_cf, Value* start_pc, Value* exit_pc, Value* expected_exit_pc) {
 
 			Signature sig(ls_, ls_->Int32Ty);
 			sig << "VM";
@@ -153,16 +132,66 @@ namespace rubinius {
 			sig << ls_->Int32Ty;
 			sig << ls_->Int32Ty;
 			sig << ls_->Int32Ty;
+			sig << ls_->Int32Ty;
 			sig << "TraceInfo";
 			Value* call_args[] = {
 				info()->vm(),
-				info()->call_frame(),
+				exit_cf,
+				next_pc,
+				exit_pc,
+				expected_exit_pc,
+				exit_trace_pc,
+				info()->trace_info()
+			};
+			Value* ret = sig.call("rbx_side_exit", call_args, 7, "", b());
+
+			Value* nested_completed_p = b().CreateICmpEQ(ret, int32(1), "nested_completed_p");
+			Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
+			Value* cond = b().CreateOr(nested_completed_p, bailed_p);
+
+      BasicBlock* cont = new_block("continue");
+      BasicBlock* collapse_b = new_block("collapse_b");
+      b().CreateCondBr(cond, collapse_b, cont);
+
+      set_block(collapse_b);
+			return_value(ret);
+			set_block(cont);
+
+      // If we got to here, that means that a branch trace was
+			// run successfully, which by definition must have looped
+			// back to the anchor.
+			goto_anchor();
+
+    }
+
+
+    void visit_nested_trace() {
+			Value* exit_cf = info()->call_frame(); 
+			Value* start_pc = int32(cur_trace_node_->pc);
+			Value* exit_pc = int32(cur_trace_node_->pc);
+			Value* expected_exit_pc = int32(cur_trace_node_->nested_trace->expected_exit_ip);
+			Value* trace_pc = int32(cur_trace_node_->trace_pc);
+
+			flush_call_stack();
+
+			Signature sig(ls_, ls_->Int32Ty);
+			sig << "VM";
+			sig << "CallFrame";
+			sig << ls_->Int32Ty;
+			sig << ls_->Int32Ty;
+			sig << ls_->Int32Ty;
+			sig << ls_->Int32Ty;
+			sig << "TraceInfo";
+			Value* call_args[] = {
+				info()->vm(),
+				exit_cf,
 				start_pc,
 				exit_pc,
 				expected_exit_pc,
+				trace_pc,
 				info()->trace_info()
 			};
-			Value* ret = sig.call("rbx_call_trace", call_args, 6, "", b());
+			Value* ret = sig.call("rbx_call_nested_trace", call_args, 7, "", b());
 			Value* not_nestable = b().CreateICmpEQ(ret, int32(-1), "nestable_p");
 
       BasicBlock* cont = new_block("continue");
@@ -178,6 +207,8 @@ namespace rubinius {
 			// Continue on our merry way.
       set_block(cont);
 		}
+
+  
 
 
     void visit_goto(opcode ip) {
@@ -363,8 +394,8 @@ namespace rubinius {
 			BasicBlock* cur = current_block();
 			info()->root_info()->exit_ip_phi->addIncoming(int32(cur_trace_node_->pc), cur);
 			info()->root_info()->next_ip_phi->addIncoming(int32(next_ip), cur);
-			info()->root_info()->trace_ip_phi->addIncoming(int32(cur_trace_node_->trace_pc), 
-																										 cur);
+			info()->root_info()->trace_ip_phi->addIncoming(
+				int32(cur_trace_node_->trace_pc), cur);
 			info()->root_info()->exit_cf_phi->addIncoming(info()->call_frame(), cur);
 
 			// Flush ip and sp of active current frame

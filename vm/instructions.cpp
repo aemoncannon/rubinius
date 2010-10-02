@@ -219,6 +219,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 		TraceInfo ti; 
 		ti.entry_call_frame = call_frame; 
 		ti.recording = true; 
+		ti.nested = true; 
 		Trace* trace = vmm->traces[cur_ip];
 		logln("Running nested trace while recording.\n"); 
 		int result = trace->executor(state, call_frame, &ti); 
@@ -236,9 +237,8 @@ Object* VMMethod::resumable_interpreter(STATE,
 			/* trace exited politely and we've successfully recorded a call to  */ 
 			/* a nested trace. */
 			logln("Polite exit.\n"); 
+			vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip; 
 		}
-
-		vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip; 
 
 		ip_ptr = vmm->addresses + call_frame->ip(); 
 		stack_ptr = call_frame->stk + call_frame->sp();

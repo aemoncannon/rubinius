@@ -982,36 +982,83 @@ extern "C" {
   }
 
 
-  // 0 = trace found at start_pc, ran, success
-  // -1 = trace found at start_pc, ran, failed
-  // -2 = trace not found at start_pc, ran, did not exit at expected_exit_pc
-  int rbx_call_trace(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, TraceInfo* ti)
+  int rbx_side_exit(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
   {
+		if(ti->nested){
+			ti->exit_call_frame = call_frame;
+			ti->exit_ip = exit_pc;
+			ti->exit_trace_pc = trace_pc;
+			if(ti->recording && call_frame == ti->entry_call_frame){
+				return 1;
+			}
+			else if(!(ti->recording) && call_frame == ti->entry_call_frame && exit_pc == ti->expected_exit_ip){
+				return 1;
+			}
+		}
+		else if(exit_pc == ti->expected_exit_ip){
+			return 0;
+		}
+
 		bool save_expected = ti->expected_exit_ip;
 		bool save_nested = ti->nested;
+		bool save_recording = ti->recording;
 		CallFrame* save_entry = ti->entry_call_frame;
-		Trace* trace = call_frame->cm->backend_method()->traces[start_pc];
 
+		Trace* trace = call_frame->cm->backend_method()->traces[start_pc];
 		if(trace != NULL){
+			// There's a side trace to try...
 			ti->expected_exit_ip = expected_exit_pc;
-			ti->nested = true;
+			ti->nested = false;
+			ti->recording = false;
 			ti->entry_call_frame = call_frame;
 			int result = trace->executor(state, call_frame, ti);
 			ti->expected_exit_ip = save_expected;
-			ti->exit_ip = exit_pc;
 			ti->nested = save_nested;
+			ti->recording = save_recording;
 			ti->entry_call_frame = save_entry;
+			ti->exit_ip = exit_pc;
+			ti->exit_trace_pc = trace_pc;
 			return result;
 		}
 		else{
-			if(call_frame == ti->entry_call_frame){
-				return -1;
-			}
-			else{
+			// There's no side trace to try :(
+			// Bail to uncommon.
+			ti->exit_call_frame = call_frame;
+			ti->exit_ip = exit_pc;
+			ti->exit_trace_pc = trace_pc;
+			if(call_frame != ti->entry_call_frame){
 				rbx_continue_uncommon(state, call_frame);
-				return -1;
 			}
+			return -1;
 		}
+  }
+
+  int rbx_call_nested_trace(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
+  {
+		bool save_expected = ti->expected_exit_ip;
+		bool save_nested = ti->nested;
+		bool save_recording = ti->recording;
+		CallFrame* save_entry = ti->entry_call_frame;
+
+		Trace* trace = call_frame->cm->backend_method()->traces[start_pc];
+
+		assert(trace);
+
+		ti->expected_exit_ip = expected_exit_pc;
+		ti->nested = true;
+		ti->recording = false;
+		ti->entry_call_frame = call_frame;
+
+		// call the nested trace
+		int result = trace->executor(state, call_frame, ti);
+
+		ti->expected_exit_ip = save_expected;
+		ti->exit_ip = exit_pc;
+		ti->exit_trace_pc = trace_pc;
+		ti->nested = save_nested;
+		ti->recording = save_recording;
+		ti->entry_call_frame = save_entry;
+		return result;
   }
 
 
