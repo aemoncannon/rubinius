@@ -143,6 +143,7 @@ namespace rubinius {
 			std::vector<BasicBlock*> to_remove;
 			bool Broken = false;
 			for(Function::iterator I = func->begin(), E = func->end(); I != E; ++I) {
+
 				if(I->empty()) {
 					BasicBlock& bb = *I;
 					// No one jumps to it....

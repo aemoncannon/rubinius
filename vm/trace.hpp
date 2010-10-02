@@ -21,6 +21,7 @@ namespace rubinius {
 	class JITVisit;
 	class TraceInfo;
 	class Trace;
+	class TraceIterator;
 
 	typedef uintptr_t opcode;
   typedef int (*trace_executor)(VM*, CallFrame*, TraceInfo*);
@@ -73,6 +74,16 @@ namespace rubinius {
 	};
 
 
+	class TraceIterator {
+		Trace* trace;
+		TraceNode* cur;
+	public:
+		TraceIterator(Trace* const trace);
+		TraceNode* next();
+		bool has_next();
+	};
+
+
 	class Trace {
 	public:
 		std::map<int, TraceNode*> node_map;
@@ -104,6 +115,10 @@ namespace rubinius {
 
 		CompiledMethod* entry_cm(){
 			return entry->cm;
+		}
+
+		TraceIterator iter(){
+			return TraceIterator(this);
 		}
 
 		bool is_branch(){
@@ -167,14 +182,12 @@ namespace rubinius {
 		}
 
 
-
 		template <typename T>
 		void walk(T& walker) {
-			TraceNode* tmp = entry;
-			while(tmp != NULL){
-				walker.call(this, tmp);
-				tmp = tmp->next;
-				if(tmp == anchor) break;
+			TraceIterator it = iter();
+			while(it.has_next()){
+				TraceNode* node = it.next();
+				walker.call(this, node);
 			}
 		}
 

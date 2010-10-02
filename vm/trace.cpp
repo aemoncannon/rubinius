@@ -102,11 +102,6 @@ namespace rubinius {
 		}
 
 		if(pc == anchor->pc && call_frame->cm == anchor->cm){
-			if(this->is_branch()){
-				TraceNode* branch_terminator = new TraceNode(0, 0, InstructionSequence::insn_trace_branch_term, -1, -1, NULL, vmm, call_frame);
-				head->next = branch_terminator;
-				head = branch_terminator;
-			}
 			head->next = anchor;
 			head = anchor;
 			return TRACE_FINISHED;
@@ -201,17 +196,32 @@ namespace rubinius {
 
 	void Trace::pretty_print(STATE, std::ostream& out) {
 		out << "[" << "\n";
-		TraceNode* tmp = anchor;
-		while(tmp != NULL){
-			for(int i=0; i < tmp->call_depth;i++) out << "  ";
-			tmp->pretty_print(state, out);
+		TraceIterator it = iter();
+		while(it.has_next()){
+			TraceNode* node = it.next();
+			for(int i=0; i < node->call_depth;i++) out << "  ";
+			node->pretty_print(state, out);
 			out << "\n";
-			tmp = tmp->next;
-			if(tmp == anchor) break;
 		}
 		out << "]" << "\n";
 	}
 
 
+	TraceIterator::TraceIterator(Trace* const trace)
+		: trace(trace),
+		  cur(NULL){}
+
+	TraceNode* TraceIterator::next(){
+		if(cur == NULL){
+			cur = trace->entry;
+			return cur;
+		}
+		cur = cur->next;
+		return cur;
+	}
+
+	bool TraceIterator::has_next(){
+		return cur == NULL || (cur->next != NULL && cur->next != trace->anchor);
+	}
 
 }

@@ -107,29 +107,30 @@ namespace rubinius {
 
 		void TraceBuilder::allocate_call_structures(){
 			const llvm::Type* obj_type = ls_->ptr_type("Object");
-			TraceNode* tmp = trace->entry;
-			while(tmp != NULL){
-				if(tmp->traced_send || tmp->traced_yield){
 
-					info_->pre_allocated_args[tmp->trace_pc] = 
+			TraceIterator it = trace->iter();
+			while(it.has_next()){
+				TraceNode* node = it.next();
+
+				if(node->traced_send || node->traced_yield){
+
+					info_->pre_allocated_args[node->trace_pc] = 
 						b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
 
-					info_->pre_allocated_call_frames[tmp->trace_pc] = 
+					info_->pre_allocated_call_frames[node->trace_pc] = 
 						b().CreateAlloca(obj_type,
 														 ConstantInt::get(ls_->Int32Ty,
 																							(sizeof(CallFrame) / sizeof(Object*)) + 
-																							tmp->send_cm->stack_size()->to_native()),
+																							node->send_cm->stack_size()->to_native()),
 														 "cfstk");
 
-					info_->pre_allocated_vars[tmp->trace_pc] = 
+					info_->pre_allocated_vars[node->trace_pc] = 
 						b().CreateAlloca(obj_type,
 														 ConstantInt::get(ls_->Int32Ty,
 																							(sizeof(StackVariables) / sizeof(Object*)) + 
-																							tmp->send_cm->number_of_locals()),
+																							node->send_cm->number_of_locals()),
 														 "var_mem");
 				}
-				tmp = tmp->next;
-				if(tmp == trace->anchor) break;
 			}
 		}
 

@@ -2512,6 +2512,3 @@ end
 
 instruction nested_trace() [ -- ]
 end
-
-instruction trace_branch_term() [ -- ]
-end

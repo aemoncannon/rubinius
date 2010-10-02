@@ -14,6 +14,7 @@ namespace rubinius {
 
 		Trace* trace_;
 		TraceNode* cur_trace_node_;
+		bool emitted_exit_;
 
   public:
 
@@ -23,6 +24,7 @@ namespace rubinius {
     {
 			sp_ = trace->entry_sp;
 			last_sp_ = trace->entry_sp;
+			emitted_exit_ = false;
 		}
 
 
@@ -60,15 +62,8 @@ namespace rubinius {
     void initialize() {
 
 			info()->init_return_pad();
-			info()->init_trace_exit_pad();
 
       BasicBlock* start = current_block();
-
-
-			set_block(info()->trace_exit_pad());
-
-			emit_trace_exit_pad();
-
 			set_block(start);
 
       bail_out_ = new_block("bail_out");
@@ -93,7 +88,7 @@ namespace rubinius {
       if(use_full_scope_) {
         flush_scope_to_heap(vars_);
       }
-
+			
 			return_value(int32(-1));
 
       set_block(ret_raise_val);
@@ -113,6 +108,17 @@ namespace rubinius {
       init_out_args();
 
     }
+
+		void ensure_trace_exit_pad(){
+			if(!emitted_exit_){
+				BasicBlock* cur = current_block();
+				info()->init_trace_exit_pad();
+				set_block(info()->trace_exit_pad());
+				emit_trace_exit_pad();
+				emitted_exit_ = true;
+				set_block(cur);
+			}
+		}
 
     void emit_trace_exit_pad() {
 			// Emit code for entering the uncommon interpreter.
@@ -240,8 +246,8 @@ namespace rubinius {
 			// The exit stub code will automatically do a jump
 			// to the anchor if the branch trace finishishes
 			// successfully.
-			if(trace_->is_branch() && 
-				 cur_trace_node_->next->op == InstructionSequence::insn_trace_branch_term){
+			if(trace_->is_branch() && cur_trace_node_->next == trace_->anchor){
+				return_value(int32(0));
 				return;
 			}
 				
@@ -416,6 +422,9 @@ namespace rubinius {
     }
 
 		void exit_trace(int next_ip){
+
+			ensure_trace_exit_pad();
+
 			BasicBlock* cur = current_block();
 			info()->root_info()->exit_ip_phi->addIncoming(int32(cur_trace_node_->pc), cur);
 			info()->root_info()->next_ip_phi->addIncoming(int32(next_ip), cur);
@@ -645,10 +654,6 @@ namespace rubinius {
 			};
 			Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
 			stack_push(b().CreateLoad(pos, "local"));
-		}
-
-		void visit_trace_branch_term() {
-			return_value(int32(0));
 		}
 
 		void visit_meta_send_op_plus(opcode name) {

@@ -169,7 +169,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 		Trace* trace = vmm->traces[cur_ip];
 		assert(trace);
 
-		logln("Running trace.");
+		logln("Running race at " << cur_ip);
 		trace->executor(state, call_frame, &ti); 
 		logln("Run finished.");
 
@@ -177,11 +177,11 @@ Object* VMMethod::resumable_interpreter(STATE,
 
 		TraceNode* exit_node = trace->node_at(ti.exit_trace_pc);
 		assert(exit_node);
-		if(exit_node->bump_exit_hotness()){
-			logln("Exit node at " << ti.exit_ip << " got hot!");
-			state->recording_trace = new Trace(trace);
-			exit_node->clear_hotness();
-		}
+		// if(exit_node->bump_exit_hotness()){
+		// 	logln("Exit node at " << ti.exit_ip << " got hot!");
+		// 	state->recording_trace = new Trace(trace);
+		// 	exit_node->clear_hotness();
+		// }
 
 		ip_ptr = vmm->addresses + call_frame->ip(); 
 		stack_ptr = call_frame->stk + call_frame->sp();
@@ -196,7 +196,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 			logln("Trace Recorded.\n"); 
 			state->recording_trace->compile(state); 
 			logln("Trace Compiled.\n"); 
-			state->recording_trace->pretty_print(state, std::cout); 
+			state->recording_trace->pretty_print(state, std::cout);
 			vmm->traces[state->recording_trace->entry->pc] = state->recording_trace; 
 			state->recording_trace = NULL; 
 		} 
@@ -252,11 +252,14 @@ Object* VMMethod::resumable_interpreter(STATE,
 #define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
 		if(state->tracing_enabled) {																				\
 			op = vmm->opcodes[cur_ip];																				\
-			if(state->recording_trace == NULL && vmm->traces[cur_ip] != NULL){ \
+			if(state->recording_trace == NULL &&															\
+				 vmm->traces[cur_ip] != NULL &&																	\
+				 !vmm->traces[cur_ip]->is_branch()															\
+				 ){																															\
 				/*Not currently recording. Hit an ip with a stored trace...*/		\
 				goto run_trace;																									\
 			}																																	\
-			else if(state->recording_trace != NULL && \
+			else if(state->recording_trace != NULL &&													\
 							vmm->traces[cur_ip] != NULL &&														\
 							!(vmm->traces[cur_ip]->parent_of(state->recording_trace))){ \
 				/*Recording. Hit an ip with a stored trace...*/									\
