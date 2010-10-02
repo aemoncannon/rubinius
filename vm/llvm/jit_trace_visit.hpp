@@ -32,6 +32,7 @@ namespace rubinius {
 
     void at_ip(int ip) {
       BlockMap::iterator i = block_map_.find(ip);
+
       if(i != block_map_.end()) {
         JITBasicBlock& jbb = i->second;
         current_jbb_ = &jbb;
@@ -126,6 +127,7 @@ namespace rubinius {
 			// constant for this trace
 			Value* expected_exit_pc = int32(trace_->anchor->pc);
 
+
 			Signature sig(ls_, ls_->Int32Ty);
 			sig << "VM";
 			sig << "CallFrame";
@@ -157,10 +159,20 @@ namespace rubinius {
 			return_value(ret);
 			set_block(cont);
 
-      // If we got to here, that means that a branch trace was
-			// run successfully, which by definition must have looped
-			// back to the anchor.
-			goto_anchor();
+			if(!(trace_->is_branch())){
+				// If we got to here, that means that a branch trace was
+				// run successfully, which by definition must have looped
+				// back to the anchor.
+				goto_anchor();
+			}
+			else{
+				// If we got to here, that means that a branch trace called
+				// from a branch trace was run successfully. 
+				
+				// We return immediately, which hands control back up to the 
+				// parent trace, which will (per above) jump to the anchor
+				return_value(int32(0));
+			}
 
     }
 
@@ -213,10 +225,23 @@ namespace rubinius {
 
     void visit_goto(opcode ip) {
 
-			// Skip useless unconditional jumps (not needed in
-			// trace).
+			// Omit unconditional jump if all it does is hop 
+			// to the next trace node. (unless the next node is
+			// the anchor, in which case we do want to jump because
+			// the anchor is emitted first, not last.)
 			if(cur_trace_node_->next->trace_pc == (int)ip &&
 				 cur_trace_node_->next != trace_->anchor){
+				return;
+			}
+
+			// Omit unconditional jump if this is a branch trace
+			// and we're at the last node before the terminator.
+
+			// The exit stub code will automatically do a jump
+			// to the anchor if the branch trace finishishes
+			// successfully.
+			if(trace_->is_branch() && 
+				 cur_trace_node_->next->op == InstructionSequence::insn_trace_branch_term){
 				return;
 			}
 				
@@ -622,6 +647,9 @@ namespace rubinius {
 			stack_push(b().CreateLoad(pos, "local"));
 		}
 
+		void visit_trace_branch_term() {
+			return_value(int32(0));
+		}
 
 		void visit_meta_send_op_plus(opcode name) {
 			InlineCache* cache = reinterpret_cast<InlineCache*>(name);

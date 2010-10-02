@@ -107,7 +107,7 @@ namespace rubinius {
 
 		void TraceBuilder::allocate_call_structures(){
 			const llvm::Type* obj_type = ls_->ptr_type("Object");
-			TraceNode* tmp = trace->anchor;
+			TraceNode* tmp = trace->entry;
 			while(tmp != NULL){
 				if(tmp->traced_send || tmp->traced_yield){
 

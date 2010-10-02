@@ -114,7 +114,7 @@ namespace rubinius {
 
 		void Compiler::compile_trace(LLVMState* ls, Trace* trace) {
 
-			CompiledMethod* cm = trace->anchor_cm();
+			CompiledMethod* cm = trace->entry_cm();
 			VMMethod* vmm = cm->backend_method();
 
 			jit::Context ctx(ls);

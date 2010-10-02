@@ -170,21 +170,19 @@ Object* VMMethod::resumable_interpreter(STATE,
 		assert(trace);
 
 		logln("Running trace.");
-		int result = trace->executor(state, call_frame, &ti); 
+		trace->executor(state, call_frame, &ti); 
 		logln("Run finished.");
 
-		/* If traceinfo answers false to nestable, the trace must have bailed into */ 
-		/* uncommon interpreter.*/
-		if(result == -1){
-			logln("Exit at trace_pc: " << ti.exit_trace_pc);
-		} 
-		else{
-			/* Otherwise, we know that the */ 
-			/* trace exited politely.*/
-			logln("Polite exit.");
+		logln("Resuming at: " << call_frame->ip());
+
+		TraceNode* exit_node = trace->node_at(ti.exit_trace_pc);
+		assert(exit_node);
+		if(exit_node->bump_exit_hotness()){
+			logln("Exit node at " << ti.exit_ip << " got hot!");
+			state->recording_trace = new Trace(trace);
+			exit_node->clear_hotness();
 		}
 
-		logln("Resuming at: " << call_frame->ip()); 
 		ip_ptr = vmm->addresses + call_frame->ip(); 
 		stack_ptr = call_frame->stk + call_frame->sp();
 		goto continue_to_run; 
@@ -199,7 +197,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 			state->recording_trace->compile(state); 
 			logln("Trace Compiled.\n"); 
 			state->recording_trace->pretty_print(state, std::cout); 
-			vmm->traces[cur_ip] = state->recording_trace; 
+			vmm->traces[state->recording_trace->entry->pc] = state->recording_trace; 
 			state->recording_trace = NULL; 
 		} 
 		else if(s == Trace::TRACE_CANCEL){
@@ -258,7 +256,9 @@ Object* VMMethod::resumable_interpreter(STATE,
 				/*Not currently recording. Hit an ip with a stored trace...*/		\
 				goto run_trace;																									\
 			}																																	\
-			else if(state->recording_trace != NULL && vmm->traces[cur_ip] != NULL){ \
+			else if(state->recording_trace != NULL && \
+							vmm->traces[cur_ip] != NULL &&														\
+							!(vmm->traces[cur_ip]->parent_of(state->recording_trace))){ \
 				/*Recording. Hit an ip with a stored trace...*/									\
 				goto record_nested_trace;																				\
 			}																																	\

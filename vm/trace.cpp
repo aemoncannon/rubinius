@@ -68,14 +68,45 @@ namespace rubinius {
 	Trace::Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
 		anchor = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
 		head = anchor;
+		entry = anchor;
 		pc_base_counter = 0;
 		expected_exit_ip = -1;
 		entry_sp = sp;
+		parent = NULL;
+	}
+
+	Trace::Trace(Trace* parent){
+		this->parent = parent;
+		anchor = parent->anchor;
+		entry = NULL;
+		head = NULL;
 	}
 
 
 	Trace::Status Trace::add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
+
+		if(this->is_branch() && head == NULL){
+			// Possible the side-exit jumps straight to the anchor...
+			if(pc == anchor->pc && call_frame->cm == anchor->cm){
+				std::cout << "Recording branch directly to anchor.\n";
+				head = anchor;
+				entry = head;
+				return TRACE_FINISHED;
+			}
+			head = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
+			entry = head;
+			pc_base_counter = 0;
+			expected_exit_ip = -1;
+			entry_sp = sp;
+			return TRACE_OK;
+		}
+
 		if(pc == anchor->pc && call_frame->cm == anchor->cm){
+			if(this->is_branch()){
+				TraceNode* branch_terminator = new TraceNode(0, 0, InstructionSequence::insn_trace_branch_term, -1, -1, NULL, vmm, call_frame);
+				head->next = branch_terminator;
+				head = branch_terminator;
+			}
 			head->next = anchor;
 			head = anchor;
 			return TRACE_FINISHED;
@@ -148,6 +179,7 @@ namespace rubinius {
 			head->parent_send = parent_send;
 			head->prev = prev;
 			prev->next = head;
+			node_map[head->trace_pc] = head;
 
 			if(op == InstructionSequence::insn_nested_trace){
 				head->nested_trace = vmm->traces[pc];

@@ -10,7 +10,7 @@ def run()
     if(i < (ITERATIONS/2))
       j += 1
     else
-      j -= 1
+      j += 2
     end
   end
   puts "Result: #{j}"

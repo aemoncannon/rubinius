@@ -10,8 +10,6 @@ namespace llvm {
 
 namespace rubinius {
 
-	struct JITBasicBlock;
-
 
 	class VM;
 	class VMMethod;
@@ -25,9 +23,7 @@ namespace rubinius {
 	class Trace;
 
 	typedef uintptr_t opcode;
-  typedef map<int, JITBasicBlock> BlockMap;
   typedef int (*trace_executor)(VM*, CallFrame*, TraceInfo*);
-
 
 	class TraceNode {
 	public:
@@ -49,6 +45,7 @@ namespace rubinius {
 		int call_depth;
 		Trace* nested_trace;
 		bool jump_taken;
+		int exit_counter;
 
 		int total_size;
 		int numargs;
@@ -64,13 +61,24 @@ namespace rubinius {
 			return arg1 - pc_base;
 		}
 
+		bool bump_exit_hotness(){
+			exit_counter++;
+			return exit_counter > 50;
+		}
+
+		void clear_hotness(){
+			exit_counter = 0;
+		}
+
 	};
 
 
 	class Trace {
 	public:
+		std::map<int, TraceNode*> node_map;
 		TraceNode* anchor;
 		TraceNode* head;
+		TraceNode* entry;
 		llvm::Function* llvm_function;
 		size_t jitted_bytes;
 		void*  jitted_impl;
@@ -78,10 +86,13 @@ namespace rubinius {
 		int pc_base_counter;
 		int expected_exit_ip;
 		int entry_sp;
+		Trace* parent;
 
 		enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
 
 		Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+
+		Trace(Trace* parent);
 
 		Status add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
@@ -91,12 +102,28 @@ namespace rubinius {
 
 		void compile(STATE);
 
-		CompiledMethod* anchor_cm(){
-			return anchor->cm;
+		CompiledMethod* entry_cm(){
+			return entry->cm;
+		}
+
+		bool is_branch(){
+			return parent != NULL;
 		}
 
 		int init_ip(){
-			return anchor->pc;
+			return entry->pc;
+		}
+
+		TraceNode* node_at(int trace_pc){
+			return node_map[trace_pc];
+		}
+
+		bool parent_of(Trace* trace){
+			Trace* t = trace->parent;
+			while(t != NULL){
+				if(t == this) return true;
+			}
+			return false;
 		}
 
 		void set_jitted(llvm::Function* func, size_t bytes, void* impl) {
@@ -140,32 +167,10 @@ namespace rubinius {
 		}
 
 
-		// class Walker {
-		// 		JITVisit& v_;
-		// 		BlockMap& map_;
-
-		// 	public:
-		// 		Walker(JITVisit& v, BlockMap& map)
-		// 			: v_(v)
-		// 			, map_(map)
-		// 		{}
-
-		// 		void call(OpcodeIterator& iter) {
-		// 			v_.dispatch(iter.stream(), iter.ip());
-
-		// 			if(v_.b().GetInsertBlock()->getTerminator() == NULL) {
-		// 				BlockMap::iterator i = map_.find(iter.next_ip());
-		// 				if(i != map_.end()) {
-		// 					v_.b().CreateBr(i->second.block);
-		// 				}
-		// 			}
-		// 		}
-		// 	};
-
 
 		template <typename T>
 		void walk(T& walker) {
-			TraceNode* tmp = anchor;
+			TraceNode* tmp = entry;
 			while(tmp != NULL){
 				walker.call(this, tmp);
 				tmp = tmp->next;
