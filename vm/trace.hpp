@@ -113,6 +113,8 @@ namespace rubinius {
 
 		void compile(STATE);
 
+		void store();
+
 		CompiledMethod* entry_cm(){
 			return entry->cm;
 		}

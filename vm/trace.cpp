@@ -190,6 +190,11 @@ namespace rubinius {
 		ls->compile_trace(state, this);
 	}
 
+	void Trace::store() {
+		VMMethod* vmm = entry->cm->backend_method();
+		vmm->traces[entry->pc] = this;
+	}
+
 	string Trace::trace_name(){
 		return string("_TRACE_");
 	}

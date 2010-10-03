@@ -88,13 +88,15 @@ namespace rubinius {
       if(use_full_scope_) {
         flush_scope_to_heap(vars_);
       }
-			
+
+			dump_int(666);
 			return_value(int32(-1));
 
       set_block(ret_raise_val);
 //      Value* crv = f.clear_raise_value.call(&vm_, 1, "crv", b());
       if(use_full_scope_) flush_scope_to_heap(vars_);
 
+			dump_int(6667);
 			return_value(int32(-1));
 
       set_block(start);
@@ -258,8 +260,6 @@ namespace rubinius {
 				return_value(int32(0));
 			}
     }
-
-
    
     void visit_goto_if_false(opcode ip) {
       Value* cond = stack_pop();
@@ -419,14 +419,15 @@ namespace rubinius {
 				JITMethodInfo* prev_info = info();
 				method_info_ = new JITMethodInfo(info()->context(), info()->method(), info()->vm_method());
 				info()->init_globals(prev_info);
-
 				info()->set_call_frame(call_frame_);
 				info()->set_variables(vars_);
 				info()->set_stack(stack_);
 				info()->set_vm(vm_);
-				sp_ = cur_trace_node_->next->sp;
-				last_sp_ = sp_;
 
+				// Leave room for return value..
+				sp_ = cur_trace_node_->next->sp - 1; 
+
+				last_sp_ = sp_;
 			}
 
 			stack_push(ret_val);

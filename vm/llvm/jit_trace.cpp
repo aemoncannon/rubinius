@@ -4,6 +4,7 @@
 #include "call_frame.hpp"
 #include "vmmethod.hpp"
 #include "trace.hpp"
+#include "utilities.hpp"
 
 #include "llvm/jit_trace_visit.hpp"
 #include "llvm/control_flow.hpp"
@@ -153,10 +154,10 @@ namespace rubinius {
 
 			void call(Trace* trace, TraceNode* node){
 
-				std::cout << "\n\n\nCompiling node: " << endl;
-				std::cout << "sp is: " << v_.sp() << endl;
-				node->pretty_print(VM::current_state(), std::cout);
-				std::cout << "\nsp is: " << v_.sp() << endl;
+				// logln("\n\n\nCompiling node: ");
+				// logln("sp is: " << v_.sp());
+				//if(DEBUG) node->pretty_print(VM::current_state(), std::cout);
+				//logln("\nsp is: " << v_.sp());
 				trace->dispatch(v_, node);
 
 				// if(v_.b().GetInsertBlock()->getTerminator() == NULL) {

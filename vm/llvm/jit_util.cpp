@@ -985,6 +985,9 @@ extern "C" {
 
   int rbx_side_exit(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
   {
+		logln("Side-exited:"); 
+		if(DEBUG) { call_frame->dump(); }
+
 		if(ti->nested){
 			ti->exit_call_frame = call_frame;
 			ti->exit_ip = exit_pc;
@@ -1005,9 +1008,12 @@ extern "C" {
 		bool save_recording = ti->recording;
 		CallFrame* save_entry = ti->entry_call_frame;
 		Trace* save_trace = ti->trace;
-
-		Trace* trace = call_frame->cm->backend_method()->traces[start_pc];
+		
+		VMMethod* vmm = call_frame->cm->backend_method();
+		Trace* trace = vmm->traces[start_pc];
+		logln("Looking for trace at " << vmm << ", " << start_pc << "..."); 		
 		if(trace != NULL){
+			logln("Found branch trace..."); 
 			// There's a side trace to try...
 			ti->expected_exit_ip = expected_exit_pc;
 			ti->nested = false;
@@ -1015,6 +1021,7 @@ extern "C" {
 			ti->entry_call_frame = call_frame;
 			ti->trace = trace;
 			int result = trace->executor(state, call_frame, ti);
+			logln("Result of branch is " << result); 
 			ti->expected_exit_ip = save_expected;
 			ti->nested = save_nested;
 			ti->recording = save_recording;
@@ -1025,6 +1032,7 @@ extern "C" {
 			return result;
 		}
 		else{
+			logln("No branch to continue on. Exiting."); 
 			// There's no side trace to try :(
 			ti->exit_call_frame = call_frame;
 			ti->exit_ip = exit_pc;

@@ -167,11 +167,10 @@ Object* VMMethod::resumable_interpreter(STATE,
 		ti.trace = trace;
 		assert(trace);
 
-		logln("Running trace at " << cur_ip);
+		logln("\nRunning trace at " << cur_ip);
 		trace->executor(state, call_frame, &ti); 
 		logln("Run finished.");
-
-		logln("Resuming at: " << call_frame->ip());
+		logln("Resuming at: " << call_frame->ip() << "\n");
 
 		ip_ptr = vmm->addresses + call_frame->ip(); 
 		stack_ptr = call_frame->stk + call_frame->sp();
@@ -187,8 +186,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 			logln("Trace Recorded.\n--------------------------\n"); 
 			state->recording_trace->pretty_print(state, std::cout);
 			state->recording_trace->compile(state); 
-			logln("\nTrace Compiled.\n"); 
-			vmm->traces[state->recording_trace->entry->pc] = state->recording_trace; 
+			state->recording_trace->store();
 			state->recording_trace = NULL; 
 		} 
 		else if(s == Trace::TRACE_CANCEL){
@@ -407,7 +405,7 @@ Object* VMMethod::uncommon_interpreter(STATE,
 		call_frame->stk_push(result);
 	}
 
-	logln("Exiting uncommon..\n\n");
+	logln("Exiting uncommon..");
 
 	return result;
 }
