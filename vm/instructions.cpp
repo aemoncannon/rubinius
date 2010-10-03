@@ -170,7 +170,8 @@ Object* VMMethod::resumable_interpreter(STATE,
 		logln("\nRunning trace at " << cur_ip);
 		trace->executor(state, call_frame, &ti); 
 		logln("Run finished.");
-		logln("Resuming at: " << call_frame->ip() << "\n");
+		logln("Resuming at: " << call_frame->ip());
+		if(DEBUG) call_frame->dump();
 
 		ip_ptr = vmm->addresses + call_frame->ip(); 
 		stack_ptr = call_frame->stk + call_frame->sp();
@@ -242,7 +243,8 @@ Object* VMMethod::resumable_interpreter(STATE,
 #define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
 		if(state->tracing_enabled) {																				\
 			op = vmm->opcodes[cur_ip];																				\
-			if(state->recording_trace == NULL &&															\
+			if(state->trace_exec_enabled &&																		\
+		     state->recording_trace == NULL &&															\
 				 vmm->traces[cur_ip] != NULL &&																	\
 				 !vmm->traces[cur_ip]->is_branch()															\
 				 ){																															\
@@ -397,6 +399,8 @@ Object* VMMethod::uncommon_interpreter(STATE,
 	// otherwise why are we in uncommon?
 	assert(call_frame->is_traced_frame());
 
+	state->trace_exec_enabled = false;
+
 	while(call_frame->is_traced_frame()){
 		if(DEBUG) call_frame->dump();
 		result = resumable_interpreter(state, vmm, call_frame, true);
@@ -404,6 +408,8 @@ Object* VMMethod::uncommon_interpreter(STATE,
 		vmm = call_frame->cm->backend_method();
 		call_frame->stk_push(result);
 	}
+
+	state->trace_exec_enabled = true;
 
 	logln("Exiting uncommon..");
 

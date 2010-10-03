@@ -1048,8 +1048,12 @@ extern "C" {
 				exit_node->clear_hotness();
 			}
 
-			// Bail to uncommon if we've stacked up call_frames in trace...
-			if(call_frame != ti->entry_call_frame){
+			// Bail to uncommon if we've stacked up call_frames before the exit.
+			// Or if a nested trace exited unexpectedly (we don't know _where_ it
+			// ended up)...
+			if(call_frame != ti->entry_call_frame ||
+				 ti->nested){
+
 				rbx_continue_uncommon(state, call_frame);
 			}
 
@@ -1064,15 +1068,15 @@ extern "C" {
 		bool save_nested = ti->nested;
 		bool save_recording = ti->recording;
 		CallFrame* save_entry = ti->entry_call_frame;
+		Trace* save_trace = ti->trace;
 
 		Trace* trace = call_frame->cm->backend_method()->traces[start_pc];
-
 		assert(trace);
-
 		ti->expected_exit_ip = expected_exit_pc;
 		ti->nested = true;
 		ti->recording = false;
 		ti->entry_call_frame = call_frame;
+		ti->trace = trace;
 
 		// call the nested trace
 		int result = trace->executor(state, call_frame, ti);
@@ -1083,6 +1087,7 @@ extern "C" {
 		ti->nested = save_nested;
 		ti->recording = save_recording;
 		ti->entry_call_frame = save_entry;
+		ti->trace = save_trace;
 		return result;
   }
 

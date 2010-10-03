@@ -57,6 +57,7 @@ namespace rubinius {
     , interrupts(shared.interrupts)
     , check_local_interrupts(false)
     , tracing_enabled(false)
+    , trace_exec_enabled(true)
     , recording_trace(NULL)
     , debug_traces(false)
     , thread_state_(this)
