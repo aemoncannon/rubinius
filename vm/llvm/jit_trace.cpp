@@ -354,7 +354,6 @@ namespace rubinius {
 						if(cDebugStack) std::cout << "Fixing!" << "\n";
 						sp_--;
 					}
-					assert(sp_ >= -1);
 				}
 
 				return true;

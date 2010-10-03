@@ -28,6 +28,8 @@ namespace rubinius {
 		int next_ip;
 		int exit_trace_pc;
 
+		Trace* trace;
+
 		TraceInfo();
 	};
 

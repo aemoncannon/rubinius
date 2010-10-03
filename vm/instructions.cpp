@@ -20,8 +20,10 @@
 #include "builtin/global_cache_entry.hpp"
 #include "builtin/iseq.hpp"
 
+#include "utilities.hpp"
 #include "call_frame.hpp"
 #include "trace_info.hpp"
+
 
 #include "objectmemory.hpp"
 #include "arguments.hpp"
@@ -47,11 +49,6 @@ using namespace rubinius;
 #define stack_pop() *STACK_PTR--
 #define stack_set_top(val) *STACK_PTR = (val)
 
-#define DEBUG true
-
-#define logln(str) if(DEBUG) std::cout << str << endl
-
-#define GDB_BREAK __asm__("int3")
 
 #define USE_JUMP_TABLE
 
@@ -167,22 +164,14 @@ Object* VMMethod::resumable_interpreter(STATE,
 		ti.recording = false; 
 		ti.nested = false; 
 		Trace* trace = vmm->traces[cur_ip];
+		ti.trace = trace;
 		assert(trace);
 
-		logln("Running race at " << cur_ip);
+		logln("Running trace at " << cur_ip);
 		trace->executor(state, call_frame, &ti); 
 		logln("Run finished.");
 
 		logln("Resuming at: " << call_frame->ip());
-
-		TraceNode* exit_node = trace->node_at(ti.exit_trace_pc);
-		assert(exit_node);
-
-		if(exit_node->bump_exit_hotness()){
-			logln("Exit node at " << ti.exit_ip << " got hot!");
-			state->recording_trace = new Trace(trace);
-			exit_node->clear_hotness();
-		}
 
 		ip_ptr = vmm->addresses + call_frame->ip(); 
 		stack_ptr = call_frame->stk + call_frame->sp();
@@ -221,6 +210,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 		ti.recording = true; 
 		ti.nested = true; 
 		Trace* trace = vmm->traces[cur_ip];
+		ti.trace = trace; 
 		logln("Running nested trace while recording.\n"); 
 		int result = trace->executor(state, call_frame, &ti); 
 

@@ -137,6 +137,7 @@ namespace rubinius {
 			Trace* t = trace->parent;
 			while(t != NULL){
 				if(t == this) return true;
+				t = t->parent;
 			}
 			return false;
 		}

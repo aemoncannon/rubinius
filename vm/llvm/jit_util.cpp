@@ -24,6 +24,7 @@
 #include "instruments/profiler.hpp"
 
 #include "helpers.hpp"
+#include "utilities.hpp"
 
 #include "arguments.hpp"
 #include "dispatch.hpp"
@@ -1003,6 +1004,7 @@ extern "C" {
 		bool save_nested = ti->nested;
 		bool save_recording = ti->recording;
 		CallFrame* save_entry = ti->entry_call_frame;
+		Trace* save_trace = ti->trace;
 
 		Trace* trace = call_frame->cm->backend_method()->traces[start_pc];
 		if(trace != NULL){
@@ -1011,24 +1013,39 @@ extern "C" {
 			ti->nested = false;
 			ti->recording = false;
 			ti->entry_call_frame = call_frame;
+			ti->trace = trace;
 			int result = trace->executor(state, call_frame, ti);
 			ti->expected_exit_ip = save_expected;
 			ti->nested = save_nested;
 			ti->recording = save_recording;
 			ti->entry_call_frame = save_entry;
+			ti->trace = save_trace;
 			ti->exit_ip = exit_pc;
 			ti->exit_trace_pc = trace_pc;
 			return result;
 		}
 		else{
 			// There's no side trace to try :(
-			// Bail to uncommon.
 			ti->exit_call_frame = call_frame;
 			ti->exit_ip = exit_pc;
 			ti->exit_trace_pc = trace_pc;
+
+			// Maybe start recording a branch trace...
+			Trace* exiting_trace = ti->trace;
+			TraceNode* exit_node = exiting_trace->node_at(trace_pc);
+			assert(exit_node);
+			if(exit_node->bump_exit_hotness()){
+				logln("Exit node at " << ti->exit_ip << " got hot! Recording branch...");
+				state->recording_trace = new Trace(exiting_trace);
+				exit_node->clear_hotness();
+			}
+
+			// Bail to uncommon if we've stacked up call_frames in trace...
 			if(call_frame != ti->entry_call_frame){
 				rbx_continue_uncommon(state, call_frame);
 			}
+
+			// Otherwise, just return directly to caller...
 			return -1;
 		}
   }
