@@ -388,13 +388,46 @@ namespace rubinius {
 
 			Value* ret_val = stack_top();
 
-			method_info_ = info()->parent_info();
-			vm_ = info()->vm();
-			call_frame_ = info()->call_frame();
-			vars_ = info()->variables();
-			stack_ = info()->stack();
-			sp_ = info()->saved_sp();
-			last_sp_ = info()->saved_last_sp();
+			// parent_info exists if this call_frame
+			// was activated on this trace
+			if(info()->parent_info()){
+				method_info_ = info()->parent_info();
+				vm_ = info()->vm();
+				call_frame_ = info()->call_frame();
+				vars_ = info()->variables();
+				stack_ = info()->stack();
+				sp_ = info()->saved_sp();
+				last_sp_ = info()->saved_last_sp();
+			}
+			else{
+				// Otherwise, we're returning from
+				// a call_frame that wasn't created on
+				// this trace. We need to grab all the
+				// info by other means.
+
+				vm_ = info()->vm();
+
+				Value* cf_pos = get_field(info()->call_frame(), offset::cf_previous);
+				call_frame_ = b().CreateLoad(cf_pos, "previous_cf");
+				
+				Value* vars_pos = get_field(call_frame_, offset::cf_scope);
+				vars_ = b().CreateLoad(vars_pos, "vars");
+
+				Value* stk_base = get_field(call_frame_, offset::cf_stk);
+				stack_ = b().CreateBitCast(stk_base, ObjArrayTy, "obj_ary_type");
+
+				JITMethodInfo* prev_info = info();
+				method_info_ = new JITMethodInfo(info()->context(), info()->method(), info()->vm_method());
+				info()->init_globals(prev_info);
+
+				info()->set_call_frame(call_frame_);
+				info()->set_variables(vars_);
+				info()->set_stack(stack_);
+				info()->set_vm(vm_);
+				sp_ = cur_trace_node_->next->sp;
+				last_sp_ = sp_;
+
+			}
 
 			stack_push(ret_val);
 
@@ -645,7 +678,6 @@ namespace rubinius {
 
 		void visit_ret() {
 			if(use_full_scope_) flush_scope_to_heap(info()->variables());
-			assert(cur_trace_node_->active_send);
 			emit_traced_return();
 		}
 

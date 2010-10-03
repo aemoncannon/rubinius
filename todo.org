@@ -79,3 +79,7 @@ of the vars pointer, which we need to load.
  - What about branches that pop frames? Hmmm traces need to be able to go backwards, up the call-stack?
 - allocating wrong type in pre-allocation of call_frames?
 - what's to stop a branch trace from calling it's parent?
+
+* MethodInfo should be TraceInfo.. don't need cm,vmm info
+
+* Get rid of the visitor local vars (call_frame_, vars_, etc) confusing. Move things to info

@@ -295,6 +295,10 @@ namespace rubinius {
       return method_.get();
     }
 
+    VMMethod* vm_method() {
+      return vmm;
+    }
+
     llvm::BasicBlock* return_pad() {
       return return_pad_;
     }
@@ -313,6 +317,10 @@ namespace rubinius {
 
     void set_parent_info(JITMethodInfo* info) {
       parent_info_ = info;
+			init_globals(info);
+    }
+
+		void init_globals(JITMethodInfo* info){
       vm_ = info->vm();
       out_args_ = info->out_args();
       counter_ = info->counter();
@@ -321,9 +329,8 @@ namespace rubinius {
 			return_phi_ = info->return_phi();
 			return_pad_ = info->return_pad();
 			trace_exit_pad_ = info->trace_exit_pad();
-
       set_function(info->function());
-    }
+		}
 
     llvm::Value* parent_call_frame() {
       if(parent_info_) {
