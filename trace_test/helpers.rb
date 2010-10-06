@@ -12,8 +12,9 @@ def expect(val)
   if ARGV[1];enable_tracing;end
   result = yield
   if ARGV[1];disable_tracing;end
+
   if result == val
-    puts "."
+    puts "SUCCESS"
     exit(0)
   else
     $stderr << "FAILURE: Expected #{val}, found #{result}.\n"

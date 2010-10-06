@@ -1,6 +1,8 @@
 require 'helpers'
 
-ITERATIONS = 100000
+def foo()
+  23
+end
 
 def run()
   j = 0
@@ -8,9 +10,17 @@ def run()
   while i < ITERATIONS
     i += 1
     if(i < (ITERATIONS/2))
-      j += 1
+      a = 24
+      b = foo()
+      c = (b - a) * 1
+      d = c / 1
+      j += d
     else
-      j -= 2
+      a = 24
+      b = foo()
+      c = (b - a) * 1
+      d = c / 1
+      j -= d
     end
   end
   puts "Result: #{j}"

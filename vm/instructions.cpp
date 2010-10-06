@@ -201,7 +201,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 	{
 		/* Add a virtual op that will cause call of nested trace to be emitted */ 
 
-		sp = stack_ptr - call_frame->stk;			 
+		sp = stack_ptr - call_frame->stk;
 		state->recording_trace->add(
 			InstructionSequence::insn_nested_trace, cur_ip, sp, ip_ptr, vmm, call_frame); 
 		TraceInfo ti; 

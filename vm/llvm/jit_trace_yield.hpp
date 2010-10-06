@@ -34,7 +34,6 @@ void emit_traced_yield_stack(opcode args) {
 																ls_->ptr_type("BlockEnvironment"),
 																"block_env");
 
-
 	info()->set_block_env(block_env);
 
 	Value* prev_call_frame = parent_info->call_frame();

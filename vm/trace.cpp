@@ -157,7 +157,8 @@ namespace rubinius {
 						pc_base = prev->active_send->pc_base;
 					}
 					else{
-						pc_base = anchor->pc_base;
+						pc_base_counter += prev->cm->backend_method()->total;
+						pc_base = pc_base_counter;
 					}
 					call_depth -= 1;
 				}

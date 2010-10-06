@@ -412,6 +412,11 @@ namespace rubinius {
 
 				vm_ = info()->vm();
 
+				// Hmmmm, shouln't do this unless there's def. a block
+				Value* prev_block_env_pos = get_field(info()->variables(), offset::vars_block);
+				Value* block_env = b().CreateLoad(prev_block_env_pos, "previous_block_env");
+				block_env = b().CreateBitCast(block_env, ls_->ptr_type("BlockEnvironment"),"block_env");
+
 				Value* cf_pos = get_field(info()->call_frame(), offset::cf_previous);
 				call_frame_ = b().CreateLoad(cf_pos, "previous_cf");
 				
@@ -423,7 +428,8 @@ namespace rubinius {
 
 				JITMethodInfo* prev_info = info();
 				method_info_ = new JITMethodInfo(info()->context(), info()->method(), info()->vm_method());
-				info()->is_block = false;
+				info()->is_block = false; // <---- this will be wrong if returning to a block...
+				info()->set_block_env(block_env);
 				info()->init_globals(prev_info);
 				info()->context().set_root(info()->root_info());
 				info()->set_call_frame(call_frame_);
@@ -447,23 +453,23 @@ namespace rubinius {
 			flush_ip(current_ip_);
     }
 
-    void flush_ip(int ip) {
+		void flush_ip(int ip) {
 			Value* call_frame = info()->call_frame();
-      Value* pos = b().CreateConstGEP2_32(call_frame, 0, offset::cf_ip, "ip_pos");
-      b().CreateStore(ConstantInt::get(ls_->Int32Ty, ip), pos);
-    }
+			Value* pos = b().CreateConstGEP2_32(call_frame, 0, offset::cf_ip, "ip_pos");
+			b().CreateStore(ConstantInt::get(ls_->Int32Ty, ip), pos);
+		}
 
 		void return_value(Value* ret) {
 			info()->add_return_value(ret, current_block());
 			b().CreateBr(info()->return_pad());
 		}
 
-    void goto_anchor() {
+		void goto_anchor() {
 			BasicBlock* bb = block_map_[trace_->anchor->trace_pc].block;
 			assert(bb);
 			b().CreateBr(bb);
 			set_block(new_block("continue"));
-    }
+		}
 
 		void exit_trace(int next_ip){
 
@@ -483,7 +489,7 @@ namespace rubinius {
 			b().CreateStore(next_ip_val, next_ip_pos);
 			Value* stckp = ConstantInt::get(ls_->Int32Ty, sp());
 			Value* exit_sp_pos = get_field(cf, offset::cf_sp);
-      b().CreateStore(stckp, exit_sp_pos);
+			b().CreateStore(stckp, exit_sp_pos);
 
 			flush_call_stack();
 

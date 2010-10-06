@@ -11,11 +11,19 @@ def foo(i)
   k
 end
 
+def times(i)
+  k = 0
+  q = 0
+  while q < 1
+    k += foo(i)
+    q += 1
+  end
+  k
+end
+
 def calc(i)
   k = 666
-  1.times do
-    k += foo(i)
-  end
+  k += times(i)
   k
 end
 

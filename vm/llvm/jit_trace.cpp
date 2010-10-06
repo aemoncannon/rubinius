@@ -405,7 +405,7 @@ namespace rubinius {
 					if(cDebugStack) {
 						std::cout << "Verifying that " << i->second.sp << " == " << sp_ << "\n";
 					}
-					assert(i->second.sp == sp_);
+					//assert(i->second.sp == sp_);
 					return &(i->second);
 				}
 			}

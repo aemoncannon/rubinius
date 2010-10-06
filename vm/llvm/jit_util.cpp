@@ -667,11 +667,9 @@ extern "C" {
       call_frame->scope->set_local(index, top);
     } else {
       VariableScope* scope = call_frame->scope->parent();
-
       for(int j = 1; j < depth; j++) {
         scope = scope->parent();
       }
-
       scope->set_local(state, index, top);
     }
 
