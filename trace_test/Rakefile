@@ -1,0 +1,57 @@
+RBX = "../bin/rbx"
+LOG = "test.log"
+TRACE_ENABLED = true
+GRAPHS = false
+
+
+TESTS = [
+         {:file => "sqrt.rb", :comment => "(digs into stdlib)", :iters => 10000},
+
+         {:file => "sqrt_int.rb", :comment => "(setup_unwind,pop_unwind, nothing thrown)", :iters => 10000}, 
+
+         {:file => "loop.rb", :comment => "", :iters => 1000000},
+
+         {:file => "nest_simple.rb", :comment => "", :iters => 100000},
+
+         {:file => "nest_funcs.rb", :comment => "", :iters => 10000},
+
+         {:file => "nest_funcs_with_yield.rb", :comment => "", :iters => 10000},
+
+         {:file => "nest_funcs_and_exit.rb", :comment => "", :iters => 100},
+
+         {:file => "if_exit.rb", :comment => "", :iters => 100000},
+
+         {:file => "if_exit_with_yield_simple.rb", :comment => "", :iters => 10000},
+
+         {:file => "if_exit_with_yield.rb", :comment => "", :iters => 100000},
+
+         {:file => "if_exit_in_func.rb", :comment => "", :iters => 10000},
+
+         {:file => "if_exit_in_two_funcs.rb", :comment => "", :iters => 10000}
+        ]
+
+
+task :units => [] do
+  graphs = FileList["trace_*.png"] + FileList["trace_*.gv"]
+  rm_rf graphs
+  TESTS.each{|t|
+    puts ""
+    puts "#{t[:file]} #{t[:comment]}"
+    puts "-------------------"
+    time = Time.now.to_f
+    sh "#{RBX} #{t[:file]} #{t[:iters]} #{TRACE_ENABLED ? "true" : ""} >> #{LOG}"
+    elapsed = Time.now.to_f - time
+    puts "#{elapsed} seconds."
+    if GRAPHS
+      graphs = FileList["trace_*.gv"]
+      graphs.each{ |gv|
+        sh "dot #{gv} -Tpng -otrace_graphs/#{t[:file]}_#{gv}.png"
+      }
+      rm graphs
+    end
+  }
+end
+
+
+task :default => [:units]
+
