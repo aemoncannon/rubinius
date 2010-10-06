@@ -1044,7 +1044,7 @@ extern "C" {
 			assert(exit_node);
 			if(exit_node->bump_exit_hotness()){
 				logln("Exit node at " << ti->exit_ip << " got hot! Recording branch...");
-				state->recording_trace = new Trace(exiting_trace);
+				state->recording_trace = new Trace(exiting_trace, exit_node);
 				exit_node->clear_hotness();
 			}
 

@@ -183,11 +183,11 @@ Object* VMMethod::resumable_interpreter(STATE,
 		sp = stack_ptr - call_frame->stk;
 		Trace::Status s = state->recording_trace->add(op, cur_ip, sp, ip_ptr, vmm, call_frame); 
 		if(s == Trace::TRACE_FINISHED){
-
 			logln("Trace Recorded.\n--------------------------\n"); 
-			state->recording_trace->pretty_print(state, std::cout);
-			state->recording_trace->compile(state); 
+			if(DEBUG) state->recording_trace->pretty_print(state, std::cout);
+			state->recording_trace->compile(state);
 			state->recording_trace->store();
+			state->recording_trace->ultimate_parent()->dump_to_graph(state);
 			state->recording_trace = NULL; 
 		} 
 		else if(s == Trace::TRACE_CANCEL){

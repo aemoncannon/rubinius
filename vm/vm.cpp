@@ -63,9 +63,26 @@ namespace rubinius {
     , thread_state_(this)
     , thread(this, (Thread*)Qnil)
     , current_fiber(this, (Fiber*)Qnil)
+    , graph_output_counter_(0)
   {
     probe.set(Qnil, &globals().roots);
     set_stack_size(cStackDepthMax);
+  }
+
+  void VM::write_trace_graph_output(std::string& str) {
+		graph_output_counter_++;
+		std::ofstream f;
+		std::stringstream name;
+		name << "trace_" << graph_output_counter_ << ".gv";
+		std::string nm = name.str();
+		f.open(nm.c_str());
+		f << "strict digraph finite_state_machine {\n";
+		f << "rankdir=TB;\n";
+		f << "dpi=200.0;\n";
+		f << "node [color=lightblue2, style=filled];\n";
+		f << str;
+		f << "}";
+		f.close();
   }
 
   void VM::discard(VM* vm) {
@@ -73,7 +90,6 @@ namespace rubinius {
     if(vm->profiler_) {
       vm->shared.remove_profiler(vm, vm->profiler_);
     }
-
     vm->shared.remove_vm(vm);
     delete vm;
   }
@@ -238,7 +254,7 @@ namespace rubinius {
 
   void type_assert(STATE, Object* obj, object_type type, const char* reason) {
     if((obj->reference_p() && obj->type_id() != type)
-        || (type == FixnumType && !obj->fixnum_p())) {
+			 || (type == FixnumType && !obj->fixnum_p())) {
       Exception::type_error(state, type, obj, reason);
     }
   }
@@ -330,11 +346,11 @@ namespace rubinius {
         int diff = (fin_time - start_time) / 1000000;
 
         fprintf(stderr, "[GC %0.1f%% %d/%d %d %2dms]\n",
-                  stats.percentage_used,
-                  stats.promoted_objects,
-                  stats.excess_objects,
-                  stats.lifetime,
-                  diff);
+								stats.percentage_used,
+								stats.promoted_objects,
+								stats.excess_objects,
+								stats.lifetime,
+								diff);
       }
     }
 
@@ -362,9 +378,9 @@ namespace rubinius {
         int diff = (fin_time - start_time) / 1000000;
         int kb = om->mature_bytes_allocated() / 1024;
         fprintf(stderr, "[Full GC %dkB => %dkB %2dms]\n",
-            before_kb,
-            kb,
-            diff);
+								before_kb,
+								kb,
+								diff);
       }
 
     }
@@ -372,14 +388,14 @@ namespace rubinius {
     // Count the finalizers toward running the mature gc. Not great,
     // but better than not seeing the time at all.
 #ifdef RBX_PROFILER
-      if(unlikely(shared.profiling())) {
-        profiler::MethodEntry method(this, profiler::kMatureGC);
-        om->run_finalizers(this);
-      } else {
-        om->run_finalizers(this);
-      }
+		if(unlikely(shared.profiling())) {
+			profiler::MethodEntry method(this, profiler::kMatureGC);
+			om->run_finalizers(this);
+		} else {
+			om->run_finalizers(this);
+		}
 #else
-      om->run_finalizers(this);
+		om->run_finalizers(this);
 #endif
   }
 

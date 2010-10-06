@@ -187,12 +187,8 @@ namespace rubinius {
       return trace_info_;
     }
 
-    void set_trace_exit_pad(llvm::BasicBlock* trace_exit_pad) {
-      trace_exit_pad_ = trace_exit_pad;
-    }
-
     llvm::BasicBlock* trace_exit_pad() {
-      return trace_exit_pad_;
+      return root_info()->trace_exit_pad_;
     }
 
     void set_block_env(llvm::Value* env) {

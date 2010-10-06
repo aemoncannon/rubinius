@@ -23,6 +23,8 @@
 #include <map>
 #include <pthread.h>
 #include <setjmp.h>
+#include <iostream>
+#include <fstream>
 
 namespace llvm {
   class Module;
@@ -106,6 +108,8 @@ namespace rubinius {
 
     // The current fiber running on this thread
     TypedRoot<Fiber*> current_fiber;
+
+    int graph_output_counter_;
 
     static int cStackDepthMax;
 
@@ -222,6 +226,8 @@ namespace rubinius {
 
     /* Prototypes */
     VM(SharedState& shared);
+
+		void write_trace_graph_output(std::string& str);
 
     void check_exception(CallFrame* call_frame);
 

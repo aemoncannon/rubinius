@@ -6,7 +6,10 @@
 #include "builtin/symbol.hpp"
 #include "vm/builtin/compiledmethod.hpp"
 #include "trace.hpp"
+#include "utilities.hpp"
 
+#include <iostream>
+#include <sstream>
 
 #ifdef ENABLE_LLVM
 #include "llvm/jit_visit.hpp"
@@ -35,12 +38,29 @@ namespace rubinius {
 			pc_base(pc_base),
 			call_depth(depth),
 			nested_trace(NULL),
-			jump_taken(false)
+			jump_taken(false),
+			branch_trace(NULL)
 
 	{
 #include "vm/gen/instruction_trace_record.hpp"
 	}
 
+	std::string TraceNode::cm_name(STATE){
+		std::string result = cm->name()->c_str(state);
+		return result;
+	}
+
+	std::string TraceNode::op_name(){
+		return InstructionSequence::get_instruction_name(op);
+	}
+
+	std::string TraceNode::graph_node_name(STATE) {
+		assert(next);
+		std::stringstream s;
+		s << "\"" << cm_name(state) << "-" << pc << " " << op_name() << "\"";
+		std::string result = s.str();
+		return result;
+	}
 
 	void TraceNode::pretty_print(STATE, std::ostream& out) {
 		if(state != NULL){
@@ -73,10 +93,12 @@ namespace rubinius {
 		expected_exit_ip = -1;
 		entry_sp = sp;
 		parent = NULL;
+		parent_node = NULL;
 	}
 
-	Trace::Trace(Trace* parent){
+	Trace::Trace(Trace* parent, TraceNode* parent_node){
 		this->parent = parent;
+		this->parent_node = parent_node;
 		anchor = parent->anchor;
 		entry = NULL;
 		head = NULL;
@@ -88,7 +110,7 @@ namespace rubinius {
 		if(this->is_branch() && head == NULL){
 			// Possible the side-exit jumps straight to the anchor...
 			if(pc == anchor->pc && call_frame->cm == anchor->cm){
-				std::cout << "Recording branch directly to anchor.\n";
+				logln("Recording branch directly to anchor.");
 				head = anchor;
 				entry = head;
 				return TRACE_FINISHED;
@@ -110,11 +132,11 @@ namespace rubinius {
 						op == InstructionSequence::insn_raise_return ||
 						op == InstructionSequence::insn_raise_break ||
 						op == InstructionSequence::insn_reraise){
-			std::cout << "Canceling record due to exception condition.\n";
+			logln("Canceling record due to exception condition.");
 			return TRACE_CANCEL;
 		}
 		else if(op == InstructionSequence::insn_ret && call_frame == anchor->call_frame){
-			std::cout << "Canceling record due to return from home frame.\n";
+			logln("Canceling record due to return from home frame.");
 			return TRACE_CANCEL;
 		}
 		else{
@@ -193,6 +215,9 @@ namespace rubinius {
 	void Trace::store() {
 		VMMethod* vmm = entry->cm->backend_method();
 		vmm->traces[entry->pc] = this;
+		if(is_branch()){
+			parent_node->branch_trace = this;
+		}
 	}
 
 	string Trace::trace_name(){
@@ -204,11 +229,37 @@ namespace rubinius {
 		TraceIterator it = iter();
 		while(it.has_next()){
 			TraceNode* node = it.next();
-			for(int i=0; i < node->call_depth;i++) out << "  ";
+			for(int i=0; i < node->call_depth + 5;i++) out << "  ";
 			node->pretty_print(state, out);
 			out << "\n";
 		}
 		out << "]" << "\n";
+	}
+
+	std::string Trace::to_graph_data(STATE) {
+		std::stringstream s;
+		TraceIterator it = iter();
+		while(it.has_next()){
+			TraceNode* node = it.next();
+			s << node->graph_node_name(state);
+			s << " -> ";
+			s << node->next->graph_node_name(state);
+			s << ";\n";
+			if(node->branch_trace != NULL){
+				s << node->graph_node_name(state);
+				s << " -> ";
+				s << node->branch_trace->entry->graph_node_name(state);
+				s << ";\n";
+				s << node->branch_trace->to_graph_data(state);
+			}
+		}
+		std::string result = s.str();
+		return result;
+	}
+
+	void Trace::dump_to_graph(STATE) {
+		std::string s = to_graph_data(state);
+		state->write_trace_graph_output(s);
 	}
 
 

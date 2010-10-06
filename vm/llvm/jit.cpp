@@ -10,6 +10,7 @@
 #include "field_offset.hpp"
 #include "builtin/compiledmethod.hpp"
 #include "objectmemory.hpp"
+#include "utilities.hpp"
 
 #include "call_frame.hpp"
 #include "configuration.hpp"
@@ -154,8 +155,9 @@ namespace rubinius {
 
   const llvm::Type* LLVMState::ptr_type(std::string name) {
     std::string full_name = std::string("struct.rubinius::") + name;
-    return PointerType::getUnqual(
+		llvm::Type* tpe =  PointerType::getUnqual(
 			module_->getTypeByName(full_name.c_str()));
+    return tpe;
   }
 
   const llvm::Type* LLVMState::type(std::string name) {

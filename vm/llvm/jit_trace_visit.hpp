@@ -4,6 +4,7 @@
 #include "builtin/tuple.hpp"
 #include "builtin/global_cache_entry.hpp"
 #include "inline_cache.hpp"
+#include "utilities.hpp"
 
 #include "llvm/jit_visit.hpp"
 #include "trace.hpp"
@@ -114,7 +115,7 @@ namespace rubinius {
 		void ensure_trace_exit_pad(){
 			if(!emitted_exit_){
 				BasicBlock* cur = current_block();
-				info()->init_trace_exit_pad();
+				info()->root_info()->init_trace_exit_pad();
 				set_block(info()->trace_exit_pad());
 				emit_trace_exit_pad();
 				emitted_exit_ = true;
@@ -135,15 +136,17 @@ namespace rubinius {
 			// constant for this trace
 			Value* expected_exit_pc = int32(trace_->anchor->pc);
 
-
 			Signature sig(ls_, ls_->Int32Ty);
-			sig << "VM";
-			sig << "CallFrame";
+			sig << ls_->ptr_type("VM");
+			sig << ls_->ptr_type("CallFrame");
 			sig << ls_->Int32Ty;
 			sig << ls_->Int32Ty;
 			sig << ls_->Int32Ty;
 			sig << ls_->Int32Ty;
-			sig << "TraceInfo";
+			sig << ls_->ptr_type("TraceInfo");
+
+
+
 			Value* call_args[] = {
 				info()->vm(),
 				exit_cf,
@@ -153,7 +156,9 @@ namespace rubinius {
 				exit_trace_pc,
 				info()->trace_info()
 			};
+
 			Value* ret = sig.call("rbx_side_exit", call_args, 7, "", b());
+
 
 			Value* nested_completed_p = b().CreateICmpEQ(ret, int32(1), "nested_completed_p");
 			Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
@@ -418,7 +423,9 @@ namespace rubinius {
 
 				JITMethodInfo* prev_info = info();
 				method_info_ = new JITMethodInfo(info()->context(), info()->method(), info()->vm_method());
+				info()->is_block = false;
 				info()->init_globals(prev_info);
+				info()->context().set_root(info()->root_info());
 				info()->set_call_frame(call_frame_);
 				info()->set_variables(vars_);
 				info()->set_stack(stack_);
@@ -485,7 +492,6 @@ namespace rubinius {
 
 
 		void flush_call_stack(){
-			std::cout << "\n\nFLUSHING CALL STACK\n" << endl;
 			// Flush ip and sp of any stacked frames
 			TraceNode* node = cur_trace_node_->active_send;
 			while(node != NULL){
@@ -508,8 +514,6 @@ namespace rubinius {
 
 				if(node->op == InstructionSequence::insn_send_stack){
 					int sp = node->sp - node->arg2 - 1;
-					std::cout << "node sp at send: " << node->sp << endl;
-					std::cout << "sp at send: " << sp << endl;
 					stckp = ConstantInt::get(ls_->Int32Ty, sp);
 					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
 				}

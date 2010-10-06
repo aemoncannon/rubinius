@@ -7,7 +7,7 @@ void emit_traced_yield_stack(opcode args) {
 	
 	CompiledMethod* cm = cur_trace_node_->send_cm;
 	VMMethod* vmm = cm->backend_method();
-	jit::Context ctx(ls_);
+	jit::Context& ctx = info()->context();
 	JITMethodInfo* parent_info = info();
 	parent_info->set_saved_sp(sp_);
 	parent_info->set_saved_last_sp(last_sp_);

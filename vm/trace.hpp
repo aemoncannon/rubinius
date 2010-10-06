@@ -47,6 +47,7 @@ namespace rubinius {
 		Trace* nested_trace;
 		bool jump_taken;
 		int exit_counter;
+		Trace* branch_trace;
 
 		int total_size;
 		int numargs;
@@ -57,6 +58,8 @@ namespace rubinius {
 		TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		void pretty_print(STATE, std::ostream& out);
+
+		std::string graph_node_name(STATE);
 
 		int interp_jump_target(){
 			return arg1 - pc_base;
@@ -70,6 +73,9 @@ namespace rubinius {
 		void clear_hotness(){
 			exit_counter = 0;
 		}
+
+		std::string cm_name(STATE);
+		std::string op_name();
 
 	};
 
@@ -98,12 +104,13 @@ namespace rubinius {
 		int expected_exit_ip;
 		int entry_sp;
 		Trace* parent;
+		TraceNode* parent_node;
 
 		enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
 
 		Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
-		Trace(Trace* parent);
+		Trace(Trace* parent, TraceNode* parent_node);
 
 		Status add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
@@ -112,6 +119,9 @@ namespace rubinius {
 		string trace_name();
 
 		void compile(STATE);
+
+		std::string to_graph_data(STATE);
+		void dump_to_graph(STATE);
 
 		void store();
 
@@ -142,6 +152,14 @@ namespace rubinius {
 				t = t->parent;
 			}
 			return false;
+		}
+
+		Trace* ultimate_parent(){
+			Trace* t = this;
+			while(t->parent != NULL){
+				t = t->parent;
+			}
+			return t;
 		}
 
 		void set_jitted(llvm::Function* func, size_t bytes, void* impl) {

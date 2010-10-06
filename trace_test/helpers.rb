@@ -10,12 +10,8 @@ end
 
 def expect(val)
   if ARGV[1];enable_tracing;end
-  t = Time.now.to_f
   result = yield
   if ARGV[1];disable_tracing;end
-  elapsed = Time.now.to_f - t
-  puts "#{elapsed} seconds."
-
   if result == val
     puts "."
     exit(0)
