@@ -6,17 +6,17 @@ def foo(i)
   if i < ITERATIONS/2
     k = 2
   else
-    k = -3
+    k = -2
   end
   k
 end
 
 def calc(i)
   k = 666
-  1.times do
+#  1.times do
     val = foo(i)
     k += foo(i)
-  end
+#  end
   k
 end
 

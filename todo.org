@@ -83,3 +83,5 @@ of the vars pointer, which we need to load.
 * MethodInfo should be TraceInfo.. don't need cm,vmm info
 
 * Get rid of the visitor local vars (call_frame_, vars_, etc) confusing. Move things to info
+
+* Return back to interpreter *before* calling uncommon. Would that fix the stack growth issue? Hmmm. No.
