@@ -434,6 +434,11 @@ namespace rubinius {
   }
 
   void Environment::halt() {
+
+    if(state->shared.config.bytecode_stats) {
+      state->print_bytecode_statistics();
+    }
+
     if(state->shared.config.ic_stats) {
       state->shared.ic_registry()->print_stats(state);
     }

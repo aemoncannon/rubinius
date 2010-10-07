@@ -75,6 +75,12 @@ namespace rubinius {
     dynamic_interpreter = NULL;
     standard_interpreter = &VMMethod::interpreter;
 #endif
+
+    if(state->shared.config.bytecode_stats) {
+      dynamic_interpreter = NULL;
+      standard_interpreter = &VMMethod::bytecode_stats_interpreter;
+      return;
+    }
   }
 
   /*
@@ -82,7 +88,7 @@ namespace rubinius {
    */
   VMMethod::VMMethod(STATE, CompiledMethod* meth)
     : parent_(NULL)
-    , run(standard_interpreter)
+    , run(&VMMethod::bytecode_stats_interpreter)
     , type(NULL)
     , uncommon_count(0)
     , number_of_caches_(0)

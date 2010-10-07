@@ -78,6 +78,8 @@ namespace rubinius {
     uintptr_t stack_limit_;
     int stack_size_;
     profiler::Profiler* profiler_;
+		double* bytecode_stats_counts_;
+		double* bytecode_stats_times_;
     bool run_signals_;
 
     MethodMissingReason method_missing_reason_;
@@ -373,6 +375,9 @@ namespace rubinius {
       }
       return true;
     }
+
+		void add_bytecode_statistic(unsigned int op, double secs);
+		void print_bytecode_statistics();
 
     profiler::Profiler* profiler();
 

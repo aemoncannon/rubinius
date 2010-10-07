@@ -46,6 +46,7 @@ namespace rubinius {
     config::Bool    gil_debug;
     config::Integer print_config;
     config::Bool    ic_stats;
+    config::Bool    bytecode_stats;
     config::Bool    profile;
     config::String  report_path;
 
@@ -96,6 +97,7 @@ namespace rubinius {
       , gil_debug(this,       "vm.gil.debug")
       , print_config(this,    "config.print")
       , ic_stats(this,        "ic.stats")
+      , bytecode_stats(this,  "bytecode.stats")
       , profile(this,         "profile")
       , report_path(this,     "vm.crash_report_path")
     {
@@ -176,6 +178,9 @@ namespace rubinius {
 
       ic_stats.set_description(
           "Print out stats about the InlineCaches before exiting");
+
+      bytecode_stats.set_description(
+          "Prints out stats about bytecodes. How many times each is used, and how much time(total) is spent executing each.");
 
       qa_port.set_description(
           "Start the QueryAgent on a TCP port. Default port is a random port");

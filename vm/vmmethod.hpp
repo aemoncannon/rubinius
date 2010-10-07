@@ -187,6 +187,9 @@ namespace rubinius {
     static Object* interpreter(STATE, VMMethod* const vmm,
                                InterpreterCallFrame* const call_frame);
 
+    static Object* bytecode_stats_interpreter(STATE, VMMethod* const vmm,
+																							InterpreterCallFrame* const call_frame);
+
     static Object* debugger_interpreter(STATE, VMMethod* const vmm,
                                         InterpreterCallFrame* const call_frame);
     static Object* debugger_interpreter_continue(STATE,

@@ -17,6 +17,7 @@
 #include "builtin/system.hpp"
 #include "builtin/fiber.hpp"
 #include "builtin/location.hpp"
+#include "builtin/iseq.hpp"
 
 #include "instruments/profiler.hpp"
 
@@ -57,6 +58,8 @@ namespace rubinius {
     , saved_call_frame_(0)
     , stack_start_(0)
     , profiler_(0)
+		, bytecode_stats_counts_(NULL)
+		, bytecode_stats_times_(NULL)
     , run_signals_(false)
     , thread_step_(false)
 
@@ -128,6 +131,16 @@ namespace rubinius {
   }
 
   void VM::initialize_config() {
+
+    if(shared.config.bytecode_stats) {
+			bytecode_stats_counts_ = new double[InstructionSequence::cTotal];
+			bytecode_stats_times_ = new double[InstructionSequence::cTotal];
+			for(unsigned int i = 0; i < InstructionSequence::cTotal; i++){
+				bytecode_stats_counts_[i] = 0;
+				bytecode_stats_times_[i] = 0;
+			}
+		}
+
 #ifdef USE_DYNAMIC_INTERPRETER
     if(shared.config.dynamic_interpreter_enabled) {
       G(rubinius)->set_const(this, "INTERPRETER", symbol("dynamic"));
@@ -270,7 +283,7 @@ namespace rubinius {
 
   void type_assert(STATE, Object* obj, object_type type, const char* reason) {
     if((obj->reference_p() && obj->type_id() != type)
-        || (type == FixnumType && !obj->fixnum_p())) {
+			 || (type == FixnumType && !obj->fixnum_p())) {
       Exception::type_error(state, type, obj, reason);
     }
   }
@@ -363,11 +376,11 @@ namespace rubinius {
         int diff = (fin_time - start_time) / 1000000;
 
         fprintf(stderr, "[GC %0.1f%% %d/%d %d %2dms]\n",
-                  stats.percentage_used,
-                  stats.promoted_objects,
-                  stats.excess_objects,
-                  stats.lifetime,
-                  diff);
+								stats.percentage_used,
+								stats.promoted_objects,
+								stats.excess_objects,
+								stats.lifetime,
+								diff);
       }
     }
 
@@ -395,9 +408,9 @@ namespace rubinius {
         int diff = (fin_time - start_time) / 1000000;
         int kb = om->mature_bytes_allocated() / 1024;
         fprintf(stderr, "[Full GC %dkB => %dkB %2dms]\n",
-            before_kb,
-            kb,
-            diff);
+								before_kb,
+								kb,
+								diff);
       }
 
     }
@@ -405,14 +418,14 @@ namespace rubinius {
     // Count the finalizers toward running the mature gc. Not great,
     // but better than not seeing the time at all.
 #ifdef RBX_PROFILER
-      if(unlikely(shared.profiling())) {
-        profiler::MethodEntry method(this, profiler::kMatureGC);
-        om->run_finalizers(this, call_frame);
-      } else {
-        om->run_finalizers(this, call_frame);
-      }
+		if(unlikely(shared.profiling())) {
+			profiler::MethodEntry method(this, profiler::kMatureGC);
+			om->run_finalizers(this, call_frame);
+		} else {
+			om->run_finalizers(this, call_frame);
+		}
 #else
-      om->run_finalizers(this, call_frame);
+		om->run_finalizers(this, call_frame);
 #endif
   }
 
@@ -470,7 +483,7 @@ namespace rubinius {
       {
         Exception* exc = thread_state_.current_exception();
         if(exc->locations()->nil_p() ||
-            exc->locations()->size() == 0) {
+					 exc->locations()->size() == 0) {
           exc->locations(this, Location::from_call_stack(this, call_frame));
         }
 
@@ -536,6 +549,39 @@ namespace rubinius {
 
   void VM::remove_profiler() {
     profiler_ = 0;
+  }
+
+  void VM::add_bytecode_statistic(unsigned int op, double secs) {
+		bytecode_stats_counts_[op] += 1;
+		bytecode_stats_times_[op] += secs;
+  }
+
+  void VM::print_bytecode_statistics() {
+		unsigned int total = InstructionSequence::cTotal;
+		std::cout << "\n BYTECODE_COUNTS = [";
+		for(unsigned int i = 0; i < total; i++){
+				std::cout << bytecode_stats_counts_[i];
+			if(i != (total - 1)){
+				std::cout << ", ";
+			} 
+		}
+		std::cout << "]\n";
+		std::cout << "\n BYTECODE_TIMES = [";
+		for(unsigned int i = 0; i < total; i++){
+				std::cout << bytecode_stats_times_[i];
+			if(i != (total - 1)){
+				std::cout << ", ";
+			} 
+		}
+		std::cout << "]\n";
+		std::cout << "\n BYTECODE_NAMES = [";
+		for(unsigned int i = 0; i < total; i++){
+			std::cout << "\"" << InstructionSequence::get_instruction_name(i) << "\"";
+			if(i != (total - 1)){
+				std::cout << ", ";
+			} 
+		}
+		std::cout << "]\n";
   }
 
   void VM::set_current_fiber(Fiber* fib) {
