@@ -56,6 +56,12 @@ namespace rubinius {
 		return InstructionSequence::get_instruction_name(op);
 	}
 
+	int TraceNode::arg_count(){
+		if(op == InstructionSequence::insn_send_method) return 0;
+		else if(op == InstructionSequence::insn_send_stack) return arg2;
+		else return arg2;
+	}
+
 	std::string TraceNode::graph_node_name(STATE) {
 		assert(next);
 		std::stringstream s;
@@ -135,6 +141,10 @@ namespace rubinius {
 						op == InstructionSequence::insn_raise_break ||
 						op == InstructionSequence::insn_reraise){
 			logln("Canceling record due to exception condition.");
+			return TRACE_CANCEL;
+		}
+		else if(op == InstructionSequence::insn_send_stack_with_splat){
+			logln("Canceling record due to splat.");
 			return TRACE_CANCEL;
 		}
 		else if(op == InstructionSequence::insn_ret && call_frame == anchor->call_frame){

@@ -1,7 +1,7 @@
 #ifndef UTILITIES_HPP
 #define UTILITIES_HPP
 
-#define DEBUG false
+#define DEBUG true
 #define DUMP_BITCODE false
 
 #define logln(str) if(DEBUG) std::cout << str << endl

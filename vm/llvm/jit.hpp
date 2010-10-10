@@ -313,12 +313,12 @@ namespace rubinius {
 
     void set_parent_info(JITMethodInfo* info) {
       parent_info_ = info;
+      args_ = info->out_args();
 			init_globals(info);
     }
 
 		void init_globals(JITMethodInfo* info){
       vm_ = info->vm();
-      out_args_ = info->out_args();
       counter_ = info->counter();
 			root = info->root_info();
 			trace_info_ = info->trace_info();

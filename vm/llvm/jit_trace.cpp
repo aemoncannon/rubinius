@@ -89,6 +89,11 @@ namespace rubinius {
 			vars = b().CreateBitCast(vars, ls_->ptr_type("StackVariables"), "vars");
 			info_->set_variables(vars);
 
+			Value* args_pos = get_field(call_frame, offset::cf_arguments);
+			Value* args = b().CreateLoad(args_pos, "args");
+			args = b().CreateBitCast(vars, ls_->ptr_type("Arguments"), "args");
+			info_->set_args(vars);
+
 			info_->set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
 			
 			// ip
@@ -154,10 +159,10 @@ namespace rubinius {
 
 			void call(Trace* trace, TraceNode* node){
 
-				// logln("\n\n\nCompiling node: ");
-				// logln("sp is: " << v_.sp());
-				//if(DEBUG) node->pretty_print(VM::current_state(), std::cout);
-				//logln("\nsp is: " << v_.sp());
+				logln("\n\n\nCompiling node: ");
+				logln("sp is: " << v_.sp());
+				if(DEBUG) node->pretty_print(VM::current_state(), std::cout);
+				logln("\nsp is: " << v_.sp());
 				trace->dispatch(v_, node);
 
 				// if(v_.b().GetInsertBlock()->getTerminator() == NULL) {

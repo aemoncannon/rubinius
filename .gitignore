@@ -1,3 +1,4 @@
+trace_test/trace_graphs
 diags
 !spec/tags
 *.a

@@ -51,8 +51,12 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 	prev_call_frame->setName("prev_call_frame");
 	info()->set_previous(prev_call_frame);
 
-	info()->set_args(out_args_);
-	info()->set_out_args(info()->root_info()->pre_allocated_args[cur_trace_node_->trace_pc]);
+	args_ = parent_info->out_args();
+	info()->set_args(args_);
+
+	out_args_ = info()->root_info()->pre_allocated_args[cur_trace_node_->trace_pc];
+	out_args_ = b().CreateBitCast(out_args_, ls_->ptr_type("Arguments"), "casted out_args");
+	info()->set_out_args(out_args_);
 	init_out_args();
 
 	Value* cfstk = info()->root_info()->pre_allocated_call_frames[
@@ -116,210 +120,35 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 
 
 void import_args() {
-	Value* vm_obj = info()->vm();
 	Value* arg_obj = info()->args();
 
 	setup_scope();
 
-
 	// Import the arguments
 	Value* offset = b().CreateConstGEP2_32(arg_obj, 0, offset::args_ary, "arg_ary_pos");
-
 	Value* arg_ary = b().CreateLoad(offset, "arg_ary");
 
-	// If there are a precise number of args, easy.
-	if(info()->vmm->required_args == info()->vmm->total_args) {
-		for(int i = 0; i < info()->vmm->required_args; i++) {
-			Value* int_pos = ConstantInt::get(ls_->Int32Ty, i);
+	// As opposed to method jit, number of args is always known statically.
+	// Currently, splats invalidate traces, so don't worry about those.
+	for(int i = 0; i < cur_trace_node_->arg_count(); i++) {
+		Value* int_pos = ConstantInt::get(ls_->Int32Ty, i);
 
-			Value* arg_val_offset = b().CreateConstGEP1_32(arg_ary, i, "arg_val_offset");
-
-			Value* arg_val = b().CreateLoad(arg_val_offset, "arg_val");
-
-			Value* idx2[] = {
-				ConstantInt::get(ls_->Int32Ty, 0),
-				ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-				int_pos
-			};
-
-			Value* pos = b().CreateGEP(info()->variables(), idx2, idx2+3, "var_pos");
-
-			b().CreateStore(arg_val, pos);
-
-		}
-
-
-		// Otherwise, we must loop in the generate code because we don't know
-		// how many they've actually passed in.
-	} 
-	else {
-		Value* loop_i = info()->counter();
-
-		BasicBlock* top = BasicBlock::Create(ls_->ctx(), "arg_loop_top", info()->function());
-		BasicBlock* body = BasicBlock::Create(ls_->ctx(), "arg_loop_body", info()->function());
-		BasicBlock* after = BasicBlock::Create(ls_->ctx(), "arg_loop_cont", info()->function());
-
-		Value* limit;
-
-		// Because of a splat, there can be more args given than
-		// vmm->total_args, so we need to use vmm->total_args as a max.
-		if(info()->vmm->splat_position >= 0) {
-			Value* static_total = ConstantInt::get(ls_->Int32Ty, info()->vmm->total_args);
-
-			limit = b().CreateSelect(
-				b().CreateICmpSLT(static_total, info()->arg_total()),
-				static_total,
-				info()->arg_total());
-		} else {
-			// Because of arity checks, arg_total is less than or equal
-			// to vmm->total_args.
-			limit = info()->arg_total();
-		}
-
-		b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), loop_i);
-		b().CreateBr(top);
-
-		b().SetInsertPoint(top);
-
-		// now at the top of block, check if we should continue...
-		Value* loop_val = b().CreateLoad(loop_i, "loop_val");
-		Value* cmp = b().CreateICmpSLT(loop_val, limit, "loop_test");
-
-		b().CreateCondBr(cmp, body, after);
-
-		// Now, the body
-		b().SetInsertPoint(body);
-
-		Value* arg_val_offset =
-			b().CreateGEP(arg_ary, loop_val, "arg_val_offset");
+		Value* arg_val_offset = b().CreateConstGEP1_32(arg_ary, i, "arg_val_offset");
 
 		Value* arg_val = b().CreateLoad(arg_val_offset, "arg_val");
 
 		Value* idx2[] = {
 			ConstantInt::get(ls_->Int32Ty, 0),
 			ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-			loop_val
+			int_pos
 		};
 
 		Value* pos = b().CreateGEP(info()->variables(), idx2, idx2+3, "var_pos");
 
 		b().CreateStore(arg_val, pos);
 
-		Value* plus_one = b().CreateAdd(loop_val,
-																		ConstantInt::get(ls_->Int32Ty, 1), "add");
-		b().CreateStore(plus_one, loop_i);
-
-		b().CreateBr(top);
-
-		b().SetInsertPoint(after);
 	}
 
-	// Setup the splat.
-	if(info()->vmm->splat_position >= 0) {
-		Signature sig(ls_, "Object");
-		sig << "VM";
-		sig << "Arguments";
-		sig << ls_->Int32Ty;
-
-		Value* call_args[] = {
-			vm_obj,
-			arg_obj,
-			ConstantInt::get(ls_->Int32Ty, info()->vmm->total_args)
-		};
-
-		Function* func = sig.function("rbx_construct_splat");
-		func->setOnlyReadsMemory(true);
-		func->setDoesNotThrow(true);
-
-		CallInst* splat_val = sig.call("rbx_construct_splat", call_args, 3, "splat_val", b());
-
-		splat_val->setOnlyReadsMemory(true);
-		splat_val->setDoesNotThrow(true);
-
-		Value* idx3[] = {
-			ConstantInt::get(ls_->Int32Ty, 0),
-			ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-			ConstantInt::get(ls_->Int32Ty, info()->vmm->splat_position)
-		};
-
-		Value* pos = b().CreateGEP(info()->variables(), idx3, idx3+3, "splat_pos");
-		b().CreateStore(splat_val, pos);
-	}
-}
-
-void check_arity() {
-	Value* vm_obj = vm_;
-	Value* dis_obj = info()->msg();
-	Value* arg_obj = info()->args();
-
-	Value* total_offset = b().CreateConstGEP2_32(arg_obj, 0,
-																							 offset::args_total, "total_pos");
-	Value* total = b().CreateLoad(total_offset, "arg.total");
-
-	// For others to use.
-	info()->set_arg_total(total);
-
-	BasicBlock* arg_error = BasicBlock::Create(ls_->ctx(), "arg_error", info()->function());
-	BasicBlock* cont = BasicBlock::Create(ls_->ctx(), "import_args", info()->function());
-
-	// Check arguments
-	//
-	// if there is a splat..
-	if(info()->vmm->splat_position >= 0) {
-		if(info()->vmm->required_args > 0) {
-			// Make sure we got at least the required args
-			Value* cmp = b().CreateICmpSLT(total,
-																		 ConstantInt::get(ls_->Int32Ty, info()->vmm->required_args), "arg_cmp");
-			b().CreateCondBr(cmp, arg_error, cont);
-		} else {
-			// Only splat or optionals, no handling!
-			b().CreateBr(cont);
-		}
-
-		// No splat, a precise number of args
-	} else if(info()->vmm->required_args == info()->vmm->total_args) {
-		// Make sure we got the exact number of arguments
-		Value* cmp = b().CreateICmpNE(total,
-																	ConstantInt::get(ls_->Int32Ty, info()->vmm->required_args), "arg_cmp");
-		b().CreateCondBr(cmp, arg_error, cont);
-
-		// No splat, with optionals
-	} else {
-		Value* c1 = b().CreateICmpSLT(total,
-																	ConstantInt::get(ls_->Int32Ty, info()->vmm->required_args), "arg_cmp");
-		Value* c2 = b().CreateICmpSGT(total,
-																	ConstantInt::get(ls_->Int32Ty, info()->vmm->total_args), "arg_cmp");
-
-		Value* cmp = b().CreateOr(c1, c2, "arg_combine");
-		b().CreateCondBr(cmp, arg_error, cont);
-	}
-
-	b().SetInsertPoint(arg_error);
-
-	// Call our arg_error helper
-	Signature sig(ls_, "Object");
-
-	sig << "VM";
-	sig << "CallFrame";
-	sig << "Dispatch";
-	sig << "Arguments";
-	sig << ls_->Int32Ty;
-
-
-	Value* call_args[] = {
-		vm_obj,
-		info()->previous(),
-		dis_obj,
-		arg_obj,
-		ConstantInt::get(ls_->Int32Ty, info()->vmm->required_args)
-	};
-
-
-	Value* val = sig.call("rbx_arg_error", call_args, 5, "ret", b());
-	return_value(val);
-
-	// Switch to using continuation
-	b().SetInsertPoint(cont);
 }
 
 

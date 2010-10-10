@@ -19,7 +19,7 @@ TESTS = [
 
          {:file => "nest_funcs_and_exit.rb", :comment => "", :iters => 100},
 
-         {:file => "if_exit.rb", :comment => "", :iters => 100000},
+         {:file => "if_exit.rb", :comment => "", :iters => 1000000},
 
          {:file => "if_exit_in_func.rb", :comment => "", :iters => 1000000},
 
@@ -29,7 +29,11 @@ TESTS = [
 
          {:file => "if_exit_with_yield_simple.rb", :comment => "", :iters => 10000},
 
-         {:file => "if_exit_with_yield.rb", :comment => "", :iters => 100000}
+         {:file => "if_exit_with_yield.rb", :comment => "", :iters => 100000},
+
+         {:file => "nest_funcs_with_optional_args.rb", :comment => "", :iters => 10000},
+
+         {:file => "loop_with_puts.rb", :comment => "", :iters => 10000}
 
         ]
 

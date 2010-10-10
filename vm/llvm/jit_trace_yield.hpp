@@ -40,8 +40,12 @@ void emit_traced_yield_stack(opcode args) {
 	prev_call_frame->setName("prev_call_frame");
 	info()->set_previous(prev_call_frame);
 
-	info()->set_args(out_args_);
-	info()->set_out_args(info()->root_info()->pre_allocated_args[cur_trace_node_->trace_pc]);
+	args_ = parent_info->out_args();
+	info()->set_args(args_);
+
+	out_args_ = info()->root_info()->pre_allocated_args[cur_trace_node_->trace_pc];
+	out_args_ = b().CreateBitCast(out_args_, ls_->ptr_type("Arguments"), "casted out_args");
+	info()->set_out_args(out_args_);
 	init_out_args();
 
 	Value* cfstk = info()->root_info()->pre_allocated_call_frames[cur_trace_node_->trace_pc];

@@ -26,6 +26,13 @@ namespace rubinius {
 			sp_ = trace->entry_sp;
 			last_sp_ = trace->entry_sp;
 			emitted_exit_ = false;
+
+			vm_ = info->vm();
+			call_frame_ = info->call_frame();
+			vars_ = info->variables();
+			stack_ = info->stack();
+			args_ = info->args();
+			out_args_ = info->out_args();
 		}
 
 
@@ -434,11 +441,13 @@ namespace rubinius {
 			if(info()->parent_info()){
 				method_info_ = info()->parent_info();
 				vm_ = info()->vm();
+				args_ = info()->args();
 				call_frame_ = info()->call_frame();
 				vars_ = info()->variables();
 				stack_ = info()->stack();
 				sp_ = info()->saved_sp();
 				last_sp_ = info()->saved_last_sp();
+				out_args_ = info()->out_args();
 			}
 			else{
 				// Otherwise, we're returning from
@@ -459,8 +468,13 @@ namespace rubinius {
 				Value* vars_pos = get_field(call_frame_, offset::cf_scope);
 				vars_ = b().CreateLoad(vars_pos, "vars");
 
+				Value* args_pos = get_field(call_frame_, offset::cf_arguments);
+				args_ = b().CreateLoad(args_pos, "args");
+
 				Value* stk_base = get_field(call_frame_, offset::cf_stk);
 				stack_ = b().CreateBitCast(stk_base, ObjArrayTy, "obj_ary_type");
+
+				out_args_ = b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
 
 				JITMethodInfo* prev_info = info();
 				method_info_ = new JITMethodInfo(info()->context(), info()->method(), info()->vm_method());
@@ -472,6 +486,8 @@ namespace rubinius {
 				info()->set_variables(vars_);
 				info()->set_stack(stack_);
 				info()->set_vm(vm_);
+				info()->set_args(args_);
+				info()->set_out_args(out_args_);
 
 				// Leave room for return value..
 				sp_ = cur_trace_node_->next->sp - 1; 

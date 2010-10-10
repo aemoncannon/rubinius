@@ -61,6 +61,8 @@ namespace rubinius {
 
 		std::string graph_node_name(STATE);
 
+		int arg_count();
+
 		int interp_jump_target(){
 			return arg1 - pc_base;
 		}
