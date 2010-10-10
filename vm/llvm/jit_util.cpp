@@ -741,13 +741,11 @@ extern "C" {
       state->interrupts.checked();
 
       if(state->interrupts.perform_gc) {
-				std::cout << "Perform GC" << endl;
         state->interrupts.perform_gc = true;
         state->collect_maybe(call_frame);
       }
 
       if(state->interrupts.timer) {
-				std::cout << "Timer interrupt." << endl;
         state->interrupts.timer = false;
         state->set_call_frame(call_frame);
         state->global_lock().yield();
