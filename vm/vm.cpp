@@ -129,6 +129,7 @@ namespace rubinius {
   }
 
   void VM::initialize_config() {
+
 #ifdef USE_DYNAMIC_INTERPRETER
     if(shared.config.dynamic_interpreter_enabled) {
       G(rubinius)->set_const(this, "INTERPRETER", symbol("dynamic"));

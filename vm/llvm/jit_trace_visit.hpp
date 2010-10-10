@@ -33,6 +33,7 @@ namespace rubinius {
 			cur_trace_node_ = node;
 		}
 
+
     void at_ip(int ip) {
       BlockMap::iterator i = block_map_.find(ip);
 
@@ -173,15 +174,14 @@ namespace rubinius {
 			set_block(cont);
 
 			if(!(trace_->is_branch())){
-				// If we got to here, that means that a branch trace was
+				// If we got to here, that means that a branch of this trace was
 				// run successfully, which by definition must have looped
 				// back to the anchor.
-				goto_anchor();
+				skip_to_anchor();
 			}
 			else{
 				// If we got to here, that means that a branch trace called
 				// from a branch trace was run successfully. 
-				
 				// We return immediately, which hands control back up to the 
 				// parent trace, which will (per above) jump to the anchor
 				return_value(int32(0));
@@ -197,6 +197,8 @@ namespace rubinius {
 			Value* expected_exit_pc = int32(cur_trace_node_->nested_trace->expected_exit_ip);
 			Value* trace_pc = int32(cur_trace_node_->trace_pc);
 
+			// Don't need to flush current call frame. Nested trace will take care of that if
+			// it side-exits.
 			flush_call_stack();
 
 			Signature sig(ls_, ls_->Int32Ty);
@@ -233,7 +235,30 @@ namespace rubinius {
       set_block(cont);
 		}
 
-  
+    void visit_check_interrupts() {
+      std::vector<const Type*> types;
+
+      types.push_back(VMTy);
+      types.push_back(CallFrameTy);
+
+      FunctionType* ft = FunctionType::get(ObjType, types, false);
+      Function* func = cast<Function>(
+				module_->getOrInsertFunction("rbx_check_interrupts", ft));
+
+      func->setDoesNotCapture(0, true);
+      func->setDoesNotCapture(1, true);
+      func->setDoesNotCapture(2, true);
+
+      flush();
+
+      Value* call_args[] = {
+        vm_,
+        call_frame_
+      };
+
+      Value* ret = b().CreateCall(func, call_args, call_args+2, "ci");
+      check_for_exception(ret);
+    }  
 
 
     void visit_goto(opcode ip) {
@@ -317,6 +342,17 @@ namespace rubinius {
 			set_block(exit_stub);
 			exit_trace(cur_trace_node_->interp_jump_target());
 			set_block(cont);
+    }
+
+    void visit_set_local(opcode which) {
+      Value* idx2[] = {
+        ConstantInt::get(ls_->Int32Ty, 0),
+        ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+        ConstantInt::get(ls_->Int32Ty, which)
+      };
+      Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
+      Value* val = stack_top();
+      b().CreateStore(val, pos);
     }
 
     void visit_setup_unwind(opcode where, opcode type) {
@@ -464,7 +500,7 @@ namespace rubinius {
 			b().CreateBr(info()->return_pad());
 		}
 
-		void goto_anchor() {
+		void skip_to_anchor() {
 			BasicBlock* bb = block_map_[trace_->anchor->trace_pc].block;
 			assert(bb);
 			b().CreateBr(bb);
@@ -482,18 +518,22 @@ namespace rubinius {
 				int32(cur_trace_node_->trace_pc), cur);
 			info()->root_info()->exit_cf_phi->addIncoming(info()->call_frame(), cur);
 
-			// Flush ip and sp of active current frame
-			Value* cf = info()->call_frame();
-			Value* next_ip_val = ConstantInt::get(ls_->Int32Ty, next_ip);
-			Value* next_ip_pos = get_field(cf, offset::cf_ip);
-			b().CreateStore(next_ip_val, next_ip_pos);
-			Value* stckp = ConstantInt::get(ls_->Int32Ty, sp());
-			Value* exit_sp_pos = get_field(cf, offset::cf_sp);
-			b().CreateStore(stckp, exit_sp_pos);
-
+			flush_current_call_frame(next_ip);
 			flush_call_stack();
 
 			b().CreateBr(info()->trace_exit_pad());
+		}
+
+
+		void flush_current_call_frame(int next_ip){
+			// Flush ip and sp of active current frame
+			Value* cf = info()->call_frame();
+			Value* next_ip_val = int32(next_ip);
+			Value* next_ip_pos = get_field(cf, offset::cf_ip);
+			b().CreateStore(next_ip_val, next_ip_pos);
+			Value* stckp = int32(sp());
+			Value* exit_sp_pos = get_field(cf, offset::cf_sp);
+			b().CreateStore(stckp, exit_sp_pos);
 		}
 
 

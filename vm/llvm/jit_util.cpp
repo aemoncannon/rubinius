@@ -741,11 +741,13 @@ extern "C" {
       state->interrupts.checked();
 
       if(state->interrupts.perform_gc) {
+				std::cout << "Perform GC" << endl;
         state->interrupts.perform_gc = true;
         state->collect_maybe(call_frame);
       }
 
       if(state->interrupts.timer) {
+				std::cout << "Timer interrupt." << endl;
         state->interrupts.timer = false;
         state->set_call_frame(call_frame);
         state->global_lock().yield();
@@ -983,21 +985,27 @@ extern "C" {
 
   int rbx_side_exit(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
   {
-		logln("Side-exited:"); 
+		logln("Side-exited"); 
 		if(DEBUG) { call_frame->dump(); }
 
 		if(ti->nested){
+			logln("..from nested trace."); 
 			ti->exit_call_frame = call_frame;
 			ti->exit_ip = exit_pc;
 			ti->exit_trace_pc = trace_pc;
 			if(ti->recording && call_frame == ti->entry_call_frame){
+				logln("Successful nested recording, returning 1."); 
 				return 1;
 			}
 			else if(!(ti->recording) && call_frame == ti->entry_call_frame && exit_pc == ti->expected_exit_ip){
+				logln("Successful nested run, returning 1."); 
 				return 1;
 			}
 		}
-		else if(exit_pc == ti->expected_exit_ip){
+
+		// If a trace or branch trace exits at it's expected anchor...
+		else if(call_frame == ti->entry_call_frame && exit_pc == ti->expected_exit_ip){
+			logln("Exited at expected ip and call_frame, don't look for branch."); 
 			return 0;
 		}
 
@@ -1010,7 +1018,7 @@ extern "C" {
 		VMMethod* vmm = call_frame->cm->backend_method();
 		Trace* trace = vmm->traces[start_pc];
 		logln("Looking for trace at " << vmm << ", " << start_pc << "..."); 		
-		if(trace != NULL){
+		if(trace != NULL && trace->parent == ti->trace){
 			logln("Found branch trace..."); 
 			// There's a side trace to try...
 			ti->expected_exit_ip = expected_exit_pc;
@@ -1049,9 +1057,7 @@ extern "C" {
 			// Bail to uncommon if we've stacked up call_frames before the exit.
 			// Or if a nested trace exited unexpectedly (we don't know _where_ it
 			// ended up)...
-			if(call_frame != ti->entry_call_frame ||
-				 ti->nested){
-
+			if(call_frame != ti->entry_call_frame || ti->nested){
 				rbx_continue_uncommon(state, call_frame);
 			}
 

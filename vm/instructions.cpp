@@ -270,7 +270,8 @@ Object* VMMethod::resumable_interpreter(STATE,
 			}																																	\
 			else{																															\
 				/* Start recording after threshold is hit..*/										\
-				if(vmm->trace_counters[cur_ip] > 50){														\
+				if(vmm->traces[cur_ip] == NULL &&																\
+					 vmm->trace_counters[cur_ip] > 50){														\
 					logln("Start recording trace.\n");														\
 					sp = stack_ptr - call_frame->stk;															\
 					state->recording_trace = new Trace(op, cur_ip, sp, ip_ptr, vmm, call_frame); \
