@@ -187,7 +187,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 			if(DEBUG) state->recording_trace->pretty_print(state, std::cout);
 			state->recording_trace->compile(state);
 			state->recording_trace->store();
-			state->recording_trace->ultimate_parent()->dump_to_graph(state);
+			if(DEBUG) state->recording_trace->ultimate_parent()->dump_to_graph(state);
 			state->recording_trace = NULL; 
 		} 
 		else if(s == Trace::TRACE_CANCEL){
@@ -396,10 +396,10 @@ Object* VMMethod::uncommon_interpreter(STATE,
 	VMMethod* vmm = vmm_;
 	CallFrame* call_frame = call_frame_;
 	Object* result = NULL;
-	
-	// otherwise why are we in uncommon?
-	assert(call_frame->is_traced_frame());
 
+	// Disable tracing while executing synthetic frames.
+	// Cheap way to avoid unbounded stack growth in 
+	// cases where trace repeatedly side-exits in loop.
 	state->trace_exec_enabled = false;
 
 	while(call_frame->is_traced_frame()){

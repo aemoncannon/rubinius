@@ -1055,7 +1055,7 @@ extern "C" {
 			// Bail to uncommon if we've stacked up call_frames before the exit.
 			// Or if a nested trace exited unexpectedly (we don't know _where_ it
 			// ended up)...
-			if(call_frame != ti->entry_call_frame || ti->nested){
+			if(call_frame->is_traced_frame() || ti->nested){
 				rbx_continue_uncommon(state, call_frame);
 			}
 

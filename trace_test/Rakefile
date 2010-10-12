@@ -33,7 +33,9 @@ TESTS = [
 
          {:file => "nest_funcs_with_optional_args.rb", :comment => "", :iters => 10000},
 
-         {:file => "loop_with_puts.rb", :comment => "", :iters => 10000}
+         {:file => "loop_with_hash.rb", :comment => "", :iters => 10000}
+
+#         {:file => "loop_with_puts.rb", :comment => "", :iters => 10000}
 
         ]
 

@@ -41,8 +41,6 @@ namespace rubinius {
 			jump_taken(false),
 			exit_counter(0),
 			branch_trace(NULL)
-
-
 	{
 #include "vm/gen/instruction_trace_record.hpp"
 	}

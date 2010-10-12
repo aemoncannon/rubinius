@@ -314,14 +314,17 @@ namespace rubinius {
       BasicBlock* cont = new_block("continue");
       BasicBlock* exit_stub = new_block("exit_stub");
 
+      int exit_to_pc;
 			if(cur_trace_node_->jump_taken){
 				b().CreateCondBr(cmp, cont, exit_stub);
+				exit_to_pc = cur_trace_node_->pc + 1 + cur_trace_node_->numargs;
 			}
 			else{
 				b().CreateCondBr(cmp, exit_stub, cont);
+				exit_to_pc = cur_trace_node_->interp_jump_target();
 			}
 			set_block(exit_stub);
-			exit_trace(cur_trace_node_->interp_jump_target());
+			exit_trace(exit_to_pc);
 			set_block(cont);
     }
 
@@ -340,14 +343,18 @@ namespace rubinius {
 			BasicBlock* cont = new_block("continue");
       BasicBlock* exit_stub = new_block("exit_stub");
 
+
+      int exit_to_pc;
 			if(cur_trace_node_->jump_taken){
 				b().CreateCondBr(cmp, cont, exit_stub);
+				exit_to_pc = cur_trace_node_->pc + 1 + cur_trace_node_->numargs;
 			}
 			else{
 				b().CreateCondBr(cmp, exit_stub, cont);
+				exit_to_pc = cur_trace_node_->interp_jump_target();
 			}
 			set_block(exit_stub);
-			exit_trace(cur_trace_node_->interp_jump_target());
+			exit_trace(exit_to_pc);
 			set_block(cont);
     }
 
