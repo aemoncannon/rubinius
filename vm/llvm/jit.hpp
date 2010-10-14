@@ -94,6 +94,7 @@ namespace rubinius {
     llvm::Value* call_frame_;
     llvm::Value* stack_;
     llvm::Value* vm_;
+    llvm::Value* out_trace_info_;
     llvm::Value* args_;
     llvm::Value* trace_info_;
     llvm::Value* block_env_;
@@ -169,6 +170,14 @@ namespace rubinius {
 
     llvm::Value* vm() {
       return vm_;
+    }
+
+    void set_out_trace_info(llvm::Value* out_trace_info) {
+      out_trace_info_ = out_trace_info;
+    }
+
+    llvm::Value* out_trace_info() {
+      return out_trace_info_;
     }
 
     void set_args(llvm::Value* args) {

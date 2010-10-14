@@ -1,7 +1,5 @@
 require 'helpers'
 
-ITERATIONS = 100000
-
 def calc(i)
   1.times do
     3

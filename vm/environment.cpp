@@ -336,6 +336,8 @@ namespace rubinius {
     LLVMState::shutdown(state);
 #endif
 
+    IF_TRACE_PROFILE(state->dump_trace_timers());
+
     state->shared.stop_the_world();
   }
 
@@ -395,7 +397,7 @@ namespace rubinius {
     if(sig_stream) {
       sig_stream >> signature_;
       G(rubinius)->set_const(state, "Signature",
-                       Integer::from(state, signature_));
+														 Integer::from(state, signature_));
       sig_stream.close();
     } else {
       G(rubinius)->set_const(state, "Signature", Integer::from(state, 0));

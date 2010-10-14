@@ -116,7 +116,7 @@ namespace rubinius {
 		if(this->is_branch() && head == NULL){
 			// Possible the side-exit jumps straight to the anchor...
 			if(pc == anchor->pc && call_frame->cm == anchor->cm){
-				logln("Recording branch directly to anchor.");
+				DEBUGLN("Recording branch directly to anchor.");
 				head = anchor;
 				entry = head;
 				return TRACE_FINISHED;
@@ -138,15 +138,15 @@ namespace rubinius {
 						op == InstructionSequence::insn_raise_return ||
 						op == InstructionSequence::insn_raise_break ||
 						op == InstructionSequence::insn_reraise){
-			logln("Canceling record due to exception condition.");
+			DEBUGLN("Canceling record due to exception condition.");
 			return TRACE_CANCEL;
 		}
 		else if(op == InstructionSequence::insn_send_stack_with_splat){
-			logln("Canceling record due to splat.");
+			DEBUGLN("Canceling record due to splat.");
 			return TRACE_CANCEL;
 		}
 		else if(op == InstructionSequence::insn_ret && call_frame == anchor->call_frame){
-			logln("Canceling record due to return from home frame.");
+			DEBUGLN("Canceling record due to return from home frame.");
 			return TRACE_CANCEL;
 		}
 		else{

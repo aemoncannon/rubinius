@@ -116,6 +116,8 @@ Object* VMMethod::resumable_interpreter(STATE,
     return NULL;
   }
 
+	TRACK_TIME(INTERP_TIMER);
+
   InterpreterState is;
 	Object** stack_ptr;
 
@@ -126,7 +128,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 #endif
 
 	if(synthetic){
-		logln("Resuming at " << call_frame->ip());
+		DEBUGLN("Resuming at " << call_frame->ip());
 		ip_ptr = vmm->addresses + call_frame->ip();
 		stack_ptr = call_frame->stk + call_frame->sp();
 	}
@@ -159,6 +161,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 
  run_trace:
 	{
+		TRACK_TIME(TRACE_SETUP_TIMER);
 		TraceInfo ti; 
 		ti.entry_call_frame = call_frame; 
 		ti.recording = false; 
@@ -167,40 +170,47 @@ Object* VMMethod::resumable_interpreter(STATE,
 		ti.trace = trace;
 		assert(trace);
 
-		logln("\nRunning trace at " << cur_ip);
+		DEBUGLN("\nRunning trace at " << cur_ip);
+		TRACK_TIME(ON_TRACE_TIMER);
 		trace->executor(state, call_frame, &ti); 
-		logln("Run finished.");
-		logln("Resuming at: " << call_frame->ip());
-		if(DEBUG) call_frame->dump();
+		TRACK_TIME(TRACE_SETUP_TIMER);
+		DEBUGLN("Run finished.");
+		DEBUGLN("Resuming at: " << call_frame->ip());
+		IF_DEBUG(call_frame->dump());
 
 		ip_ptr = vmm->addresses + call_frame->ip(); 
 		stack_ptr = call_frame->stk + call_frame->sp();
+		TRACK_TIME(INTERP_TIMER);
 		goto continue_to_run; 
 	}
 
  record_op:
 	{
+		TRACK_TIME(TRACE_SETUP_TIMER);
 		sp = stack_ptr - call_frame->stk;
 		Trace::Status s = state->recording_trace->add(op, cur_ip, sp, ip_ptr, vmm, call_frame); 
 		if(s == Trace::TRACE_FINISHED){
-			logln("Trace Recorded.\n--------------------------\n"); 
-			if(DEBUG) state->recording_trace->pretty_print(state, std::cout);
+			DEBUGLN("Trace Recorded.\n--------------------------\n"); 
+			IF_DEBUG(state->recording_trace->pretty_print(state, std::cout));
+			TRACK_TIME(TRACE_COMPILER_TIMER);
 			state->recording_trace->compile(state);
+			TRACK_TIME(TRACE_SETUP_TIMER);
 			state->recording_trace->store();
-			if(DEBUG) state->recording_trace->ultimate_parent()->dump_to_graph(state);
+			IF_DEBUG(state->recording_trace->ultimate_parent()->dump_to_graph(state));
 			state->recording_trace = NULL; 
 		} 
 		else if(s == Trace::TRACE_CANCEL){
 			delete state->recording_trace; 
 			state->recording_trace = NULL;																
 		}
+		TRACK_TIME(INTERP_TIMER);
 		goto **ip_ptr++;
 	}
 
  record_nested_trace:
 	{
 		/* Add a virtual op that will cause call of nested trace to be emitted */ 
-
+		TRACK_TIME(TRACE_SETUP_TIMER);
 		sp = stack_ptr - call_frame->stk;
 		state->recording_trace->add(
 			InstructionSequence::insn_nested_trace, cur_ip, sp, ip_ptr, vmm, call_frame); 
@@ -210,14 +220,16 @@ Object* VMMethod::resumable_interpreter(STATE,
 		ti.nested = true; 
 		Trace* trace = vmm->traces[cur_ip];
 		ti.trace = trace; 
-		logln("Running nested trace while recording.\n"); 
+		DEBUGLN("Running nested trace while recording.\n"); 
+		TRACK_TIME(ON_TRACE_TIMER);
 		int result = trace->executor(state, call_frame, &ti); 
+		TRACK_TIME(TRACE_SETUP_TIMER);
 
-		/* If traceinfo answers false to nestable, the nested trace must have bailed into */ 
+		/* If result is -1, the nested trace must have bailed into */ 
 		/* uncommon interpreter, we consider this recording invalidated.  */ 
 		if(result == -1){
-			logln("Exit at trace_pc: " << ti.exit_trace_pc << "\n"); 
-			logln("Failed to record nested trace, throwing away recording\n"); 
+			DEBUGLN("Exit at trace_pc: " << ti.exit_trace_pc << "\n"); 
+			DEBUGLN("Failed to record nested trace, throwing away recording\n"); 
 			delete state->recording_trace; 
 			state->recording_trace = NULL; 
 		}																																
@@ -225,12 +237,13 @@ Object* VMMethod::resumable_interpreter(STATE,
 			/* Otherwise, we know that the */ 
 			/* trace exited politely and we've successfully recorded a call to  */ 
 			/* a nested trace. */
-			logln("Polite exit.\n"); 
+			DEBUGLN("Polite exit.\n"); 
 			vmm->traces[cur_ip]->expected_exit_ip = ti.exit_ip; 
 		}
 
 		ip_ptr = vmm->addresses + call_frame->ip(); 
 		stack_ptr = call_frame->stk + call_frame->sp();
+		TRACK_TIME(INTERP_TIMER);
 		goto continue_to_run; 
 	}
 	
@@ -272,7 +285,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 				/* Start recording after threshold is hit..*/										\
 				if(vmm->traces[cur_ip] == NULL &&																\
 					 vmm->trace_counters[cur_ip] > 50){														\
-					logln("Start recording trace.\n");														\
+					DEBUGLN("Start recording trace.\n");													\
 					sp = stack_ptr - call_frame->stk;															\
 					state->recording_trace = new Trace(op, cur_ip, sp, ip_ptr, vmm, call_frame); \
 				}																																\
@@ -379,7 +392,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 		break;
 	} // switch
 
-	logln("bug!\n");
+	DEBUGLN("bug!\n");
 	call_frame->print_backtrace(state);
 	abort();
 	return NULL;
@@ -391,7 +404,8 @@ Object* VMMethod::uncommon_interpreter(STATE,
                                        CallFrame* const call_frame_)
 {
 
-	logln("Entering uncommon...");
+	DEBUGLN("Entering uncommon...");
+	TRACK_TIME(UNCOMMON_INTERP_TIMER);
 
 	VMMethod* vmm = vmm_;
 	CallFrame* call_frame = call_frame_;
@@ -403,8 +417,9 @@ Object* VMMethod::uncommon_interpreter(STATE,
 	state->trace_exec_enabled = false;
 
 	while(call_frame->is_traced_frame()){
-		if(DEBUG) call_frame->dump();
+		IF_DEBUG(call_frame->dump());
 		result = resumable_interpreter(state, vmm, call_frame, true);
+		TRACK_TIME(UNCOMMON_INTERP_TIMER);
 		call_frame = call_frame->previous;
 		vmm = call_frame->cm->backend_method();
 		call_frame->stk_push(result);
@@ -412,7 +427,7 @@ Object* VMMethod::uncommon_interpreter(STATE,
 
 	state->trace_exec_enabled = true;
 
-	logln("Exiting uncommon..");
+	DEBUGLN("Exiting uncommon..");
 
 	return result;
 }
@@ -576,7 +591,7 @@ Object* VMMethod::debugger_interpreter(STATE,
     break;
   } // switch
 
-  logln("bug!\n");
+  DEBUGLN("bug!\n");
   call_frame->print_backtrace(state);
   abort();
   return NULL;

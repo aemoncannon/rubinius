@@ -983,29 +983,9 @@ extern "C" {
 
   int rbx_side_exit(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
   {
-		logln("Side-exited"); 
-		if(DEBUG) { call_frame->dump(); }
-
-		if(ti->nested){
-			logln("..from nested trace."); 
-			ti->exit_call_frame = call_frame;
-			ti->exit_ip = exit_pc;
-			ti->exit_trace_pc = trace_pc;
-			if(ti->recording && call_frame == ti->entry_call_frame){
-				logln("Successful nested recording, returning 1."); 
-				return 1;
-			}
-			else if(!(ti->recording) && call_frame == ti->entry_call_frame && exit_pc == ti->expected_exit_ip){
-				logln("Successful nested run, returning 1."); 
-				return 1;
-			}
-		}
-
-		// If a trace or branch trace exits at it's expected anchor...
-		else if(call_frame == ti->entry_call_frame && exit_pc == ti->expected_exit_ip){
-			logln("Exited at expected ip and call_frame, don't look for branch."); 
-			return 0;
-		}
+		TRACK_TIME(IN_EXIT_TIMER);
+		DEBUGLN("Side-exited"); 
+		IF_DEBUG(call_frame->dump());
 
 		bool save_expected = ti->expected_exit_ip;
 		bool save_nested = ti->nested;
@@ -1015,17 +995,19 @@ extern "C" {
 		
 		VMMethod* vmm = call_frame->cm->backend_method();
 		Trace* trace = vmm->traces[start_pc];
-		logln("Looking for trace at " << vmm << ", " << start_pc << "..."); 		
+		DEBUGLN("Looking for trace at " << vmm << ", " << start_pc << "..."); 		
 		if(trace != NULL && trace->parent == ti->trace){
-			logln("Found branch trace..."); 
+			DEBUGLN("Found branch trace..."); 
 			// There's a side trace to try...
 			ti->expected_exit_ip = expected_exit_pc;
 			ti->nested = false;
 			ti->recording = false;
 			ti->entry_call_frame = call_frame;
 			ti->trace = trace;
+			TRACK_TIME(ON_TRACE_TIMER);
 			int result = trace->executor(state, call_frame, ti);
-			logln("Result of branch is " << result); 
+			TRACK_TIME(IN_EXIT_TIMER);
+			DEBUGLN("Result of branch is " << result); 
 			ti->expected_exit_ip = save_expected;
 			ti->nested = save_nested;
 			ti->recording = save_recording;
@@ -1036,7 +1018,7 @@ extern "C" {
 			return result;
 		}
 		else{
-			logln("No branch to continue on. Exiting."); 
+			DEBUGLN("No branch to continue on. Exiting."); 
 			// There's no side trace to try :(
 			ti->exit_call_frame = call_frame;
 			ti->exit_ip = exit_pc;
@@ -1047,7 +1029,7 @@ extern "C" {
 			TraceNode* exit_node = exiting_trace->node_at(trace_pc);
 			assert(exit_node);
 			if(exit_node->bump_exit_hotness()){
-				logln("Exit node at " << ti->exit_ip << " got hot! Recording branch...");
+				DEBUGLN("Exit node at " << ti->exit_ip << " got hot! Recording branch...");
 				state->recording_trace = new Trace(exiting_trace, exit_node);
 				exit_node->clear_hotness();
 			}
@@ -1060,12 +1042,14 @@ extern "C" {
 			}
 
 			// Otherwise, just return directly to caller...
+			TRACK_TIME(ON_TRACE_TIMER);
 			return -1;
 		}
   }
 
   int rbx_call_nested_trace(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
   {
+		TRACK_TIME(IN_EXIT_TIMER);
 		bool save_expected = ti->expected_exit_ip;
 		bool save_nested = ti->nested;
 		bool save_recording = ti->recording;
@@ -1081,7 +1065,9 @@ extern "C" {
 		ti->trace = trace;
 
 		// call the nested trace
+		TRACK_TIME(ON_TRACE_TIMER);
 		int result = trace->executor(state, call_frame, ti);
+		TRACK_TIME(IN_EXIT_TIMER);
 
 		ti->expected_exit_ip = save_expected;
 		ti->exit_ip = exit_pc;
@@ -1090,6 +1076,7 @@ extern "C" {
 		ti->recording = save_recording;
 		ti->entry_call_frame = save_entry;
 		ti->trace = save_trace;
+		TRACK_TIME(ON_TRACE_TIMER);
 		return result;
   }
 

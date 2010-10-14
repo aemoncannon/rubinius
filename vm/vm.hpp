@@ -18,6 +18,7 @@
 
 #include "shared_state.hpp"
 #include "trace.hpp"
+#include "utilities.hpp"
 
 #include <vector>
 #include <map>
@@ -83,7 +84,13 @@ namespace rubinius {
     bool run_signals_;
     MethodMissingReason method_missing_reason_;
 
+
   public:
+
+		double trace_timers[7];
+		clock_t last_trace_clock;
+		int current_trace_timer;
+
     /* Data members */
     SharedState& shared;
     thread::Mutex local_lock_;
@@ -158,12 +165,24 @@ namespace rubinius {
     }
 
     void enable_tracing() {
-		tracing_enabled = true;
+			tracing_enabled = true;
     }
 
     void disable_tracing() {
-		tracing_enabled = false;
+			tracing_enabled = false;
     }
+
+    void start_trace_timer(int timer) {
+			if(tracing_enabled){
+				clock_t end = clock();
+				double ms = ((double) (end - last_trace_clock)) / (CLOCKS_PER_SEC / 1000.0);
+				trace_timers[current_trace_timer] += ms;
+				current_trace_timer = timer;
+				last_trace_clock = clock();
+			}
+    }
+
+    void dump_trace_timers();
 
     Globals& globals() {
       return shared.globals;
@@ -257,20 +276,20 @@ namespace rubinius {
     Object* new_object_from_type(Class* cls, TypeInfo* ti);
 
     template <class T>
-      T* new_object(Class *cls) {
-        return reinterpret_cast<T*>(new_object_typed(cls, sizeof(T), T::type));
-      }
+		T* new_object(Class *cls) {
+			return reinterpret_cast<T*>(new_object_typed(cls, sizeof(T), T::type));
+		}
 
     template <class T>
-      T* new_struct(Class* cls, size_t bytes = 0) {
-        T* obj = reinterpret_cast<T*>(new_object_typed(cls, sizeof(T) + bytes, T::type));
-        return obj;
-      }
+		T* new_struct(Class* cls, size_t bytes = 0) {
+			T* obj = reinterpret_cast<T*>(new_object_typed(cls, sizeof(T) + bytes, T::type));
+			return obj;
+		}
 
     template <class T>
-      T* new_object_mature(Class *cls) {
-        return reinterpret_cast<T*>(new_object_typed_mature(cls, sizeof(T), T::type));
-      }
+		T* new_object_mature(Class *cls) {
+			return reinterpret_cast<T*>(new_object_typed_mature(cls, sizeof(T), T::type));
+		}
 
     // Create an uninitialized Class object
     Class* new_basic_class(Class* sup);

@@ -1,3 +1,6 @@
+* Constants for trace return codes
+* Specialize exit stubs for situation. 
+ - stubs from known side-exits should skip right to branch check
 
 * Regression tests!!!
 

@@ -141,7 +141,79 @@ namespace rubinius {
 			Value* exit_pc = info()->root_info()->exit_ip_phi;
 			Value* exit_cf = info()->root_info()->exit_cf_phi;
 
-			// constant for this trace
+			// Do fast checks to see if we are a nested trace that is
+			// finishing, or if we are otherwise exiting in a polite way,
+			// and should simply return to caller.
+
+			Value* recording_pos = get_field(info()->trace_info(), offset::trace_info_recording);
+			Value* recording = b().CreateIntCast(b().CreateLoad(recording_pos, "recording"), ls_->Int1Ty, "recording");
+			Value* not_recording = b().CreateNot(recording, "not_recording");
+
+			Value* nested_pos = get_field(info()->trace_info(), offset::trace_info_nested);
+			Value* nested = b().CreateIntCast(b().CreateLoad(nested_pos, "nested"), ls_->Int1Ty, "nested");
+			Value* not_nested = b().CreateNot(nested, "not_nested");
+
+			Value* entry_cf_pos = get_field(info()->trace_info(), offset::trace_info_entry_cf);
+			Value* entry_call_frame = b().CreateLoad(entry_cf_pos, "save_entry_call_frame");
+
+			Value* exp_exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_expected_exit_ip);
+			Value* expected_exit_ip = b().CreateLoad(exp_exit_ip_pos, "save_expected_exit_ip");
+
+			Value* exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_exit_ip);
+			Value* exit_trace_pc_pos = get_field(info()->trace_info(), offset::trace_info_exit_trace_pc);
+
+			Value* exit_cf_pos = get_field(info()->trace_info(), offset::trace_info_exit_cf);
+
+      Value* ip_cmp = b().CreateICmpEQ(exit_pc, expected_exit_ip, "exiting_at_expected_ip_p");
+      Value* cf_cmp = b().CreateICmpEQ(entry_call_frame, exit_cf, "at_expected_call_frame_p");
+
+			// Store information about exit into TraceInfo
+			b().CreateStore(exit_pc, exit_ip_pos);
+			// So we know where in the trace we exited (useful for debugging)...
+      b().CreateStore(exit_trace_pc, exit_trace_pc_pos);
+      b().CreateStore(exit_cf, exit_cf_pos);
+
+      BasicBlock* cont = new_block("continue");
+      BasicBlock* exit = new_block("exit");
+
+			// If we are recording (which makes this trace a nested trace candidate by definition), 
+			// and the current call_frame is this trace's home call_frame,
+			// return 1 directly to the caller of the trace. Result will
+			// be that this trace will be recorded as a nested trace.
+      Value* anded = b().CreateAnd(recording, cf_cmp, "and");
+      b().CreateCondBr(anded, exit, cont);
+      set_block(exit);
+			return_value(int32(1));
+      set_block(cont);
+
+			// If we are not recording, and this was a nested trace, and the current call_frame is 
+			// this trace's home call_frame, and the ip we are exiting to is the ip that the calling trace was expecting,
+			// exit directly to the caller of the trace -  (this informs caller
+			// that the trace exited politely, so parent trace doesn't have to pop itself)
+      cont = new_block("continue");
+      exit = new_block("exit");
+      anded = b().CreateAnd(not_recording, cf_cmp, "and");
+      anded = b().CreateAnd(anded, nested, "and");
+      anded = b().CreateAnd(anded, ip_cmp, "and");
+      b().CreateCondBr(anded, exit, cont);
+			set_block(exit);
+			return_value(int32(1));
+			set_block(cont);
+
+			// If we are not recording, and this trace is not being run as a nested trace, and  current call_frame 
+			// is this trace's home call_frame, and we exited on the expected ip, return 0 to the caller of the trace
+      cont = new_block("continue");
+      exit = new_block("exit");
+      anded = b().CreateAnd(not_recording, cf_cmp, "and");
+      anded = b().CreateAnd(anded, not_nested, "and");
+      anded = b().CreateAnd(anded, ip_cmp, "and");
+      b().CreateCondBr(anded, exit, cont);
+			set_block(exit);
+			return_value(int32(0));
+      set_block(cont);
+			
+
+			// Constant for this trace
 			Value* expected_exit_pc = int32(trace_->anchor->pc);
 
 			Signature sig(ls_, ls_->Int32Ty);
@@ -152,8 +224,6 @@ namespace rubinius {
 			sig << ls_->Int32Ty;
 			sig << ls_->Int32Ty;
 			sig << ls_->ptr_type("TraceInfo");
-
-
 
 			Value* call_args[] = {
 				info()->vm(),
@@ -167,14 +237,11 @@ namespace rubinius {
 
 			Value* ret = sig.call("rbx_side_exit", call_args, 7, "", b());
 
-
-			Value* nested_completed_p = b().CreateICmpEQ(ret, int32(1), "nested_completed_p");
 			Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
-			Value* cond = b().CreateOr(nested_completed_p, bailed_p);
 
-      BasicBlock* cont = new_block("continue");
+      cont = new_block("continue");
       BasicBlock* collapse_b = new_block("collapse_b");
-      b().CreateCondBr(cond, collapse_b, cont);
+      b().CreateCondBr(bailed_p, collapse_b, cont);
 
       set_block(collapse_b);
 			return_value(ret);

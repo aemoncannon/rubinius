@@ -78,7 +78,6 @@ namespace rubinius {
 			valid_flag = b().CreateAlloca(ls_->Int1Ty, 0, "valid_flag");
 			
 			//stack
-
 			Value* stk_base = get_field(call_frame, offset::cf_stk);
 			stk_base = b().CreateBitCast(stk_base, obj_ary_type, "obj_ary_type");
 			info_->set_stack(stk_base);
@@ -95,6 +94,9 @@ namespace rubinius {
 			info_->set_args(vars);
 
 			info_->set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
+
+			// Allocate traceinfo that will be used to store info about nested and branch traces
+			info_->set_out_trace_info(b().CreateAlloca(ls_->type("TraceInfo"), 0, "out_trace_info"));
 			
 			// ip
 			Value* ip_mem = get_field(call_frame, offset::cf_ip);
@@ -159,10 +161,10 @@ namespace rubinius {
 
 			void call(Trace* trace, TraceNode* node){
 
-				logln("\n\n\nCompiling node: ");
-				logln("sp is: " << v_.sp());
-				if(DEBUG) node->pretty_print(VM::current_state(), std::cout);
-				logln("\nsp is: " << v_.sp());
+				DEBUGLN("\n\n\nCompiling node: ");
+				DEBUGLN("sp is: " << v_.sp());
+				IF_DEBUG(node->pretty_print(VM::current_state(), std::cout));
+				DEBUGLN("\nsp is: " << v_.sp());
 				trace->dispatch(v_, node);
 
 				// if(v_.b().GetInsertBlock()->getTerminator() == NULL) {

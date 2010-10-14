@@ -26,6 +26,7 @@
 #include "call_frame.hpp"
 #include "signal.hpp"
 #include "configuration.hpp"
+#include "utilities.hpp"
 
 #include "util/thread.hpp"
 
@@ -51,6 +52,8 @@ namespace rubinius {
     , stack_start_(0)
     , profiler_(0)
     , run_signals_(false)
+		, last_trace_clock(0)
+		, current_trace_timer(0)
     , shared(shared)
     , waiter_(NULL)
     , om(shared.om)
@@ -67,6 +70,7 @@ namespace rubinius {
   {
     probe.set(Qnil, &globals().roots);
     set_stack_size(cStackDepthMax);
+		for(int i = 0; i < NUM_TIMERS; i++) trace_timers[i] = 0;
   }
 
   void VM::write_trace_graph_output(std::string& str) {
@@ -411,6 +415,23 @@ namespace rubinius {
   void VM::print_backtrace() {
     abort();
   }
+
+	void VM::dump_trace_timers(){
+		
+		double sum = 0.0;
+		for(int i = 1; i < NUM_TIMERS; i++) sum += trace_timers[i];
+
+		std::cout << endl;
+
+		for(int i = 1; i < NUM_TIMERS; i++) {
+			std::cout << TRACE_TIMER_LABELS[i] << ": " << endl;
+			std::cout << trace_timers[i] / sum * 100.0 << "%";
+			std::cout << " (" << trace_timers[i] << " ms)";
+			std::cout << endl << endl;
+		}
+
+		std::cout << "Total ms with tracing enabled: " << sum << endl;
+	}
 
   void VM::install_waiter(Waiter& waiter) {
     waiter_ = &waiter;
