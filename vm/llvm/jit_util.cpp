@@ -1047,6 +1047,35 @@ extern "C" {
 		}
   }
 
+
+
+  int rbx_dummy_trace(STATE, CallFrame* call_frame, TraceInfo* ti)
+  {
+			TRACK_TIME(IN_EXIT_TIMER);
+			DEBUGLN("No branch to continue on. Exiting."); 
+
+			// Maybe start recording a branch trace...
+			Trace* exiting_trace = ti->trace;
+			TraceNode* exit_node = exiting_trace->node_at(trace_pc);
+			assert(exit_node);
+			if(exit_node->bump_exit_hotness()){
+				DEBUGLN("Exit node at " << ti->exit_ip << " got hot! Recording branch...");
+				state->recording_trace = new Trace(exiting_trace, exit_node);
+				exit_node->clear_hotness();
+			}
+
+			// Bail to uncommon if we've stacked up call_frames before the exit.
+			// Or if a nested trace exited unexpectedly (we don't know _where_ it
+			// ended up)...
+			if(call_frame->is_traced_frame() || ti->nested){
+				rbx_continue_uncommon(state, call_frame);
+			}
+
+			// Otherwise, just return directly to caller...
+			TRACK_TIME(ON_TRACE_TIMER);
+			return -1;
+  }
+
   int rbx_call_nested_trace(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
   {
 		TRACK_TIME(IN_EXIT_TIMER);

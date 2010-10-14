@@ -211,31 +211,30 @@ namespace rubinius {
 			set_block(exit);
 			return_value(int32(0));
       set_block(cont);
-			
 
-			// Constant for this trace
-			Value* expected_exit_pc = int32(trace_->anchor->pc);
 
-			Signature sig(ls_, ls_->Int32Ty);
-			sig << ls_->ptr_type("VM");
-			sig << ls_->ptr_type("CallFrame");
-			sig << ls_->Int32Ty;
-			sig << ls_->Int32Ty;
-			sig << ls_->Int32Ty;
-			sig << ls_->Int32Ty;
-			sig << ls_->ptr_type("TraceInfo");
+			// Otherwise look up a branch for this location (this needs to be a lot faster)
+			Value* trace = info()->trace();
+			Value* exit_tbl_pos = get_field(info()->trace(), offset::trace_exit_tbl);
+			Value* branch_trace = b().CreateConstGEP2_32(exit_tbl_pos, 0, 
+																									 int32(cur_trace_node_->side_exit_id), 
+																									 "ip_pos");
+			Value* executor_pos = get_field(branch_trace, offset::trace_executor);
+			Value* executor = llvm::cast<llvm::Function>(b().CreateLoad(executor_pos, "executor"));
+
+			// XXX setup out trace info here
+//			ti->expected_exit_ip = expected_exit_pc;
+//			ti->nested = false;
+//			ti->recording = false;
+//			ti->entry_call_frame = call_frame;
+//			ti->trace = trace;
 
 			Value* call_args[] = {
 				info()->vm(),
 				exit_cf,
-				next_pc,
-				exit_pc,
-				expected_exit_pc,
-				exit_trace_pc,
-				info()->trace_info()
+				info()->out_trace_info()
 			};
-
-			Value* ret = sig.call("rbx_side_exit", call_args, 7, "", b());
+			Value* ret = llvm::CallInst::Create(executor, call_args, call_args + 7, "", b()); 
 
 			Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
 
