@@ -137,7 +137,6 @@ namespace rubinius {
 			// Inputs to the exit pad
 			
 			Value* exit_trace_node = info()->root_info()->trace_node_phi;
-			Value* next_pc = info()->root_info()->next_ip_phi;
 			Value* exit_pc = info()->root_info()->exit_ip_phi;
 			Value* exit_cf = info()->root_info()->exit_cf_phi;
 
@@ -214,7 +213,7 @@ namespace rubinius {
 
 
 			// Otherwise look up a branch for this location (this needs to be faster)
-			Value* executor = load_field(exit_trace_node, offset::trace_node_branch_trace_executor, "executor");
+			Value* executor = load_field(exit_trace_node, offset::trace_node_branch_executor, "executor");
 
 			// Setup out traceinfo here
 			Value* ti_out = info()->out_trace_info();
@@ -227,12 +226,19 @@ namespace rubinius {
 			store_field(ti_out, offset::trace_info_entry_cf, exit_cf);
 			store_field(ti_out, offset::trace_info_exit_trace_node, exit_trace_node);
 
+
+			std::vector<const Type*> types;
+			types.push_back(ls_->ptr_type("VM"));
+			types.push_back(ls_->ptr_type("CallFrame"));
+			types.push_back(ls_->ptr_type("TraceInfo"));
+      FunctionType* ft = FunctionType::get(ls_->Int32Ty, types, false);
+			executor = b().CreateBitCast(executor, ft, "cast executor");			
       Value* call_args[] = {
 				info()->vm(),
 				exit_cf,
 				ti_out
       };
-      Value* ret = b().CreateCall(executor, call_args, call_args+2, "ci");
+      Value* ret = b().CreateCall(executor, call_args, call_args+2, "call_branch_trace");
 
 			// Did the branch-trace bail? Parent trace should collapse, too.
 			Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
@@ -263,34 +269,40 @@ namespace rubinius {
 
 
     void visit_nested_trace() {
-			Value* exit_cf = info()->call_frame(); 
-			Value* start_pc = int32(cur_trace_node_->pc);
-			Value* exit_pc = int32(cur_trace_node_->pc);
-			Value* expected_exit_pc = int32(cur_trace_node_->nested_trace->expected_exit_ip);
-			Value* trace_pc = int32(cur_trace_node_->trace_pc);
+
 
 			// Don't need to flush current call frame. Nested trace will take care of that if
 			// it side-exits.
 			flush_call_stack();
 
-			Signature sig(ls_, ls_->Int32Ty);
-			sig << "VM";
-			sig << "CallFrame";
-			sig << ls_->Int32Ty;
-			sig << ls_->Int32Ty;
-			sig << ls_->Int32Ty;
-			sig << ls_->Int32Ty;
-			sig << "TraceInfo";
-			Value* call_args[] = {
+			// Otherwise look up a branch for this location (this needs to be faster)
+			Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
+			Value* executor = load_field(exit_trace_node, offset::trace_node_nested_executor, "nested executor");
+
+			// Setup out traceinfo here
+			Value* ti_out = info()->out_trace_info();
+
+			// All branch traces are expected to loop back to trace anchor
+			Value* expected_exit_pc = int32(cur_trace_node_->nested_trace->expected_exit_ip);
+			store_field(ti_out, offset::trace_info_expected_exit_ip, expected_exit_pc);
+
+			store_field(ti_out, offset::trace_info_nested, int32(1));
+			store_field(ti_out, offset::trace_info_recording, int32(0));
+			store_field(ti_out, offset::trace_info_entry_cf, info()->call_frame());
+
+			std::vector<const Type*> types;
+			types.push_back(ls_->ptr_type("VM"));
+			types.push_back(ls_->ptr_type("CallFrame"));
+			types.push_back(ls_->ptr_type("TraceInfo"));
+      FunctionType* ft = FunctionType::get(ls_->Int32Ty, types, false);
+			executor = b().CreateBitCast(executor, ft, "cast executor");			
+      Value* call_args[] = {
 				info()->vm(),
-				exit_cf,
-				start_pc,
-				exit_pc,
-				expected_exit_pc,
-				trace_pc,
-				info()->trace_info()
-			};
-			Value* ret = sig.call("rbx_call_nested_trace", call_args, 7, "", b());
+				info()->call_frame(),
+				ti_out
+      };
+      Value* ret = b().CreateCall(executor, call_args, call_args+2, "call_branch_trace");
+
 			Value* not_nestable = b().CreateICmpEQ(ret, int32(-1), "nestable_p");
 
       BasicBlock* cont = new_block("continue");
@@ -597,7 +609,6 @@ namespace rubinius {
 			ensure_trace_exit_pad();
 			BasicBlock* cur = current_block();
 			info()->root_info()->exit_ip_phi->addIncoming(int32(cur_trace_node_->pc), cur);
-			info()->root_info()->next_ip_phi->addIncoming(int32(next_ip), cur);
 			info()->root_info()->trace_node_phi->addIncoming(constant(
 																												 cur_trace_node_, 
 																												 ls_->ptr_type("TraceNode")),
@@ -981,30 +992,30 @@ namespace rubinius {
 			sig.call("rbx_show_int", call_args, 1, "", b());
 		}
 
-		void dump_str(char* str){
+		// void dump_str(char* str){
 
-			vector<const Type*> arg_types;
-			arg_types.push_back(PointerType::get(Type::SByteTy));
-			Function* f = module_.getOrInsertFunction(
-				"printf",
-				FunctionType::get(Type::IntTy, arg_types, true));
+		// 	vector<const Type*> arg_types;
+		// 	arg_types.push_back(PointerType::get(Type::SByteTy));
+		// 	Function* f = module_.getOrInsertFunction(
+		// 		"printf",
+		// 		FunctionType::get(Type::IntTy, arg_types, true));
 
-			Constant* constStr = ConstantArray::get(str);
-			GlobalVariable* gv = new GlobalVariable(
-				constStr->getType(), 
-				true, GlobalValue::InternalLinkage, 
-				constStr, "", module_);
+		// 	Constant* constStr = ConstantArray::get(str);
+		// 	GlobalVariable* gv = new GlobalVariable(
+		// 		constStr->getType(), 
+		// 		true, GlobalValue::InternalLinkage, 
+		// 		constStr, "", module_);
 
-			std::vector<Constant*> geplist;
-			geplist.push_back(ConstantUInt::get(Type::UIntTy,0));
-			geplist.push_back(ConstantUInt::get(Type::UIntTy,0));
-			Constant* gep = ConstantExpr::getGetElementPtr(gv,geplist);
+		// 	std::vector<Constant*> geplist;
+		// 	geplist.push_back(ConstantUInt::get(Type::UIntTy,0));
+		// 	geplist.push_back(ConstantUInt::get(Type::UIntTy,0));
+		// 	Constant* gep = ConstantExpr::getGetElementPtr(gv,geplist);
 
-			std::vector<Value*> args;
-			args.push_back(gep);
+		// 	std::vector<Value*> args;
+		// 	args.push_back(gep);
 
-			llvm::CallInst::Create(f, args.begin(), args.end(), "call_printf", b());
-		}
+		// 	llvm::CallInst::Create(f, args.begin(), args.end(), "call_printf", b());
+		// }
 
 
 

@@ -939,46 +939,7 @@ extern "C" {
     self->set_table_ivar(state, name, val);
   }
 
-  Object* rbx_continue_uncommon(STATE, CallFrame* call_frame)
-  {
-    LLVMState::get(state)->add_uncommons_taken();
-
-    VMMethod* vmm = call_frame->cm->backend_method();
-
-    /*
-			InlineCache* cache = 0;
-
-			if(vmm->opcodes[call_frame->ip()] == InstructionSequence::insn_send_stack) {
-      cache = reinterpret_cast<InlineCache*>(vmm->opcodes[call_frame->ip() + 1]);
-			} else if(vmm->opcodes[call_frame->ip()] == InstructionSequence::insn_send_method) {
-      cache = reinterpret_cast<InlineCache*>(vmm->opcodes[call_frame->ip() + 1]);
-			} else if(vmm->opcodes[call_frame->ip()] == InstructionSequence::insn_send_stack_with_block) {
-      cache = reinterpret_cast<InlineCache*>(vmm->opcodes[call_frame->ip() + 1]);
-			}
-
-			if(cache) {
-      if(cache->name->symbol_p()) {
-			std::cout << "Uncommon trap for send: " << cache->name->c_str(state) << "\n";
-      }
-			}
-    */
-
-    if(call_frame->is_inline_frame()) {
-      // Fix up this inlined block.
-      if(vmm->parent()) {
-        CallFrame* creator = call_frame->previous->previous;
-        assert(creator);
-
-        VariableScope* parent = creator->promote_scope(state);
-        call_frame->scope->set_parent(parent);
-
-        // Only support one depth!
-        assert(!creator->cm->backend_method()->parent());
-      }
-    }
-
-    return VMMethod::uncommon_interpreter(state, vmm, call_frame);
-  }
+  
 
 
 //  int rbx_side_exit(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
@@ -1049,39 +1010,38 @@ extern "C" {
 
 
 
-
-  int rbx_call_nested_trace(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
-  {
-		TRACK_TIME(IN_EXIT_TIMER);
-		bool save_expected = ti->expected_exit_ip;
-		bool save_nested = ti->nested;
-		bool save_recording = ti->recording;
-		CallFrame* save_entry = ti->entry_call_frame;
-		Trace* save_trace = ti->trace;
-
-		Trace* trace = call_frame->cm->backend_method()->traces[start_pc];
-		assert(trace);
-		ti->expected_exit_ip = expected_exit_pc;
-		ti->nested = true;
-		ti->recording = false;
-		ti->entry_call_frame = call_frame;
-		ti->trace = trace;
-
-		// call the nested trace
-		TRACK_TIME(ON_TRACE_TIMER);
-		int result = trace->executor(state, call_frame, ti);
-		TRACK_TIME(IN_EXIT_TIMER);
-
-		ti->expected_exit_ip = save_expected;
-		ti->exit_ip = exit_pc;
-		ti->exit_trace_pc = trace_pc;
-		ti->nested = save_nested;
-		ti->recording = save_recording;
-		ti->entry_call_frame = save_entry;
-		ti->trace = save_trace;
-		TRACK_TIME(ON_TRACE_TIMER);
-		return result;
-  }
+//  int rbx_call_nested_trace(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
+//  {
+//		TRACK_TIME(IN_EXIT_TIMER);
+//		bool save_expected = ti->expected_exit_ip;
+//		bool save_nested = ti->nested;
+//		bool save_recording = ti->recording;
+//		CallFrame* save_entry = ti->entry_call_frame;
+//		Trace* save_trace = ti->trace;
+//
+//		Trace* trace = call_frame->cm->backend_method()->traces[start_pc];
+//		assert(trace);
+//		ti->expected_exit_ip = expected_exit_pc;
+//		ti->nested = true;
+//		ti->recording = false;
+//		ti->entry_call_frame = call_frame;
+//		ti->trace = trace;
+//
+//		// call the nested trace
+//		TRACK_TIME(ON_TRACE_TIMER);
+//		int result = trace->executor(state, call_frame, ti);
+//		TRACK_TIME(IN_EXIT_TIMER);
+//
+//		ti->expected_exit_ip = save_expected;
+//		ti->exit_ip = exit_pc;
+//		ti->exit_trace_pc = trace_pc;
+//		ti->nested = save_nested;
+//		ti->recording = save_recording;
+//		ti->entry_call_frame = save_entry;
+//		ti->trace = save_trace;
+//		TRACK_TIME(ON_TRACE_TIMER);
+//		return result;
+//  }
 
 
   Object* rbx_restart_interp(STATE, CallFrame* call_frame, Dispatch& msg, Arguments& args) {

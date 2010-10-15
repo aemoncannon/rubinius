@@ -218,7 +218,7 @@ namespace rubinius {
 			return b().CreateLoad(pos, name);
 		}
 
-		Value* store_field(Value* val, int which, Value* toStore) {
+		void store_field(Value* val, int which, Value* toStore) {
 			Value* pos =  b().CreateConstGEP2_32(val, 0, which);
 			b().CreateStore(toStore, pos);
 		}

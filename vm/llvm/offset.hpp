@@ -5,6 +5,7 @@ namespace offset {
 
   const static int trace_node_branch_trace = 0;
   const static int trace_node_branch_executor = 1;
+  const static int trace_node_nested_executor = 2;
 
   const static int trace_executor = 0;
 

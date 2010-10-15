@@ -5,11 +5,12 @@ GRAPHS = false
 
 
 TESTS = [
+
+         {:file => "loop.rb", :comment => "", :iters => 1000000},
+
          {:file => "sqrt.rb", :comment => "(digs into stdlib)", :iters => 10000},
 
          {:file => "sqrt_int.rb", :comment => "(setup_unwind,pop_unwind, nothing thrown)", :iters => 10000}, 
-
-         {:file => "loop.rb", :comment => "", :iters => 1000000},
 
          {:file => "nest_simple.rb", :comment => "", :iters => 100000},
 

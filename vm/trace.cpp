@@ -6,6 +6,7 @@
 #include "builtin/symbol.hpp"
 #include "vm/builtin/compiledmethod.hpp"
 #include "trace.hpp"
+#include "trace_info.hpp"
 #include "utilities.hpp"
 
 #include <iostream>
@@ -20,10 +21,12 @@
 namespace rubinius {
 
 
-	TraceNode::TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
+	TraceNode::TraceNode(Trace* trace, int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
 		: 
 		branch_trace(NULL),
 		branch_executor(&missing_branch_handler),
+		nested_executor(&missing_branch_handler),
+		trace(NULL),
 		op(op),
 		pc(pc),
 		sp(sp),
@@ -45,6 +48,7 @@ namespace rubinius {
 		exit_counter(0)
 
 	{
+		this->trace = trace;
 #include "vm/gen/instruction_trace_record.hpp"
 	}
 
@@ -100,19 +104,19 @@ namespace rubinius {
 
 		DEBUGLN("No branch to continue on. Exiting."); 
 		// Maybe start recording a branch trace...
-		Trace* exiting_trace = ti->trace;
 		TraceNode* exit_node = ti->exit_trace_node;
 		assert(exit_node);
 		if(exit_node->bump_exit_hotness()){
 			DEBUGLN("Exit node at " << ti->exit_ip << " got hot! Recording branch...");
-			state->recording_trace = new Trace(exiting_trace, exit_node);
+			state->recording_trace = new Trace(exit_node->trace, exit_node);
 			exit_node->clear_hotness();
 		}
 		// Bail to uncommon if we've stacked up call_frames before the exit.
 		// Or if a nested trace exited unexpectedly (we don't know _where_ it
 		// ended up)...
 		if(call_frame->is_traced_frame() || ti->nested){
-			rbx_continue_uncommon(state, call_frame);
+			VMMethod* vmm = call_frame->cm->backend_method();
+			VMMethod::uncommon_interpreter(state, vmm, call_frame);
 		}
 		// Otherwise, just return directly to caller...
 		TRACK_TIME(ON_TRACE_TIMER);
@@ -120,7 +124,7 @@ namespace rubinius {
   }
 
 	Trace::Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
-		anchor = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
+		anchor = new TraceNode(this, 0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
 		head = anchor;
 		entry = anchor;
 		pc_base_counter = 0;
@@ -149,7 +153,7 @@ namespace rubinius {
 				entry = head;
 				return TRACE_FINISHED;
 			}
-			head = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
+			head = new TraceNode(this, 0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
 			entry = head;
 			pc_base_counter = 0;
 			expected_exit_ip = -1;
@@ -230,7 +234,7 @@ namespace rubinius {
 				}
 			}
 
-			head = new TraceNode(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
+			head = new TraceNode(this, call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
 			head->active_send = active_send;
 			head->parent_send = parent_send;
 			head->prev = prev;
@@ -255,6 +259,8 @@ namespace rubinius {
 		vmm->traces[entry->pc] = this;
 		if(is_branch()){
 			parent_node->branch_trace = this;
+			assert(this->executor);
+			parent_node->branch_executor = this->executor;
 		}
 	}
 

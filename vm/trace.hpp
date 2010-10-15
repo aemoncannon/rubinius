@@ -32,6 +32,8 @@ namespace rubinius {
 	public:
 		Trace* branch_trace;
 		trace_executor branch_executor;
+		trace_executor nested_executor;
+		Trace* trace;
 		opcode op;
 		int pc;
 		int sp;
@@ -59,7 +61,7 @@ namespace rubinius {
 		intptr_t arg2;
 
 
-		TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+		TraceNode(Trace* trace, int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		void pretty_print(STATE, std::ostream& out);
 
