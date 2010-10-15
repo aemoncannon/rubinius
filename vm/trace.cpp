@@ -138,6 +138,7 @@ namespace rubinius {
 		this->parent = parent;
 		this->parent_node = parent_node;
 		anchor = parent->anchor;
+		expected_exit_ip = -1;
 		entry = NULL;
 		head = NULL;
 	}

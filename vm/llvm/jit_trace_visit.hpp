@@ -226,19 +226,19 @@ namespace rubinius {
 			store_field(ti_out, offset::trace_info_entry_cf, exit_cf);
 			store_field(ti_out, offset::trace_info_exit_trace_node, exit_trace_node);
 
+			// std::vector<const Type*> types;
+			// types.push_back(ls_->ptr_type("VM"));
+			// types.push_back(ls_->ptr_type("CallFrame"));
+			// types.push_back(ls_->ptr_type("TraceInfo"));
+      // FunctionType* ft = FunctionType::get(ls_->Int32Ty, types, false);
+			// executor = b().CreateBitCast(executor, ft, "cast executor");			
 
-			std::vector<const Type*> types;
-			types.push_back(ls_->ptr_type("VM"));
-			types.push_back(ls_->ptr_type("CallFrame"));
-			types.push_back(ls_->ptr_type("TraceInfo"));
-      FunctionType* ft = FunctionType::get(ls_->Int32Ty, types, false);
-			executor = b().CreateBitCast(executor, ft, "cast executor");			
       Value* call_args[] = {
 				info()->vm(),
 				exit_cf,
 				ti_out
       };
-      Value* ret = b().CreateCall(executor, call_args, call_args+2, "call_branch_trace");
+      Value* ret = b().CreateCall(executor, call_args, call_args+3, "call_branch_trace");
 
 			// Did the branch-trace bail? Parent trace should collapse, too.
 			Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
@@ -290,18 +290,12 @@ namespace rubinius {
 			store_field(ti_out, offset::trace_info_recording, int32(0));
 			store_field(ti_out, offset::trace_info_entry_cf, info()->call_frame());
 
-			std::vector<const Type*> types;
-			types.push_back(ls_->ptr_type("VM"));
-			types.push_back(ls_->ptr_type("CallFrame"));
-			types.push_back(ls_->ptr_type("TraceInfo"));
-      FunctionType* ft = FunctionType::get(ls_->Int32Ty, types, false);
-			executor = b().CreateBitCast(executor, ft, "cast executor");			
       Value* call_args[] = {
 				info()->vm(),
 				info()->call_frame(),
 				ti_out
       };
-      Value* ret = b().CreateCall(executor, call_args, call_args+2, "call_branch_trace");
+      Value* ret = b().CreateCall(executor, call_args, call_args+3, "call_branch_trace");
 
 			Value* not_nestable = b().CreateICmpEQ(ret, int32(-1), "nestable_p");
 

@@ -329,6 +329,7 @@ namespace rubinius {
       vm_ = info->vm();
       counter_ = info->counter();
 			root = info->root_info();
+			out_trace_info_ = info->out_trace_info();
 			trace_info_ = info->trace_info();
 			return_phi_ = info->return_phi();
 			return_pad_ = info->return_pad();
