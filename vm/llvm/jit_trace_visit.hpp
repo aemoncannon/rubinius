@@ -213,21 +213,19 @@ namespace rubinius {
       set_block(cont);
 
 
-			// Otherwise look up a branch for this location (this needs to be a lot faster)
-			Value* trace = info()->trace();
-			Value* exit_tbl_pos = get_field(info()->trace(), offset::trace_branch_tbl);
-			Value* branch_trace = b().CreateConstGEP2_32(exit_tbl_pos, 0, 
-																									 int32(cur_trace_node_->side_exit_index),
-																									 "ip_pos");
-			Value* executor = load_field(branch_trace, offset::trace_executor, "executor");
+			// Otherwise look up a branch for this location (this needs to be faster)
+			Value* executor = load_field(exit_trace_node, offset::trace_node_branch_trace_executor, "executor");
 
 			// Setup out traceinfo here
 			Value* ti_out = info()->out_trace_info();
+
 			// All branch traces are expected to loop back to trace anchor
 			store_field(ti_out, offset::trace_info_expected_exit_ip, int32(trace_->anchor->pc));
+
 			store_field(ti_out, offset::trace_info_nested, int32(0));
 			store_field(ti_out, offset::trace_info_recording, int32(0));
 			store_field(ti_out, offset::trace_info_entry_cf, exit_cf);
+			store_field(ti_out, offset::trace_info_exit_trace_node, exit_trace_node);
 
       Value* call_args[] = {
 				info()->vm(),
@@ -235,7 +233,6 @@ namespace rubinius {
 				ti_out
       };
       Value* ret = b().CreateCall(executor, call_args, call_args+2, "ci");
-
 
 			// Did the branch-trace bail? Parent trace should collapse, too.
 			Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");

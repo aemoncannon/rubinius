@@ -2,8 +2,11 @@
 #define RBX_LLVM_OFFSET_HPP
 
 namespace offset {
-  const static int trace_branch_tbl = 0;
-  const static int trace_executor = 1;
+
+  const static int trace_node_branch_trace = 0;
+  const static int trace_node_branch_executor = 1;
+
+  const static int trace_executor = 0;
 
   const static int trace_info_exit_ip = 0;
   const static int trace_info_exit_stk = 1;

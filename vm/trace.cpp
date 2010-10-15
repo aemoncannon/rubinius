@@ -21,26 +21,29 @@ namespace rubinius {
 
 
 	TraceNode::TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
-		: op(op),
-		  pc(pc),
-		  sp(sp),
-		  call_frame(call_frame),
-		  cm(call_frame->cm),
-		  send_cm(NULL),
-		  ip_ptr(ip_ptr),
-		  prev(NULL),
-		  next(NULL),
-			traced_send(false),
-			traced_yield(false),
-			active_send(NULL),
-			parent_send(NULL),
-			trace_pc(0),
-			pc_base(pc_base),
-			call_depth(depth),
-			nested_trace(NULL),
-			jump_taken(false),
-			exit_counter(0),
-			branch_trace(NULL)
+		: 
+		branch_trace(NULL),
+		branch_executor(&missing_branch_handler),
+		op(op),
+		pc(pc),
+		sp(sp),
+		call_frame(call_frame),
+		cm(call_frame->cm),
+		send_cm(NULL),
+		ip_ptr(ip_ptr),
+		prev(NULL),
+		next(NULL),
+		traced_send(false),
+		traced_yield(false),
+		active_send(NULL),
+		parent_send(NULL),
+		trace_pc(0),
+		pc_base(pc_base),
+		call_depth(depth),
+		nested_trace(NULL),
+		jump_taken(false),
+		exit_counter(0)
+
 	{
 #include "vm/gen/instruction_trace_record.hpp"
 	}
@@ -90,6 +93,31 @@ namespace rubinius {
 			out << ")";
 		}
 	}
+
+
+  int missing_branch_handler(STATE, CallFrame* call_frame, TraceInfo* ti){
+		TRACK_TIME(IN_EXIT_TIMER);
+
+		DEBUGLN("No branch to continue on. Exiting."); 
+		// Maybe start recording a branch trace...
+		Trace* exiting_trace = ti->trace;
+		TraceNode* exit_node = ti->exit_trace_node;
+		assert(exit_node);
+		if(exit_node->bump_exit_hotness()){
+			DEBUGLN("Exit node at " << ti->exit_ip << " got hot! Recording branch...");
+			state->recording_trace = new Trace(exiting_trace, exit_node);
+			exit_node->clear_hotness();
+		}
+		// Bail to uncommon if we've stacked up call_frames before the exit.
+		// Or if a nested trace exited unexpectedly (we don't know _where_ it
+		// ended up)...
+		if(call_frame->is_traced_frame() || ti->nested){
+			rbx_continue_uncommon(state, call_frame);
+		}
+		// Otherwise, just return directly to caller...
+		TRACK_TIME(ON_TRACE_TIMER);
+		return -1;
+  }
 
 	Trace::Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
 		anchor = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);

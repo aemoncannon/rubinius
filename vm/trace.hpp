@@ -30,6 +30,8 @@ namespace rubinius {
 
 	class TraceNode {
 	public:
+		Trace* branch_trace;
+		trace_executor branch_executor;
 		opcode op;
 		int pc;
 		int sp;
@@ -49,7 +51,7 @@ namespace rubinius {
 		Trace* nested_trace;
 		bool jump_taken;
 		int exit_counter;
-		Trace* branch_trace;
+
 
 		int total_size;
 		int numargs;
@@ -94,10 +96,11 @@ namespace rubinius {
 	};
 
 
+  int missing_branch_handler(STATE, CallFrame* call_frame, TraceInfo* ti);
+
 	class Trace {
 	public:
-		Trace *branch_tbl[MAX_BRANCHES];
-		trace_executor  executor;
+		trace_executor executor;
 		TraceNode* anchor;
 		TraceNode* head;
 		TraceNode* entry;
