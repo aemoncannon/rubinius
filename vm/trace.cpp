@@ -207,7 +207,6 @@ namespace rubinius {
 			head->parent_send = parent_send;
 			head->prev = prev;
 			prev->next = head;
-			node_map[head->trace_pc] = head;
 
 			if(op == InstructionSequence::insn_nested_trace){
 				head->nested_trace = vmm->traces[pc];

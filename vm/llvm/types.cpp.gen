@@ -376,6 +376,16 @@ mod->addTypeName("struct.rubinius::Selector", OpaqueTy_struct_rubinius__Selector
 mod->addTypeName("struct.rubinius::StackVariables", StructTy_struct_rubinius__StackVariables);
 mod->addTypeName("struct.rubinius::StaticScope", OpaqueTy_struct_rubinius__StaticScope);
 mod->addTypeName("struct.rubinius::Symbol", OpaqueTy_struct_rubinius__Symbol);
+std::vector<const Type*>StructTy_struct_rubinius__Trace_fields;
+PATypeHolder StructTy_struct_rubinius__Trace_fwd = OpaqueType::get(mod->getContext());
+PointerType* PointerTy_34 = PointerType::get(StructTy_struct_rubinius__Trace_fwd, 0);
+
+ArrayType* ArrayTy_33 = ArrayType::get(PointerTy_34, 10);
+
+StructTy_struct_rubinius__Trace_fields.push_back(ArrayTy_33);
+std::vector<const Type*>FuncTy_36_args;
+FuncTy_36_args.push_back(PointerTy_17);
+FuncTy_36_args.push_back(PointerTy_18);
 std::vector<const Type*>StructTy_struct_rubinius__TraceInfo_fields;
 StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(mod->getContext(), 32));
 StructTy_struct_rubinius__TraceInfo_fields.push_back(PointerTy_0);
@@ -386,10 +396,74 @@ StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(mod->getCo
 StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(mod->getContext(), 32));
 StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(mod->getContext(), 32));
 StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(mod->getContext(), 32));
-StructTy_struct_rubinius__TraceInfo_fields.push_back(IntegerType::get(mod->getContext(), 32));
+std::vector<const Type*>StructTy_struct_rubinius__TraceNode_fields;
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_18);
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_14);
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_14);
+PointerType* PointerTy_39 = PointerType::get(PointerTy_2, 0);
+
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_39);
+PATypeHolder PointerTy_38_fwd = OpaqueType::get(mod->getContext());
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_38_fwd);
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_38_fwd);
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 8));
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 8));
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_38_fwd);
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_38_fwd);
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_34);
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 8));
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_34);
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructType* StructTy_struct_rubinius__TraceNode = StructType::get(mod->getContext(), StructTy_struct_rubinius__TraceNode_fields, /*isPacked=*/false);
+mod->addTypeName("struct.rubinius::TraceNode", StructTy_struct_rubinius__TraceNode);
+
+PointerType* PointerTy_38 = PointerType::get(StructTy_struct_rubinius__TraceNode, 0);
+cast<OpaqueType>(PointerTy_38_fwd.get())->refineAbstractTypeTo(PointerTy_38);
+PointerTy_38 = cast<PointerType>(PointerTy_38_fwd.get());
+
+
+StructTy_struct_rubinius__TraceInfo_fields.push_back(PointerTy_38);
 StructType* StructTy_struct_rubinius__TraceInfo = StructType::get(mod->getContext(), StructTy_struct_rubinius__TraceInfo_fields, /*isPacked=*/false);
 mod->addTypeName("struct.rubinius::TraceInfo", StructTy_struct_rubinius__TraceInfo);
 
+PointerType* PointerTy_37 = PointerType::get(StructTy_struct_rubinius__TraceInfo, 0);
+
+FuncTy_36_args.push_back(PointerTy_37);
+FunctionType* FuncTy_36 = FunctionType::get(
+  /*Result=*/IntegerType::get(mod->getContext(), 32),
+  /*Params=*/FuncTy_36_args,
+  /*isVarArg=*/false);
+
+PointerType* PointerTy_35 = PointerType::get(FuncTy_36, 0);
+
+StructTy_struct_rubinius__Trace_fields.push_back(PointerTy_35);
+StructTy_struct_rubinius__Trace_fields.push_back(PointerTy_38);
+StructTy_struct_rubinius__Trace_fields.push_back(PointerTy_38);
+StructTy_struct_rubinius__Trace_fields.push_back(PointerTy_38);
+StructTy_struct_rubinius__Trace_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__Trace_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__Trace_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__Trace_fields.push_back(IntegerType::get(mod->getContext(), 32));
+StructTy_struct_rubinius__Trace_fields.push_back(PointerTy_34);
+StructTy_struct_rubinius__Trace_fields.push_back(PointerTy_38);
+StructType* StructTy_struct_rubinius__Trace = StructType::get(mod->getContext(), StructTy_struct_rubinius__Trace_fields, /*isPacked=*/false);
+mod->addTypeName("struct.rubinius::Trace", StructTy_struct_rubinius__Trace);
+cast<OpaqueType>(StructTy_struct_rubinius__Trace_fwd.get())->refineAbstractTypeTo(StructTy_struct_rubinius__Trace);
+StructTy_struct_rubinius__Trace = cast<StructType>(StructTy_struct_rubinius__Trace_fwd.get());
+
+
+mod->addTypeName("struct.rubinius::TraceInfo", StructTy_struct_rubinius__TraceInfo);
+mod->addTypeName("struct.rubinius::TraceNode", StructTy_struct_rubinius__TraceNode);
 mod->addTypeName("struct.rubinius::Tuple", StructTy_struct_rubinius__Tuple);
 mod->addTypeName("struct.rubinius::TypeInfo", OpaqueTy_struct_rubinius__TypeInfo);
 std::vector<const Type*>StructTy_struct_rubinius__UnwindInfo_fields;

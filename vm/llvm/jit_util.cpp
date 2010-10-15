@@ -1056,7 +1056,7 @@ extern "C" {
 
 			// Maybe start recording a branch trace...
 			Trace* exiting_trace = ti->trace;
-			TraceNode* exit_node = exiting_trace->node_at(trace_pc);
+			TraceNode* exit_node = ti->exit_trace_node;
 			assert(exit_node);
 			if(exit_node->bump_exit_hotness()){
 				DEBUGLN("Exit node at " << ti->exit_ip << " got hot! Recording branch...");

@@ -23,6 +23,8 @@ namespace rubinius {
 	class Trace;
 	class TraceIterator;
 
+	int const MAX_BRANCHES = 10;
+
 	typedef uintptr_t opcode;
   typedef int (*trace_executor)(VM*, CallFrame*, TraceInfo*);
 
@@ -94,14 +96,12 @@ namespace rubinius {
 
 	class Trace {
 	public:
-		std::map<int, TraceNode*> node_map;
+		Trace *branch_tbl[MAX_BRANCHES];
+		trace_executor  executor;
 		TraceNode* anchor;
 		TraceNode* head;
 		TraceNode* entry;
-		llvm::Function* llvm_function;
 		size_t jitted_bytes;
-		void*  jitted_impl;
-		trace_executor  executor;
 		int pc_base_counter;
 		int expected_exit_ip;
 		int entry_sp;
@@ -143,10 +143,6 @@ namespace rubinius {
 			return entry->pc;
 		}
 
-		TraceNode* node_at(int trace_pc){
-			return node_map[trace_pc];
-		}
-
 		bool parent_of(Trace* trace){
 			Trace* t = trace->parent;
 			while(t != NULL){
@@ -164,11 +160,9 @@ namespace rubinius {
 			return t;
 		}
 
-		void set_jitted(llvm::Function* func, size_t bytes, void* impl) {
-			llvm_function = func;
-			jitted_impl = impl;
+		void set_jitted(size_t bytes, void* impl) {
 			jitted_bytes = bytes;
-			executor = reinterpret_cast<trace_executor>(jitted_impl);
+			executor = reinterpret_cast<trace_executor>(impl);
 		}
 
 		template <typename T>

@@ -136,7 +136,7 @@ namespace rubinius {
 			// This is used in exit stubs, when the trace bails for some reason.
 			// Inputs to the exit pad
 			
-			Value* exit_trace_pc = info()->root_info()->trace_ip_phi;
+			Value* exit_trace_node = info()->root_info()->trace_node_phi;
 			Value* next_pc = info()->root_info()->next_ip_phi;
 			Value* exit_pc = info()->root_info()->exit_ip_phi;
 			Value* exit_cf = info()->root_info()->exit_cf_phi;
@@ -160,7 +160,7 @@ namespace rubinius {
 			Value* expected_exit_ip = b().CreateLoad(exp_exit_ip_pos, "save_expected_exit_ip");
 
 			Value* exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_exit_ip);
-			Value* exit_trace_pc_pos = get_field(info()->trace_info(), offset::trace_info_exit_trace_pc);
+			Value* exit_trace_node_pos = get_field(info()->trace_info(), offset::trace_info_exit_trace_node);
 
 			Value* exit_cf_pos = get_field(info()->trace_info(), offset::trace_info_exit_cf);
 
@@ -169,8 +169,8 @@ namespace rubinius {
 
 			// Store information about exit into TraceInfo
 			b().CreateStore(exit_pc, exit_ip_pos);
-			// So we know where in the trace we exited (useful for debugging)...
-      b().CreateStore(exit_trace_pc, exit_trace_pc_pos);
+			// So we know where in the trace we exited
+      b().CreateStore(exit_trace_node, exit_trace_node_pos);
       b().CreateStore(exit_cf, exit_cf_pos);
 
       BasicBlock* cont = new_block("continue");
@@ -215,27 +215,29 @@ namespace rubinius {
 
 			// Otherwise look up a branch for this location (this needs to be a lot faster)
 			Value* trace = info()->trace();
-			Value* exit_tbl_pos = get_field(info()->trace(), offset::trace_exit_tbl);
+			Value* exit_tbl_pos = get_field(info()->trace(), offset::trace_branch_tbl);
 			Value* branch_trace = b().CreateConstGEP2_32(exit_tbl_pos, 0, 
-																									 int32(cur_trace_node_->side_exit_id), 
+																									 int32(cur_trace_node_->side_exit_index),
 																									 "ip_pos");
-			Value* executor_pos = get_field(branch_trace, offset::trace_executor);
-			Value* executor = llvm::cast<llvm::Function>(b().CreateLoad(executor_pos, "executor"));
+			Value* executor = load_field(branch_trace, offset::trace_executor, "executor");
 
-			// XXX setup out trace info here
-//			ti->expected_exit_ip = expected_exit_pc;
-//			ti->nested = false;
-//			ti->recording = false;
-//			ti->entry_call_frame = call_frame;
-//			ti->trace = trace;
+			// Setup out traceinfo here
+			Value* ti_out = info()->out_trace_info();
+			// All branch traces are expected to loop back to trace anchor
+			store_field(ti_out, offset::trace_info_expected_exit_ip, int32(trace_->anchor->pc));
+			store_field(ti_out, offset::trace_info_nested, int32(0));
+			store_field(ti_out, offset::trace_info_recording, int32(0));
+			store_field(ti_out, offset::trace_info_entry_cf, exit_cf);
 
-			Value* call_args[] = {
+      Value* call_args[] = {
 				info()->vm(),
 				exit_cf,
-				info()->out_trace_info()
-			};
-			Value* ret = llvm::CallInst::Create(executor, call_args, call_args + 7, "", b()); 
+				ti_out
+      };
+      Value* ret = b().CreateCall(executor, call_args, call_args+2, "ci");
 
+
+			// Did the branch-trace bail? Parent trace should collapse, too.
 			Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
 
       cont = new_block("continue");
@@ -501,9 +503,7 @@ namespace rubinius {
     }
 
 
-		Value* get_field(Value* val, int which) {
-			return b().CreateConstGEP2_32(val, 0, which);
-		}
+
 
 		void emit_traced_return(){
 
@@ -597,14 +597,14 @@ namespace rubinius {
 		}
 
 		void exit_trace(int next_ip){
-
 			ensure_trace_exit_pad();
-
 			BasicBlock* cur = current_block();
 			info()->root_info()->exit_ip_phi->addIncoming(int32(cur_trace_node_->pc), cur);
 			info()->root_info()->next_ip_phi->addIncoming(int32(next_ip), cur);
-			info()->root_info()->trace_ip_phi->addIncoming(
-				int32(cur_trace_node_->trace_pc), cur);
+			info()->root_info()->trace_node_phi->addIncoming(constant(
+																												 cur_trace_node_, 
+																												 ls_->ptr_type("TraceNode")),
+																											 cur);
 			info()->root_info()->exit_cf_phi->addIncoming(info()->call_frame(), cur);
 
 			flush_current_call_frame(next_ip);
@@ -984,16 +984,31 @@ namespace rubinius {
 			sig.call("rbx_show_int", call_args, 1, "", b());
 		}
 
-		// void dump_str(string& str){
-		// 	Type* char_star = Type.pointer(Type::Int8Ty);
-		// 	Value* val = b().create_global_string_ptr(str.c_str());
-		// 	Signature sig(ls_, ls_->Int32Ty);
-		// 	sig << char_str;
-		// 	Value* call_args[] = {
-		// 		val
-		// 	};
-		// 	sig.call("printf", call_args, 1, "", b());
-		// }
+		void dump_str(char* str){
+
+			vector<const Type*> arg_types;
+			arg_types.push_back(PointerType::get(Type::SByteTy));
+			Function* f = module_.getOrInsertFunction(
+				"printf",
+				FunctionType::get(Type::IntTy, arg_types, true));
+
+			Constant* constStr = ConstantArray::get(str);
+			GlobalVariable* gv = new GlobalVariable(
+				constStr->getType(), 
+				true, GlobalValue::InternalLinkage, 
+				constStr, "", module_);
+
+			std::vector<Constant*> geplist;
+			geplist.push_back(ConstantUInt::get(Type::UIntTy,0));
+			geplist.push_back(ConstantUInt::get(Type::UIntTy,0));
+			Constant* gep = ConstantExpr::getGetElementPtr(gv,geplist);
+
+			std::vector<Value*> args;
+			args.push_back(gep);
+
+			llvm::CallInst::Create(f, args.begin(), args.end(), "call_printf", b());
+		}
+
 
 
 	};

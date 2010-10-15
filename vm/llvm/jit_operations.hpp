@@ -209,6 +209,20 @@ namespace rubinius {
       return b().CreateConstGEP2_32(ptr, 0, which, name);
     }
 
+		Value* get_field(Value* val, int which) {
+			return b().CreateConstGEP2_32(val, 0, which);
+		}
+
+		Value* load_field(Value* val, int which, const char* name) {
+			Value* pos =  b().CreateConstGEP2_32(val, 0, which);
+			return b().CreateLoad(pos, name);
+		}
+
+		Value* store_field(Value* val, int which, Value* toStore) {
+			Value* pos =  b().CreateConstGEP2_32(val, 0, which);
+			b().CreateStore(toStore, pos);
+		}
+
     Value* upcast(Value* rec, const char* name) {
       const Type* type = ptr_type(name);
 

@@ -18,7 +18,7 @@ namespace rubinius {
 			nestable(0),
 			recording(0),
 			next_ip(-1),
-			exit_trace_pc(-1)
+			exit_trace_node(NULL)
 	{}
 
 

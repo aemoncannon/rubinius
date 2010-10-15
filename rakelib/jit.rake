@@ -10,6 +10,8 @@ namespace :jit do
                  rubinius::StackVariables
                  rubinius::CallFrame
                  rubinius::TraceInfo
+                 rubinius::Trace
+                 rubinius::TraceNode
                  rubinius::UnwindInfo
                  rubinius::VariableScope
                  rubinius::CompiledMethod
@@ -34,6 +36,7 @@ namespace :jit do
 
     files = %w!vm/call_frame.hpp
                vm/trace_info.hpp
+               vm/trace.hpp
                vm/arguments.hpp
                vm/dispatch.hpp
                vm/inline_cache.hpp
