@@ -19,8 +19,7 @@
 #endif
 
 
-
-#define TRACE_PROFILE true
+//#define TRACE_PROFILE true
 
 int const NULL_TIMER = 0;
 int const ON_TRACE_TIMER = 1;
@@ -42,10 +41,12 @@ const string TRACE_TIMER_LABELS[7] = {
 
 #ifdef TRACE_PROFILE
 #define TRACK_TIME(x) state->start_trace_timer(x)
+#define TRACK_TIME_ON_TRACE(x) track_time(x)
 #define IF_TRACE_PROFILE(x) x
 #else
 #define TRACK_TIME(x)
 #define IF_TRACE_PROFILE(x)
+#define TRACK_TIME_ON_TRACE(x)
 #endif
 
 

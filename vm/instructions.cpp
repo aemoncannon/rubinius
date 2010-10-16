@@ -226,7 +226,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 		/* If result is -1, the nested trace must have bailed into */ 
 		/* uncommon interpreter, we consider this recording invalidated.  */ 
 		if(result == -1){
-			DEBUGLN("Exit at trace_pc: " << ti.exit_trace_pc << "\n"); 
+			DEBUGLN("Exit at trace_pc: " << ti.exit_trace_node->pc << "\n"); 
 			DEBUGLN("Failed to record nested trace, throwing away recording\n"); 
 			delete state->recording_trace; 
 			state->recording_trace = NULL; 
@@ -283,7 +283,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 			else{																															\
 				/* Start recording after threshold is hit..*/										\
 				if(vmm->traces[cur_ip] == NULL &&																\
-					 vmm->trace_counters[cur_ip] > 50){														\
+					 vmm->trace_counters[cur_ip] > 30){														\
 					DEBUGLN("Start recording trace.\n");													\
 					sp = stack_ptr - call_frame->stk;															\
 					state->recording_trace = new Trace(op, cur_ip, sp, ip_ptr, vmm, call_frame); \

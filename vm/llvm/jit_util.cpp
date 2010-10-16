@@ -1044,6 +1044,10 @@ extern "C" {
 //  }
 
 
+  void rbx_track_time(STATE, int timer) {
+		state->start_trace_timer(timer);
+  }
+
   Object* rbx_restart_interp(STATE, CallFrame* call_frame, Dispatch& msg, Arguments& args) {
     return VMMethod::execute(state, call_frame, msg, args);
   }

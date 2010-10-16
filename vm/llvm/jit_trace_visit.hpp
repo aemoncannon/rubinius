@@ -75,6 +75,8 @@ namespace rubinius {
       BasicBlock* start = current_block();
 			set_block(start);
 
+			TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
+
       bail_out_ = new_block("bail_out");
 
       Value* call_args[] = {
@@ -132,6 +134,9 @@ namespace rubinius {
 		}
 
     void emit_trace_exit_pad() {
+
+			TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
+
 			// Emit code for entering the uncommon interpreter.
 			// This is used in exit stubs, when the trace bails for some reason.
 			// Inputs to the exit pad
@@ -213,7 +218,9 @@ namespace rubinius {
 
 
 			// Otherwise look up a branch for this location (this needs to be faster)
-			Value* executor = load_field(exit_trace_node, offset::trace_node_branch_executor, "executor");
+			Value* executor = load_field(exit_trace_node, 
+																	 offset::trace_node_branch_executor, 
+																	 "executor");
 
 			// Setup out traceinfo here
 			Value* ti_out = info()->out_trace_info();
@@ -226,19 +233,14 @@ namespace rubinius {
 			store_field(ti_out, offset::trace_info_entry_cf, exit_cf);
 			store_field(ti_out, offset::trace_info_exit_trace_node, exit_trace_node);
 
-			// std::vector<const Type*> types;
-			// types.push_back(ls_->ptr_type("VM"));
-			// types.push_back(ls_->ptr_type("CallFrame"));
-			// types.push_back(ls_->ptr_type("TraceInfo"));
-      // FunctionType* ft = FunctionType::get(ls_->Int32Ty, types, false);
-			// executor = b().CreateBitCast(executor, ft, "cast executor");			
-
       Value* call_args[] = {
 				info()->vm(),
 				exit_cf,
 				ti_out
       };
       Value* ret = b().CreateCall(executor, call_args, call_args+3, "call_branch_trace");
+
+			TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 
 			// Did the branch-trace bail? Parent trace should collapse, too.
 			Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
@@ -255,6 +257,7 @@ namespace rubinius {
 				// If we got to here, that means that a branch of this trace was
 				// run successfully, which by definition must have looped
 				// back to the anchor.
+				TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
 				skip_to_anchor();
 			}
 			else{
@@ -262,6 +265,7 @@ namespace rubinius {
 				// from a branch trace was run successfully. 
 				// We return immediately, which hands control back up to the 
 				// parent trace, which will (per above) jump to the anchor
+				TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
 				return_value(int32(0));
 			}
 
@@ -270,6 +274,7 @@ namespace rubinius {
 
     void visit_nested_trace() {
 
+			TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 
 			// Don't need to flush current call frame. Nested trace will take care of that if
 			// it side-exits.
@@ -281,11 +286,8 @@ namespace rubinius {
 
 			// Setup out traceinfo here
 			Value* ti_out = info()->out_trace_info();
-
-			// All branch traces are expected to loop back to trace anchor
 			Value* expected_exit_pc = int32(cur_trace_node_->nested_trace->expected_exit_ip);
 			store_field(ti_out, offset::trace_info_expected_exit_ip, expected_exit_pc);
-
 			store_field(ti_out, offset::trace_info_nested, int32(1));
 			store_field(ti_out, offset::trace_info_recording, int32(0));
 			store_field(ti_out, offset::trace_info_entry_cf, info()->call_frame());
@@ -296,6 +298,8 @@ namespace rubinius {
 				ti_out
       };
       Value* ret = b().CreateCall(executor, call_args, call_args+3, "call_branch_trace");
+
+			TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 
 			Value* not_nestable = b().CreateICmpEQ(ret, int32(-1), "nestable_p");
 
@@ -600,6 +604,7 @@ namespace rubinius {
 		}
 
 		void exit_trace(int next_ip){
+			TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 			ensure_trace_exit_pad();
 			BasicBlock* cur = current_block();
 			info()->root_info()->exit_ip_phi->addIncoming(int32(cur_trace_node_->pc), cur);
@@ -945,6 +950,17 @@ namespace rubinius {
 			sig.call("rbx_show_vars", call_args, 3, "", b());
 		}
 
+		void track_time(int timer){
+			Signature sig(ls_, ls_->VoidTy);
+			sig << "VM";
+			sig << ls_->Int32Ty;
+			Value* call_args[] = {
+				vm_,
+				int32(timer)
+			};
+			sig.call("rbx_track_time", call_args, 2, "", b());
+		}
+
 		void dump_local(opcode which){
 			Value* idx2[] = {
 				ConstantInt::get(ls_->Int32Ty, 0),
@@ -985,6 +1001,8 @@ namespace rubinius {
 			};
 			sig.call("rbx_show_int", call_args, 1, "", b());
 		}
+
+
 
 		// void dump_str(char* str){
 
