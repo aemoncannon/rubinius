@@ -75,7 +75,7 @@ namespace rubinius {
 
 		bool bump_exit_hotness(){
 			exit_counter++;
-			return exit_counter > 5;
+			return exit_counter > 30;
 		}
 
 		void clear_hotness(){
