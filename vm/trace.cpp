@@ -123,6 +123,7 @@ namespace rubinius {
 		return -1;
   }
 
+
 	// Standard constructor for initializing a new trace
 	Trace::Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame) : 
 		executor(NULL)
@@ -136,6 +137,7 @@ namespace rubinius {
 		,parent(NULL)
 		,parent_node(NULL)
 		,is_nested_copy(false)
+		,is_branch_trace(false)
 	{
 		anchor = new TraceNode(this, 0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
 		head = anchor;
@@ -157,6 +159,7 @@ namespace rubinius {
 		,parent(NULL)
 		,parent_node(NULL)
 		,is_nested_copy(false)
+		,is_branch_trace(false)
 	{}
 
 
@@ -166,6 +169,7 @@ namespace rubinius {
 		branch->parent_node = exit_node;
 		branch->anchor = this->anchor;
 		branch->expected_exit_ip = -1;
+		branch->is_branch_trace = true;
 
 		// Entry and head will be initialized
 		// on the first call to add(...)

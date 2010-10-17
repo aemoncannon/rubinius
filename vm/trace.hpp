@@ -113,6 +113,7 @@ namespace rubinius {
 		Trace* parent;
 		TraceNode* parent_node;
 		bool is_nested_copy;
+		bool is_branch_trace;
 
 		enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
 
@@ -147,7 +148,11 @@ namespace rubinius {
 		}
 
 		bool is_branch(){
-			return parent != NULL;
+			return is_branch_trace;
+		}
+
+		bool is_nested(){
+			return is_nested_copy;
 		}
 
 		int init_ip(){
