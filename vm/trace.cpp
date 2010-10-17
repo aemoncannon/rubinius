@@ -123,23 +123,41 @@ namespace rubinius {
 		return -1;
   }
 
-	Trace::Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
+	// Standard constructor for initializing a new trace
+	Trace::Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame) : 
+		executor(NULL)
+		,anchor(NULL)
+		,head(NULL) 
+		,entry(NULL) 
+		,jitted_bytes(-1) 
+		,pc_base_counter(0) 
+		,expected_exit_ip(-1)
+		,entry_sp(sp)
+		,parent(NULL)
+		,parent_node(NULL)
+		,is_nested_copy(false)
+	{
 		anchor = new TraceNode(this, 0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
 		head = anchor;
 		entry = anchor;
-		pc_base_counter = 0;
-		expected_exit_ip = -1;
 		entry_sp = sp;
-		parent = NULL;
-		parent_node = NULL;
 	}
 
-	// Simple null constructor
-	Trace::Trace(){
-		expected_exit_ip = -1;
-		entry = NULL;
-		head = NULL;
-	}
+	// Simple null constructor used for creating branch
+	// and nested traces
+	Trace::Trace()  : 
+		executor(NULL)
+		,anchor(NULL)
+		,head(NULL) 
+		,entry(NULL) 
+		,jitted_bytes(-1) 
+		,pc_base_counter(0) 
+		,expected_exit_ip(-1)
+		,entry_sp(-1)
+		,parent(NULL)
+		,parent_node(NULL)
+		,is_nested_copy(false)
+	{}
 
 
 	Trace* Trace::create_branch_at(TraceNode* exit_node){
@@ -158,10 +176,22 @@ namespace rubinius {
 	}
 
 	Trace::Status Trace::add_nested_trace_call(Trace* nested_trace, int nested_exit_pc, int pc, int sp, 
-																						 void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
+																						 void** const ip_ptr, VMMethod* const vmm, 
+																						 CallFrame* const call_frame){
+
 		this->add(InstructionSequence::insn_nested_trace, pc, sp, ip_ptr, vmm, call_frame);
-		nested_trace->expected_exit_ip = nested_exit_pc;
-		this->head->nested_executor = nested_trace->executor;
+		TraceNode* adapter_node = this->head;
+
+		adapter_node->nested_executor = nested_trace->executor;
+
+		// Create a copy, modified to suit the context of the nesting
+		Trace* nested = new Trace(*nested_trace);
+		nested->is_nested_copy = true;
+		nested->parent = this;
+		nested->parent_node = adapter_node;
+		nested->expected_exit_ip = nested_exit_pc;
+		adapter_node->nested_trace = nested;
+
 		return TRACE_OK;
 	}
 
@@ -262,10 +292,6 @@ namespace rubinius {
 			head->parent_send = parent_send;
 			head->prev = prev;
 			prev->next = head;
-
-			if(op == InstructionSequence::insn_nested_trace){
-				head->nested_trace = vmm->traces[pc];
-			}
 
 			return TRACE_OK;
 		}

@@ -112,12 +112,14 @@ namespace rubinius {
 		int entry_sp;
 		Trace* parent;
 		TraceNode* parent_node;
+		bool is_nested_copy;
 
 		enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
 
 		Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
 		Trace();
+
 
 		Status add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
