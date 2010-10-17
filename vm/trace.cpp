@@ -108,7 +108,7 @@ namespace rubinius {
 		assert(exit_node);
 		if(exit_node->bump_exit_hotness()){
 			DEBUGLN("Exit node at " << ti->exit_ip << " got hot! Recording branch...");
-			state->recording_trace = new Trace(exit_node->trace, exit_node);
+			state->recording_trace = exit_node->trace->create_branch_at(exit_node);
 			exit_node->clear_hotness();
 		}
 		// Bail to uncommon if we've stacked up call_frames before the exit.
@@ -134,13 +134,27 @@ namespace rubinius {
 		parent_node = NULL;
 	}
 
-	Trace::Trace(Trace* parent, TraceNode* parent_node){
-		this->parent = parent;
-		this->parent_node = parent_node;
-		anchor = parent->anchor;
+	// Simple null constructor
+	Trace::Trace(){
 		expected_exit_ip = -1;
 		entry = NULL;
 		head = NULL;
+	}
+
+
+	Trace* Trace::create_branch_at(TraceNode* exit_node){
+		Trace* branch = new Trace();
+		branch->parent = this;
+		branch->parent_node = exit_node;
+		branch->anchor = this->anchor;
+		branch->expected_exit_ip = -1;
+
+		// Entry and head will be initialized
+		// on the first call to add(...)
+		branch->entry = NULL;
+		branch->head = NULL;
+
+		return branch;
 	}
 
 	Trace::Status Trace::add_nested_trace_call(Trace* nested_trace, int nested_exit_pc, int pc, int sp, 
