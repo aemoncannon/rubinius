@@ -143,6 +143,14 @@ namespace rubinius {
 		head = NULL;
 	}
 
+	Trace::Status Trace::add_nested_trace_call(Trace* nested_trace, int nested_exit_pc, int pc, int sp, 
+																						 void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
+		this->add(InstructionSequence::insn_nested_trace, pc, sp, ip_ptr, vmm, call_frame);
+		nested_trace->expected_exit_ip = nested_exit_pc;
+		this->head->nested_executor = nested_trace->executor;
+		return TRACE_OK;
+	}
+
 
 	Trace::Status Trace::add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
 

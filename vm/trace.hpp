@@ -121,6 +121,8 @@ namespace rubinius {
 
 		Status add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
+		Status add_nested_trace_call(Trace* trace, int nested_exit_pc, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+
 		void pretty_print(STATE, std::ostream& out);
 
 		string trace_name();
