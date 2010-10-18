@@ -1,53 +1,40 @@
 
-In normal operation:
-Before send instruction, self and all args pushed onto the operand stack.
-Note that the stack is not modified by the call, so when execute is finished, self and args still sitting on stack.
-After execute is finished, self and args popped off, ret pushed onto stack.
+Trace runtime interfaces
+-------------------------
+
+Requirements
+ - Should optimize for speed of switching to branch traces. Because # of branch runs is potentially related to N (iterations) of loop.
+   As opposed to exits that leave the trace, which will be run once per trace run.
+ - Would be nice if nested exits were also fast. Bailing to interpreter on nested exit would make this slow - so don't do that.
+
+NESTED flag 
+ - Purpose is to notify the trace to return directly to calling trace (on expected exit), 
+   instead of bailing to the uncommon interpreter. Return 1 if nested trace exited politely so the parent 
+   trace can just continue. Otherwise return -1 and we collapse. For branches and nests of the nested trace,
+   we don't need them to do anything special. Branches are either successful or collapse. Nests are either
+   successful or collapse.
+
+RECORDING flag
+ - Like above, but we don't care what pc the trace exits at. We do need to remember this pc, because future runs
+   of this nested trace must exit here. 
+
+
+Problem with always directly calling branch traces:
+ - The traceinfo that we pass to the call is either the info for the parent trace, or the info for the new branch trace.
+ - What info do we actually need to pass? not NESTED/RECORDING flag (since it's a branch). Entry call_frame? No, we can
+   grab this at runtime. Exit call_frame? No, we'll know this at exit time. Expected exit ip? No, don't need this on 
+   branch trace. Exit ip, exit trace node can be setup on exit.
+
+ - So, what if we have two things. A NESTED/RECORDING flag passed as an argument. And a trace_info which is always interpreted
+   as information describing the previous trace's run - exit_node, exit_ip. 
+
+ - If the 
+
+   
+    
+ 
 
 
 
-In trace:
-Before send instruction, self and all args pushed onto the operand stack.
-Call will modify the stack, finally pushing it's own result onto the stack.
-At return instruction, TOS is value we want to return. Values below are arguments and self.
-Maybe we should pop the args and self off the stack after we install them in the locals (in import_args).
-Yes.
 
 
-
-
-vm/instructions.cpp defines the DISPATCH macro. vm/gen/instruction_implementations.hpp includes the actual genearted instruction implementations.
-
-
-1. trace start and end
-2. generate instructions?
-
-
-[
-run - 8(8): op_push_local 1
-run - 10(10): op_push_const_fast 0, 1
-run - 13(13): op_meta_send_op_lt 156553120
-run - 15(15): op_goto_if_false 43
-run - 17(17): op_push_local 1
-run - 19(19): op_meta_push_1 
-run - 20(20): op_meta_send_op_plus 156553180
-run - 22(22): op_set_local 1
-run - 24(24): op_pop 
-run - 25(25): op_push_local 0            106
-run - 27(27): op_push_const_fast 4, 5     106,Math
-run - 30(30): op_push_literal 6           106,Math,4.0 
-run - 32(32): op_send_stack 156553240, 1   106 
-  sqrt - 45(0): op_push_self  : active_send(32)     106,kernel
-  sqrt - 46(1): op_push_local 0 : active_send(32)    106,kernel,x
-  sqrt - 48(3): op_allow_private  : active_send(32)   106,kernel,x
-  sqrt - 49(4): op_send_stack 152182000, 1 : active_send(32)     106
-    Float - 79(0): op_push_local 0 : active_send(49) : parent(32)  106,x
-    Float - 81(2): op_send_method 150168832 : active_send(49) : parent(32)  106
-      nil? - 278(0): op_push_false  : active_send(81) : parent(49)    106,false
-      nil? - 279(1): op_ret  : active_send(81) : parent(49)   106,false
-    Float - 83(4): op_goto_if_false 98 : active_send(49) : parent(32)  106,false
-    Float - 98(19): op_push_nil  : active_send(49) : parent(32)
-    Float - 99(20): op_pop  : active_send(49) : parent(32)
-    Float - 100(21): op_push_local 0 : active_send(49) : parent(32)
-    Float - 102(23): op_push_const_fast 5, 6 : active_send(49) : parent(32)
-    Float - 105(26): op_send_stack 150168952, 1 : active_send(49) : parent(32)

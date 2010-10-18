@@ -13,9 +13,9 @@ namespace rubinius {
 
   class JITTraceVisit : public JITVisit {
 
-		Trace* trace_;
-		TraceNode* cur_trace_node_;
-		bool emitted_exit_;
+    Trace* trace_;
+    TraceNode* cur_trace_node_;
+    bool emitted_exit_;
 
   public:
 
@@ -23,22 +23,22 @@ namespace rubinius {
       : JITVisit(ls, info, bm, start)
       , trace_(trace)
     {
-			sp_ = trace->entry_sp;
-			last_sp_ = trace->entry_sp;
-			emitted_exit_ = false;
+      sp_ = trace->entry_sp;
+      last_sp_ = trace->entry_sp;
+      emitted_exit_ = false;
 
-			vm_ = info->vm();
-			call_frame_ = info->call_frame();
-			vars_ = info->variables();
-			stack_ = info->stack();
-			args_ = info->args();
-			out_args_ = info->out_args();
-		}
+      vm_ = info->vm();
+      call_frame_ = info->call_frame();
+      vars_ = info->variables();
+      stack_ = info->stack();
+      args_ = info->args();
+      out_args_ = info->out_args();
+    }
 
 
-		void at_trace_node(TraceNode* node){
-			cur_trace_node_ = node;
-		}
+    void at_trace_node(TraceNode* node){
+      cur_trace_node_ = node;
+    }
 
 
     void at_ip(int ip) {
@@ -48,12 +48,12 @@ namespace rubinius {
         JITBasicBlock& jbb = i->second;
         current_jbb_ = &jbb;
 
-				// Might need this stuff if we ever have branches in our
-				// traces..
+	// Might need this stuff if we ever have branches in our
+	// traces..
 				
         // if(BasicBlock* next = jbb.block) {
         //   if(!b().GetInsertBlock()->getTerminator()) {
-				// 		std::cout << "ACK! creating BR!!" << "\n";
+	// 		std::cout << "ACK! creating BR!!" << "\n";
         //     b().CreateBr(next);
         //   }
         //   next->moveAfter(b().GetInsertBlock());
@@ -70,12 +70,12 @@ namespace rubinius {
 
     void initialize() {
 
-			info()->init_return_pad();
+      info()->init_return_pad();
 
       BasicBlock* start = current_block();
-			set_block(start);
+      set_block(start);
 
-			TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
+      TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
 
       bail_out_ = new_block("bail_out");
 
@@ -100,222 +100,222 @@ namespace rubinius {
         flush_scope_to_heap(vars_);
       }
 
-			dump_int(666);
-			return_value(int32(-1));
+      dump_int(666);
+      return_value(int32(-1));
 
       set_block(ret_raise_val);
-//      Value* crv = f.clear_raise_value.call(&vm_, 1, "crv", b());
+      //      Value* crv = f.clear_raise_value.call(&vm_, 1, "crv", b());
       if(use_full_scope_) flush_scope_to_heap(vars_);
 
-			dump_int(6667);
-			return_value(int32(-1));
+      dump_int(6667);
+      return_value(int32(-1));
 
       set_block(start);
 
       ip_pos_ = b().CreateConstGEP2_32(call_frame_, 0, offset::cf_ip, "ip_pos");
 
       global_serial_pos = b().CreateIntToPtr(
-				ConstantInt::get(ls_->IntPtrTy, (intptr_t)ls_->shared().global_serial_address()),
-				PointerType::getUnqual(ls_->IntPtrTy), "cast_to_intptr");
+					     ConstantInt::get(ls_->IntPtrTy, (intptr_t)ls_->shared().global_serial_address()),
+					     PointerType::getUnqual(ls_->IntPtrTy), "cast_to_intptr");
 
       init_out_args();
 
     }
 
-		void ensure_trace_exit_pad(){
-			if(!emitted_exit_){
-				BasicBlock* cur = current_block();
-				info()->root_info()->init_trace_exit_pad();
-				set_block(info()->trace_exit_pad());
-				emit_trace_exit_pad();
-				emitted_exit_ = true;
-				set_block(cur);
-			}
-		}
+    void ensure_trace_exit_pad(){
+      if(!emitted_exit_){
+	BasicBlock* cur = current_block();
+	info()->root_info()->init_trace_exit_pad();
+	set_block(info()->trace_exit_pad());
+	emit_trace_exit_pad();
+	emitted_exit_ = true;
+	set_block(cur);
+      }
+    }
 
     void emit_trace_exit_pad() {
 
-			TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
+      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 
-			// Emit code for entering the uncommon interpreter.
-			// This is used in exit stubs, when the trace bails for some reason.
-			// Inputs to the exit pad
+      // Emit code for entering the uncommon interpreter.
+      // This is used in exit stubs, when the trace bails for some reason.
+      // Inputs to the exit pad
 			
-			Value* exit_trace_node = info()->root_info()->trace_node_phi;
-			Value* exit_pc = info()->root_info()->exit_ip_phi;
-			Value* exit_cf = info()->root_info()->exit_cf_phi;
+      Value* exit_trace_node = info()->root_info()->trace_node_phi;
+      Value* exit_pc = info()->root_info()->exit_ip_phi;
+      Value* exit_cf = info()->root_info()->exit_cf_phi;
 
-			// Do fast checks to see if we are a nested trace that is
-			// finishing, or if we are otherwise exiting in a polite way,
-			// and should simply return to caller.
+      // Do fast checks to see if we are a nested trace that is
+      // finishing, or if we are otherwise exiting in a polite way,
+      // and should simply return to caller.
 
-			Value* recording_pos = get_field(info()->trace_info(), offset::trace_info_recording);
-			Value* recording = b().CreateIntCast(b().CreateLoad(recording_pos, "recording"), ls_->Int1Ty, "recording");
-			Value* not_recording = b().CreateNot(recording, "not_recording");
+      Value* recording_pos = get_field(info()->trace_info(), offset::trace_info_recording);
+      Value* recording = b().CreateIntCast(b().CreateLoad(recording_pos, "recording"), ls_->Int1Ty, "recording");
+      Value* not_recording = b().CreateNot(recording, "not_recording");
 
-			Value* nested_pos = get_field(info()->trace_info(), offset::trace_info_nested);
-			Value* nested = b().CreateIntCast(b().CreateLoad(nested_pos, "nested"), ls_->Int1Ty, "nested");
-			Value* not_nested = b().CreateNot(nested, "not_nested");
+      Value* nested_pos = get_field(info()->trace_info(), offset::trace_info_nested);
+      Value* nested = b().CreateIntCast(b().CreateLoad(nested_pos, "nested"), ls_->Int1Ty, "nested");
+      Value* not_nested = b().CreateNot(nested, "not_nested");
 
-			Value* entry_cf_pos = get_field(info()->trace_info(), offset::trace_info_entry_cf);
-			Value* entry_call_frame = b().CreateLoad(entry_cf_pos, "save_entry_call_frame");
+      Value* entry_cf_pos = get_field(info()->trace_info(), offset::trace_info_entry_cf);
+      Value* entry_call_frame = b().CreateLoad(entry_cf_pos, "save_entry_call_frame");
 
-			Value* exp_exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_expected_exit_ip);
-			Value* expected_exit_ip = b().CreateLoad(exp_exit_ip_pos, "save_expected_exit_ip");
+      Value* exp_exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_expected_exit_ip);
+      Value* expected_exit_ip = b().CreateLoad(exp_exit_ip_pos, "save_expected_exit_ip");
 
-			Value* exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_exit_ip);
-			Value* exit_trace_node_pos = get_field(info()->trace_info(), offset::trace_info_exit_trace_node);
+      Value* exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_exit_ip);
+      Value* exit_trace_node_pos = get_field(info()->trace_info(), offset::trace_info_exit_trace_node);
 
-			Value* exit_cf_pos = get_field(info()->trace_info(), offset::trace_info_exit_cf);
+      Value* exit_cf_pos = get_field(info()->trace_info(), offset::trace_info_exit_cf);
 
       Value* ip_cmp = b().CreateICmpEQ(exit_pc, expected_exit_ip, "exiting_at_expected_ip_p");
       Value* cf_cmp = b().CreateICmpEQ(entry_call_frame, exit_cf, "at_expected_call_frame_p");
 
-			// Store information about exit into TraceInfo
-			b().CreateStore(exit_pc, exit_ip_pos);
-			// So we know where in the trace we exited
+      // Store information about exit into TraceInfo
+      b().CreateStore(exit_pc, exit_ip_pos);
+      // So we know where in the trace we exited
       b().CreateStore(exit_trace_node, exit_trace_node_pos);
       b().CreateStore(exit_cf, exit_cf_pos);
 
       BasicBlock* cont = new_block("continue");
       BasicBlock* exit = new_block("exit");
 
-			// If we are recording (which makes this trace a nested trace candidate by definition), 
-			// and the current call_frame is this trace's home call_frame,
-			// return 1 directly to the caller of the trace. Result will
-			// be that this trace will be recorded as a nested trace.
+      // If we are recording (which makes this trace a nested trace candidate by definition), 
+      // and the current call_frame is this trace's home call_frame,
+      // return 1 directly to the caller of the trace. Result will
+      // be that this trace will be recorded as a nested trace.
       Value* anded = b().CreateAnd(recording, cf_cmp, "and");
       b().CreateCondBr(anded, exit, cont);
       set_block(exit);
-			return_value(int32(1));
+      return_value(int32(1));
       set_block(cont);
 
-			// If we are not recording, and this was a nested trace, and the current call_frame is 
-			// this trace's home call_frame, and the ip we are exiting to is the ip that the calling trace was expecting,
-			// exit directly to the caller of the trace -  (this informs caller
-			// that the trace exited politely, so parent trace doesn't have to pop itself)
+      // If we are not recording, and this was a nested trace, and the current call_frame is 
+      // this trace's home call_frame, and the ip we are exiting to is the ip that the calling trace was expecting,
+      // exit directly to the caller of the trace -  (this informs caller
+      // that the trace exited politely, so parent trace doesn't have to pop itself)
       cont = new_block("continue");
       exit = new_block("exit");
       anded = b().CreateAnd(not_recording, cf_cmp, "and");
       anded = b().CreateAnd(anded, nested, "and");
       anded = b().CreateAnd(anded, ip_cmp, "and");
       b().CreateCondBr(anded, exit, cont);
-			set_block(exit);
-			return_value(int32(1));
-			set_block(cont);
+      set_block(exit);
+      return_value(int32(1));
+      set_block(cont);
 
-			// If we are not recording, and this trace is not being run as a nested trace, and  current call_frame 
-			// is this trace's home call_frame, and we exited on the expected ip, return 0 to the caller of the trace
+      // If we are not recording, and this trace is not being run as a nested trace, and  current call_frame 
+      // is this trace's home call_frame, and we exited on the expected ip, return 0 to the caller of the trace
       cont = new_block("continue");
       exit = new_block("exit");
       anded = b().CreateAnd(not_recording, cf_cmp, "and");
       anded = b().CreateAnd(anded, not_nested, "and");
       anded = b().CreateAnd(anded, ip_cmp, "and");
       b().CreateCondBr(anded, exit, cont);
-			set_block(exit);
-			return_value(int32(0));
+      set_block(exit);
+      return_value(int32(0));
       set_block(cont);
 
 
-			// Otherwise look up a branch for this location (this needs to be faster)
-			Value* executor = load_field(exit_trace_node, 
-																	 offset::trace_node_branch_executor, 
-																	 "executor");
+      // Otherwise look up a branch for this location (this needs to be faster)
+      Value* executor = load_field(exit_trace_node, 
+				   offset::trace_node_branch_executor, 
+				   "executor");
 
-			// Setup out traceinfo here
-			Value* ti_out = info()->out_trace_info();
+      // Setup out traceinfo here
+      Value* ti_out = info()->out_trace_info();
 
-			// All branch traces are expected to loop back to trace anchor
-			store_field(ti_out, offset::trace_info_expected_exit_ip, int32(trace_->anchor->pc));
+      // All branch traces are expected to loop back to trace anchor
+      store_field(ti_out, offset::trace_info_expected_exit_ip, int32(trace_->anchor->pc));
 
-			store_field(ti_out, offset::trace_info_nested, int32(0));
-			store_field(ti_out, offset::trace_info_recording, int32(0));
-			store_field(ti_out, offset::trace_info_entry_cf, exit_cf);
-			store_field(ti_out, offset::trace_info_exit_trace_node, exit_trace_node);
+      store_field(ti_out, offset::trace_info_nested, int32(0));
+      store_field(ti_out, offset::trace_info_recording, int32(0));
+      store_field(ti_out, offset::trace_info_entry_cf, exit_cf);
+      store_field(ti_out, offset::trace_info_exit_trace_node, exit_trace_node);
 
       Value* call_args[] = {
-				info()->vm(),
-				exit_cf,
-				ti_out
+	info()->vm(),
+	exit_cf,
+	ti_out
       };
       Value* ret = b().CreateCall(executor, call_args, call_args+3, "call_branch_trace");
 
-			TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
+      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 
-			// Did the branch-trace bail? Parent trace should collapse, too.
-			Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
+      // Did the branch-trace bail? Parent trace should collapse, too.
+      Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
 
       cont = new_block("continue");
       BasicBlock* collapse_b = new_block("collapse_b");
       b().CreateCondBr(bailed_p, collapse_b, cont);
 
       set_block(collapse_b);
-			return_value(ret);
-			set_block(cont);
+      return_value(ret);
+      set_block(cont);
 
-			if(!(trace_->is_branch())){
-				// If we got to here, that means that a branch of this trace was
-				// run successfully, which by definition must have looped
-				// back to the anchor.
-				TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
-				skip_to_anchor();
-			}
-			else{
-				// If we got to here, that means that a branch trace called
-				// from a branch trace was run successfully. 
-				// We return immediately, which hands control back up to the 
-				// parent trace, which will (per above) jump to the anchor
-				TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
-				return_value(int32(0));
-			}
+      if(!(trace_->is_branch())){
+	// If we got to here, that means that a branch of this trace was
+	// run successfully, which by definition must have looped
+	// back to the anchor.
+	TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
+	skip_to_anchor();
+      }
+      else{
+	// If we got to here, that means that a branch trace called
+	// from a branch trace was run successfully. 
+	// We return immediately, which hands control back up to the 
+	// parent trace, which will (per above) jump to the anchor
+	TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
+	return_value(int32(0));
+      }
 
     }
 
 
     void visit_nested_trace() {
 
-			TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
+      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 
-			// Don't need to flush current call frame. Nested trace will take care of that if
-			// it side-exits.
-			flush_call_stack();
+      // Don't need to flush current call frame. Nested trace will take care of that if
+      // it side-exits.
+      flush_call_stack();
 
-			// Otherwise look up a branch for this location (this needs to be faster)
-			Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
-			Value* executor = load_field(exit_trace_node, offset::trace_node_nested_executor, "nested executor");
+      // Otherwise look up a branch for this location (this needs to be faster)
+      Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
+      Value* executor = load_field(exit_trace_node, offset::trace_node_nested_executor, "nested executor");
 
-			// Setup out traceinfo here
-			Value* ti_out = info()->out_trace_info();
-			Value* expected_exit_pc = int32(cur_trace_node_->nested_trace->expected_exit_ip);
-			store_field(ti_out, offset::trace_info_expected_exit_ip, expected_exit_pc);
-			store_field(ti_out, offset::trace_info_nested, int32(1));
-			store_field(ti_out, offset::trace_info_recording, int32(0));
-			store_field(ti_out, offset::trace_info_entry_cf, info()->call_frame());
+      // Setup out traceinfo here
+      Value* ti_out = info()->out_trace_info();
+      Value* expected_exit_pc = int32(cur_trace_node_->nested_trace->expected_exit_ip);
+      store_field(ti_out, offset::trace_info_expected_exit_ip, expected_exit_pc);
+      store_field(ti_out, offset::trace_info_nested, int32(1));
+      store_field(ti_out, offset::trace_info_recording, int32(0));
+      store_field(ti_out, offset::trace_info_entry_cf, info()->call_frame());
 
       Value* call_args[] = {
-				info()->vm(),
-				info()->call_frame(),
-				ti_out
+	info()->vm(),
+	info()->call_frame(),
+	ti_out
       };
       Value* ret = b().CreateCall(executor, call_args, call_args+3, "call_branch_trace");
 
-			TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
+      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 
-			Value* not_nestable = b().CreateICmpEQ(ret, int32(-1), "nestable_p");
+      Value* not_nestable = b().CreateICmpEQ(ret, int32(-1), "nestable_p");
 
       BasicBlock* cont = new_block("continue");
       BasicBlock* not_nestable_b = new_block("not_nestable");
       b().CreateCondBr(not_nestable, not_nestable_b, cont);
 
-			//  The nested trace must have bailed into the uncommon interpreter and has 
-			//  already popped its home call_frame.  This trace is no longer relevant.
+      //  The nested trace must have bailed into the uncommon interpreter and has 
+      //  already popped its home call_frame.  This trace is no longer relevant.
       set_block(not_nestable_b);
-			return_value(ret);
+      return_value(ret);
 
-			// The nested trace exited on the expected_ip, on its home callframe.
-			// Continue on our merry way.
+      // The nested trace exited on the expected_ip, on its home callframe.
+      // Continue on our merry way.
       set_block(cont);
-		}
+    }
 
     void visit_check_interrupts() {
       std::vector<const Type*> types;
@@ -325,7 +325,7 @@ namespace rubinius {
 
       FunctionType* ft = FunctionType::get(ObjType, types, false);
       Function* func = cast<Function>(
-				module_->getOrInsertFunction("rbx_check_interrupts", ft));
+				      module_->getOrInsertFunction("rbx_check_interrupts", ft));
 
       func->setDoesNotCapture(0, true);
       func->setDoesNotCapture(1, true);
@@ -345,92 +345,92 @@ namespace rubinius {
 
     void visit_goto(opcode ip) {
 
-			// Omit unconditional jump if all it does is hop 
-			// to the next trace node. (unless the next node is
-			// the anchor, in which case we do want to jump because
-			// the anchor is emitted first, not last.)
-			if(cur_trace_node_->next->trace_pc == (int)ip &&
-				 cur_trace_node_->next != trace_->anchor){
-				return;
-			}
+      // Omit unconditional jump if all it does is hop 
+      // to the next trace node. (unless the next node is
+      // the anchor, in which case we do want to jump because
+      // the anchor is emitted first, not last.)
+      if(cur_trace_node_->next->trace_pc == (int)ip &&
+	 cur_trace_node_->next != trace_->anchor){
+	return;
+      }
 
-			// Omit unconditional jump if this is a branch trace
-			// and we're at the last node before the terminator.
-			if(trace_->is_branch() && cur_trace_node_->next == trace_->anchor){
-				return;
-			}
+      // Omit unconditional jump if this is a branch trace
+      // and we're at the last node before the terminator.
+      if(trace_->is_branch() && cur_trace_node_->next == trace_->anchor){
+	return;
+      }
 
-			BasicBlock* bb = block_map_[ip].block;
-			assert(bb);
-			b().CreateBr(bb);
-			set_block(new_block("continue"));
+      BasicBlock* bb = block_map_[ip].block;
+      assert(bb);
+      b().CreateBr(bb);
+      set_block(new_block("continue"));
     }
 
 
     void visit_end() {
-			if(trace_->is_branch()){
-				return_value(int32(0));
-			}
+      if(trace_->is_branch()){
+	return_value(int32(0));
+      }
     }
    
     void visit_goto_if_false(opcode ip) {
       Value* cond = stack_pop();
       Value* i = b().CreatePtrToInt(
-				cond, ls_->IntPtrTy, "as_int");
+				    cond, ls_->IntPtrTy, "as_int");
       Value* anded = b().CreateAnd(
-				i,
-				ConstantInt::get(ls_->IntPtrTy, FALSE_MASK), 
-				"and");
+				   i,
+				   ConstantInt::get(ls_->IntPtrTy, FALSE_MASK), 
+				   "and");
       Value* cmp = b().CreateICmpEQ(
-				anded,
-				ConstantInt::get(ls_->IntPtrTy, cFalse), 
-				"is_true");
+				    anded,
+				    ConstantInt::get(ls_->IntPtrTy, cFalse), 
+				    "is_true");
 
       BasicBlock* cont = new_block("continue");
       BasicBlock* exit_stub = new_block("exit_stub");
 
       int exit_to_pc;
-			if(cur_trace_node_->jump_taken){
-				b().CreateCondBr(cmp, cont, exit_stub);
-				exit_to_pc = cur_trace_node_->pc + 1 + cur_trace_node_->numargs;
-			}
-			else{
-				b().CreateCondBr(cmp, exit_stub, cont);
-				exit_to_pc = cur_trace_node_->interp_jump_target();
-			}
-			set_block(exit_stub);
-			exit_trace(exit_to_pc);
-			set_block(cont);
+      if(cur_trace_node_->jump_taken){
+	b().CreateCondBr(cmp, cont, exit_stub);
+	exit_to_pc = cur_trace_node_->pc + 1 + cur_trace_node_->numargs;
+      }
+      else{
+	b().CreateCondBr(cmp, exit_stub, cont);
+	exit_to_pc = cur_trace_node_->interp_jump_target();
+      }
+      set_block(exit_stub);
+      exit_trace(exit_to_pc);
+      set_block(cont);
     }
 
     void visit_goto_if_true(opcode ip) {
       Value* cond = stack_pop();
       Value* i = b().CreatePtrToInt(
-				cond, ls_->IntPtrTy, "as_int");
+				    cond, ls_->IntPtrTy, "as_int");
       Value* anded = b().CreateAnd(
-				i,
-				ConstantInt::get(ls_->IntPtrTy, FALSE_MASK), "and");
+				   i,
+				   ConstantInt::get(ls_->IntPtrTy, FALSE_MASK), "and");
 
       Value* cmp = b().CreateICmpNE(
-				anded,
-				ConstantInt::get(ls_->IntPtrTy, cFalse), "is_true");
+				    anded,
+				    ConstantInt::get(ls_->IntPtrTy, cFalse), "is_true");
 
-			BasicBlock* cont = new_block("continue");
+      BasicBlock* cont = new_block("continue");
       BasicBlock* exit_stub = new_block("exit_stub");
 
 
       int exit_to_pc;
-			if(cur_trace_node_->jump_taken){
-				b().CreateCondBr(cmp, cont, exit_stub);
-				exit_to_pc = cur_trace_node_->pc + 1 + cur_trace_node_->numargs;
-			}
-			else{
-				b().CreateCondBr(cmp, exit_stub, cont);
-				exit_to_pc = cur_trace_node_->interp_jump_target();
-			}
-			set_block(exit_stub);
-			exit_trace(exit_to_pc);
-			set_block(cont);
+      if(cur_trace_node_->jump_taken){
+	b().CreateCondBr(cmp, cont, exit_stub);
+	exit_to_pc = cur_trace_node_->pc + 1 + cur_trace_node_->numargs;
+      }
+      else{
+	b().CreateCondBr(cmp, exit_stub, cont);
+	exit_to_pc = cur_trace_node_->interp_jump_target();
+      }
+      set_block(exit_stub);
+      exit_trace(exit_to_pc);
+      set_block(cont);
     }
 
     void visit_set_local(opcode which) {
@@ -464,22 +464,22 @@ namespace rubinius {
 
         // FunctionType* ft = FunctionType::get(ls_->Int1Ty, types, false);
         // Function* func = cast<Function>(
-				// 	module_->getOrInsertFunction("rbx_raising_exception", ft));
+	// 	module_->getOrInsertFunction("rbx_raising_exception", ft));
 
         // Value* call_args[] = { vm_ };
 
 				
-				// Check if the raised condition is an exception..
+	// Check if the raised condition is an exception..
         // Value* isit = b().CreateCall(func, call_args, call_args+1, "rae");
 
-				BasicBlock* exit_stub = new_block("exit_stub");
-				set_block(exit_stub);
-				exit_trace(where);
-				set_block(code);
+	BasicBlock* exit_stub = new_block("exit_stub");
+	set_block(exit_stub);
+	exit_trace(where);
+	set_block(code);
 
 				
         // If it's not an exception, we're going to want to pass to 
-				// a surrounding handler. If no such handler exists, we bail.
+	// a surrounding handler. If no such handler exists, we bail.
         // BasicBlock* next = 0;
         // if(has_exception_handler()) {
         //   next = exception_handler();
@@ -487,16 +487,16 @@ namespace rubinius {
         //   next = exit_stub;
         // }
 
-				// Now, if it was an exception, run the rescue clause. Otherwise,
-				// pass to surrounding handler or bail.
+	// Now, if it was an exception, run the rescue clause. Otherwise,
+	// pass to surrounding handler or bail.
         // b().CreateCondBr(isit, jbb.block, next);
 
-				// Currently we're being babies and just bailing out at any 
-				// exceptional condition. 
+	// Currently we're being babies and just bailing out at any 
+	// exceptional condition. 
 
-				// See todo.org for what we should be doing.
+	// See todo.org for what we should be doing.
 
-				b().CreateBr(exit_stub);
+	b().CreateBr(exit_stub);
 
 
         set_block(orig);
@@ -512,524 +512,524 @@ namespace rubinius {
 
 
 
-		void emit_traced_return(){
+    void emit_traced_return(){
 
-			Value* ret_val = stack_top();
+      Value* ret_val = stack_top();
 
-			// parent_info exists if this call_frame
-			// was activated on this trace
-			if(info()->parent_info()){
-				method_info_ = info()->parent_info();
-				vm_ = info()->vm();
-				args_ = info()->args();
-				call_frame_ = info()->call_frame();
-				vars_ = info()->variables();
-				stack_ = info()->stack();
-				sp_ = info()->saved_sp();
-				last_sp_ = info()->saved_last_sp();
-				out_args_ = info()->out_args();
-			}
-			else{
-				// Otherwise, we're returning from
-				// a call_frame that wasn't created on
-				// this trace. We need to grab all the
-				// info by other means.
+      // parent_info exists if this call_frame
+      // was activated on this trace
+      if(info()->parent_info()){
+	method_info_ = info()->parent_info();
+	vm_ = info()->vm();
+	args_ = info()->args();
+	call_frame_ = info()->call_frame();
+	vars_ = info()->variables();
+	stack_ = info()->stack();
+	sp_ = info()->saved_sp();
+	last_sp_ = info()->saved_last_sp();
+	out_args_ = info()->out_args();
+      }
+      else{
+	// Otherwise, we're returning from
+	// a call_frame that wasn't created on
+	// this trace. We need to grab all the
+	// info by other means.
 
-				vm_ = info()->vm();
+	vm_ = info()->vm();
 
-				// Hmmmm, shouln't do this unless there's def. a block
-				Value* prev_block_env_pos = get_field(info()->variables(), offset::vars_block);
-				Value* block_env = b().CreateLoad(prev_block_env_pos, "previous_block_env");
-				block_env = b().CreateBitCast(block_env, ls_->ptr_type("BlockEnvironment"),"block_env");
+	// Hmmmm, shouln't do this unless there's def. a block
+	Value* prev_block_env_pos = get_field(info()->variables(), offset::vars_block);
+	Value* block_env = b().CreateLoad(prev_block_env_pos, "previous_block_env");
+	block_env = b().CreateBitCast(block_env, ls_->ptr_type("BlockEnvironment"),"block_env");
 
-				Value* cf_pos = get_field(info()->call_frame(), offset::cf_previous);
-				call_frame_ = b().CreateLoad(cf_pos, "previous_cf");
+	Value* cf_pos = get_field(info()->call_frame(), offset::cf_previous);
+	call_frame_ = b().CreateLoad(cf_pos, "previous_cf");
 				
-				Value* vars_pos = get_field(call_frame_, offset::cf_scope);
-				vars_ = b().CreateLoad(vars_pos, "vars");
+	Value* vars_pos = get_field(call_frame_, offset::cf_scope);
+	vars_ = b().CreateLoad(vars_pos, "vars");
 
-				Value* args_pos = get_field(call_frame_, offset::cf_arguments);
-				args_ = b().CreateLoad(args_pos, "args");
+	Value* args_pos = get_field(call_frame_, offset::cf_arguments);
+	args_ = b().CreateLoad(args_pos, "args");
 
-				Value* stk_base = get_field(call_frame_, offset::cf_stk);
-				stack_ = b().CreateBitCast(stk_base, ObjArrayTy, "obj_ary_type");
+	Value* stk_base = get_field(call_frame_, offset::cf_stk);
+	stack_ = b().CreateBitCast(stk_base, ObjArrayTy, "obj_ary_type");
 
-				out_args_ = b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
+	out_args_ = b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
 
-				JITMethodInfo* prev_info = info();
-				method_info_ = new JITMethodInfo(info()->context(), info()->method(), info()->vm_method());
-				info()->is_block = false; // <---- this will be wrong if returning to a block...
-				info()->set_block_env(block_env);
-				info()->init_globals(prev_info);
-				info()->context().set_root(info()->root_info());
-				info()->set_call_frame(call_frame_);
-				info()->set_variables(vars_);
-				info()->set_stack(stack_);
-				info()->set_vm(vm_);
-				info()->set_args(args_);
-				info()->set_out_args(out_args_);
+	JITMethodInfo* prev_info = info();
+	method_info_ = new JITMethodInfo(info()->context(), info()->method(), info()->vm_method());
+	info()->is_block = false; // <---- this will be wrong if returning to a block...
+	info()->set_block_env(block_env);
+	info()->init_globals(prev_info);
+	info()->context().set_root(info()->root_info());
+	info()->set_call_frame(call_frame_);
+	info()->set_variables(vars_);
+	info()->set_stack(stack_);
+	info()->set_vm(vm_);
+	info()->set_args(args_);
+	info()->set_out_args(out_args_);
 
-				// Leave room for return value..
-				sp_ = cur_trace_node_->next->sp - 1; 
+	// Leave room for return value..
+	sp_ = cur_trace_node_->next->sp - 1; 
 
-				last_sp_ = sp_;
-			}
+	last_sp_ = sp_;
+      }
 
-			stack_push(ret_val);
+      stack_push(ret_val);
 
-			// Info has changed, setup out_args stuff again.
-			init_out_args();
-		}
-
-    void flush_ip() {
-			flush_ip(current_ip_);
+      // Info has changed, setup out_args stuff again.
+      init_out_args();
     }
 
-		void flush_ip(int ip) {
-			Value* call_frame = info()->call_frame();
-			Value* pos = b().CreateConstGEP2_32(call_frame, 0, offset::cf_ip, "ip_pos");
-			b().CreateStore(ConstantInt::get(ls_->Int32Ty, ip), pos);
-		}
+    void flush_ip() {
+      flush_ip(current_ip_);
+    }
 
-		void return_value(Value* ret) {
-			info()->add_return_value(ret, current_block());
-			b().CreateBr(info()->return_pad());
-		}
+    void flush_ip(int ip) {
+      Value* call_frame = info()->call_frame();
+      Value* pos = b().CreateConstGEP2_32(call_frame, 0, offset::cf_ip, "ip_pos");
+      b().CreateStore(ConstantInt::get(ls_->Int32Ty, ip), pos);
+    }
 
-		void skip_to_anchor() {
-			BasicBlock* bb = block_map_[trace_->anchor->trace_pc].block;
-			assert(bb);
-			b().CreateBr(bb);
-			set_block(new_block("continue"));
-		}
+    void return_value(Value* ret) {
+      info()->add_return_value(ret, current_block());
+      b().CreateBr(info()->return_pad());
+    }
 
-		void exit_trace(int next_ip){
-			TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
-			ensure_trace_exit_pad();
-			BasicBlock* cur = current_block();
-			info()->root_info()->exit_ip_phi->addIncoming(int32(cur_trace_node_->pc), cur);
-			info()->root_info()->trace_node_phi->addIncoming(constant(
-																												 cur_trace_node_, 
-																												 ls_->ptr_type("TraceNode")),
-																											 cur);
-			info()->root_info()->exit_cf_phi->addIncoming(info()->call_frame(), cur);
+    void skip_to_anchor() {
+      BasicBlock* bb = block_map_[trace_->anchor->trace_pc].block;
+      assert(bb);
+      b().CreateBr(bb);
+      set_block(new_block("continue"));
+    }
 
-			flush_current_call_frame(next_ip);
-			flush_call_stack();
+    void exit_trace(int next_ip){
+      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
+      ensure_trace_exit_pad();
+      BasicBlock* cur = current_block();
+      info()->root_info()->exit_ip_phi->addIncoming(int32(cur_trace_node_->pc), cur);
+      info()->root_info()->trace_node_phi->addIncoming(constant(
+								cur_trace_node_, 
+								ls_->ptr_type("TraceNode")),
+						       cur);
+      info()->root_info()->exit_cf_phi->addIncoming(info()->call_frame(), cur);
 
-			b().CreateBr(info()->trace_exit_pad());
-		}
+      flush_current_call_frame(next_ip);
+      flush_call_stack();
 
-
-		void flush_current_call_frame(int next_ip){
-			// Flush ip and sp of active current frame
-			Value* cf = info()->call_frame();
-			Value* next_ip_val = int32(next_ip);
-			Value* next_ip_pos = get_field(cf, offset::cf_ip);
-			b().CreateStore(next_ip_val, next_ip_pos);
-			Value* stckp = int32(sp());
-			Value* exit_sp_pos = get_field(cf, offset::cf_sp);
-			b().CreateStore(stckp, exit_sp_pos);
-		}
+      b().CreateBr(info()->trace_exit_pad());
+    }
 
 
-		void flush_call_stack(){
-			// Flush ip and sp of any stacked frames
-			TraceNode* node = cur_trace_node_->active_send;
-			while(node != NULL){
+    void flush_current_call_frame(int next_ip){
+      // Flush ip and sp of active current frame
+      Value* cf = info()->call_frame();
+      Value* next_ip_val = int32(next_ip);
+      Value* next_ip_pos = get_field(cf, offset::cf_ip);
+      b().CreateStore(next_ip_val, next_ip_pos);
+      Value* stckp = int32(sp());
+      Value* exit_sp_pos = get_field(cf, offset::cf_sp);
+      b().CreateStore(stckp, exit_sp_pos);
+    }
 
-				assert(node->traced_send || node->traced_yield);
-				Value* cf = NULL;
-				TraceNode* cf_creator_node = node->active_send;
-				if(cf_creator_node != NULL){
-					cf = info()->root_info()->pre_allocated_call_frames[cf_creator_node->trace_pc];	
-				}
-				else{
-					cf = info()->root_info()->call_frame();
-				}
 
-				cf = b().CreateBitCast(cf, CallFrameTy, "call_frame");
-				assert(cf);
+    void flush_call_stack(){
+      // Flush ip and sp of any stacked frames
+      TraceNode* node = cur_trace_node_->active_send;
+      while(node != NULL){
 
-				Value* stckp = NULL;
-				Value* next_ip = NULL;
+	assert(node->traced_send || node->traced_yield);
+	Value* cf = NULL;
+	TraceNode* cf_creator_node = node->active_send;
+	if(cf_creator_node != NULL){
+	  cf = info()->root_info()->pre_allocated_call_frames[cf_creator_node->trace_pc];	
+	}
+	else{
+	  cf = info()->root_info()->call_frame();
+	}
 
-				if(node->op == InstructionSequence::insn_send_stack){
-					int sp = node->sp - node->arg2 - 1;
-					stckp = ConstantInt::get(ls_->Int32Ty, sp);
-					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
-				}
-				else if(node->op == InstructionSequence::insn_send_stack_with_block){
-					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 2);
-					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
-				}
-				else if(node->op == InstructionSequence::insn_yield_stack){
-					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg1);
-					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
-				}
-				else if(node->op == InstructionSequence::insn_send_method){
-					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - 1);
-					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
-				}
-				else{
-					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 1);
-					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
-				}
+	cf = b().CreateBitCast(cf, CallFrameTy, "call_frame");
+	assert(cf);
 
-				Value* next_ip_pos = get_field(cf, offset::cf_ip);
-				b().CreateStore(next_ip, next_ip_pos);
+	Value* stckp = NULL;
+	Value* next_ip = NULL;
 
-				Value* exit_sp_pos = get_field(cf, offset::cf_sp);
-				b().CreateStore(stckp, exit_sp_pos);
+	if(node->op == InstructionSequence::insn_send_stack){
+	  int sp = node->sp - node->arg2 - 1;
+	  stckp = ConstantInt::get(ls_->Int32Ty, sp);
+	  next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
+	}
+	else if(node->op == InstructionSequence::insn_send_stack_with_block){
+	  stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 2);
+	  next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
+	}
+	else if(node->op == InstructionSequence::insn_yield_stack){
+	  stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg1);
+	  next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
+	}
+	else if(node->op == InstructionSequence::insn_send_method){
+	  stckp = ConstantInt::get(ls_->Int32Ty, node->sp - 1);
+	  next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
+	}
+	else{
+	  stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 1);
+	  next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
+	}
 
-				node = node->active_send;
-			}
-		}
+	Value* next_ip_pos = get_field(cf, offset::cf_ip);
+	b().CreateStore(next_ip, next_ip_pos);
 
-		void visit_push_has_block() {
-			// We're in a traced method, so we know if there is a block staticly.
-			if(info()->traced_block_supplied()) {
-				stack_push(constant(Qtrue));
-			}
-			else{
-				stack_push(constant(Qfalse));
-			}
-		}
+	Value* exit_sp_pos = get_field(cf, offset::cf_sp);
+	b().CreateStore(stckp, exit_sp_pos);
 
-		void visit_push_self() {
-			stack_push(get_self());
-		}
+	node = node->active_send;
+      }
+    }
 
-		void visit_send_method(opcode which) {
-			visit_send_stack(which, 0);
-		}
+    void visit_push_has_block() {
+      // We're in a traced method, so we know if there is a block staticly.
+      if(info()->traced_block_supplied()) {
+	stack_push(constant(Qtrue));
+      }
+      else{
+	stack_push(constant(Qfalse));
+      }
+    }
+
+    void visit_push_self() {
+      stack_push(get_self());
+    }
+
+    void visit_send_method(opcode which) {
+      visit_send_stack(which, 0);
+    }
 
 #include "vm/llvm/jit_trace_send.hpp"
-		void visit_send_stack(opcode which, opcode args) {
-			if(cur_trace_node_->traced_send){
-				emit_traced_send(which, args, false);
-			}
-			else{
-				InlineCache* cache = reinterpret_cast<InlineCache*>(which);
-				set_has_side_effects();
-				Value* ret = inline_cache_send(args, cache);
-				stack_remove(args + 1);
-				check_for_exception(ret);
-				stack_push(ret);
-				allow_private_ = false;
-			}
-		}
+    void visit_send_stack(opcode which, opcode args) {
+      if(cur_trace_node_->traced_send){
+	emit_traced_send(which, args, false);
+      }
+      else{
+	InlineCache* cache = reinterpret_cast<InlineCache*>(which);
+	set_has_side_effects();
+	Value* ret = inline_cache_send(args, cache);
+	stack_remove(args + 1);
+	check_for_exception(ret);
+	stack_push(ret);
+	allow_private_ = false;
+      }
+    }
 
 
-		void emit_create_block(opcode which) {
-			// if we're inside an inlined method that has a block
-			// visible, that means that we've note yet emited the code to
-			// actually create the block for this inlined block.
-			//
-			// But, because we're about to create a block here, it might
-			// want to yield (ie, inlining Enumerable#find on an Array, but
-			// not inlining the call to each inside find).
-			//
-			// So at this point, we have to create the block object
-			// for this parent block.
+    void emit_create_block(opcode which) {
+      // if we're inside an inlined method that has a block
+      // visible, that means that we've note yet emited the code to
+      // actually create the block for this inlined block.
+      //
+      // But, because we're about to create a block here, it might
+      // want to yield (ie, inlining Enumerable#find on an Array, but
+      // not inlining the call to each inside find).
+      //
+      // So at this point, we have to create the block object
+      // for this parent block.
 
-			//emit_delayed_create_block();
+      //emit_delayed_create_block();
 
-			std::vector<const Type*> types;
-			types.push_back(VMTy);
-			types.push_back(CallFrameTy);
-			types.push_back(ls_->Int32Ty);
+      std::vector<const Type*> types;
+      types.push_back(VMTy);
+      types.push_back(CallFrameTy);
+      types.push_back(ls_->Int32Ty);
 
-			FunctionType* ft = FunctionType::get(ObjType, types, false);
-			Function* func = cast<Function>(
-				module_->getOrInsertFunction("rbx_create_block", ft));
+      FunctionType* ft = FunctionType::get(ObjType, types, false);
+      Function* func = cast<Function>(
+				      module_->getOrInsertFunction("rbx_create_block", ft));
 
-			Value* call_args[] = {
-				vm_,
-				call_frame_,
-				ConstantInt::get(ls_->Int32Ty, which)
-			};
+      Value* call_args[] = {
+	vm_,
+	call_frame_,
+	ConstantInt::get(ls_->Int32Ty, which)
+      };
 
-			stack_set_top(b().CreateCall(func, call_args, call_args+3, "create_block"));
-		}
+      stack_set_top(b().CreateCall(func, call_args, call_args+3, "create_block"));
+    }
 
-		void visit_send_stack_with_block(opcode which, opcode args) {
+    void visit_send_stack_with_block(opcode which, opcode args) {
 
-			InlineCache* cache = reinterpret_cast<InlineCache*>(which);
-			bool has_literal_block = (current_block_ >= 0);
-			bool block_on_stack = !has_literal_block;
+      InlineCache* cache = reinterpret_cast<InlineCache*>(which);
+      bool has_literal_block = (current_block_ >= 0);
+      bool block_on_stack = !has_literal_block;
 
-			if(cur_trace_node_->traced_send){
+      if(cur_trace_node_->traced_send){
 
-				if(!block_on_stack) {
-					emit_create_block(current_block_);
-				}
+	if(!block_on_stack) {
+	  emit_create_block(current_block_);
+	}
 
-				emit_traced_send(which, args, true);
+	emit_traced_send(which, args, true);
 
-			}
-			else{
-				set_has_side_effects();
+      }
+      else{
+	set_has_side_effects();
 
-				// Detect a literal block being created and passed here.
-				if(!block_on_stack) {
-					emit_create_block(current_block_);
-				}
+	// Detect a literal block being created and passed here.
+	if(!block_on_stack) {
+	  emit_create_block(current_block_);
+	}
 
-				Value* ret = block_send(cache, args, allow_private_);
-				stack_remove(args + 2);
-				check_for_return(ret);
-				allow_private_ = false;
+	Value* ret = block_send(cache, args, allow_private_);
+	stack_remove(args + 2);
+	check_for_return(ret);
+	allow_private_ = false;
 
-				// Clear the current block
-				current_block_ = -1;
-			}
-		}
+	// Clear the current block
+	current_block_ = -1;
+      }
+    }
 
 
 #include "vm/llvm/jit_trace_yield.hpp"
-		void visit_yield_stack(opcode count) {
-			if(cur_trace_node_->traced_yield){
-				emit_traced_yield_stack(count);
-			}
-			else{
-				set_has_side_effects();
-				Value* vars = vars_;
-				if(JITMethodInfo* home = info()->home_info()) {
-					vars = home->variables();
-				}
-				Signature sig(ls_, ObjType);
-				sig << VMTy;
-				sig << CallFrameTy;
-				sig << "Object";
-				sig << ls_->Int32Ty;
-				sig << ObjArrayTy;
-				Value* block_obj = b().CreateLoad(
-					b().CreateConstGEP2_32(vars, 0, offset::vars_block),
-					"block");
+    void visit_yield_stack(opcode count) {
+      if(cur_trace_node_->traced_yield){
+	emit_traced_yield_stack(count);
+      }
+      else{
+	set_has_side_effects();
+	Value* vars = vars_;
+	if(JITMethodInfo* home = info()->home_info()) {
+	  vars = home->variables();
+	}
+	Signature sig(ls_, ObjType);
+	sig << VMTy;
+	sig << CallFrameTy;
+	sig << "Object";
+	sig << ls_->Int32Ty;
+	sig << ObjArrayTy;
+	Value* block_obj = b().CreateLoad(
+					  b().CreateConstGEP2_32(vars, 0, offset::vars_block),
+					  "block");
 
-				Value* call_args[] = {
-					vm_,
-					call_frame_,
-					block_obj,
-					ConstantInt::get(ls_->Int32Ty, count),
-					stack_objects(count)
-				};
-				flush_ip();
-				Value* val = sig.call("rbx_yield_stack", call_args, 5, "ys", b());
-				stack_remove(count);
-				check_for_exception(val);
-				stack_push(val);
-			}
-		}
+	Value* call_args[] = {
+	  vm_,
+	  call_frame_,
+	  block_obj,
+	  ConstantInt::get(ls_->Int32Ty, count),
+	  stack_objects(count)
+	};
+	flush_ip();
+	Value* val = sig.call("rbx_yield_stack", call_args, 5, "ys", b());
+	stack_remove(count);
+	check_for_exception(val);
+	stack_push(val);
+      }
+    }
 
-		void visit_ret() {
-			if(use_full_scope_) flush_scope_to_heap(info()->variables());
-			emit_traced_return();
-		}
+    void visit_ret() {
+      if(use_full_scope_) flush_scope_to_heap(info()->variables());
+      emit_traced_return();
+    }
 
-		void visit_push_local(opcode which) {
-			Value* idx2[] = {
-				ConstantInt::get(ls_->Int32Ty, 0),
-				ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-				ConstantInt::get(ls_->Int32Ty, which)
-			};
-			Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
-			stack_push(b().CreateLoad(pos, "local"));
-		}
+    void visit_push_local(opcode which) {
+      Value* idx2[] = {
+	ConstantInt::get(ls_->Int32Ty, 0),
+	ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+	ConstantInt::get(ls_->Int32Ty, which)
+      };
+      Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
+      stack_push(b().CreateLoad(pos, "local"));
+    }
 
-		void visit_meta_send_op_plus(opcode name) {
-			InlineCache* cache = reinterpret_cast<InlineCache*>(name);
-			if(cache->classes_seen() == 0) {
-				set_has_side_effects();
-				Value* recv = stack_back(1);
-				Value* arg =  stack_top();
+    void visit_meta_send_op_plus(opcode name) {
+      InlineCache* cache = reinterpret_cast<InlineCache*>(name);
+      if(cache->classes_seen() == 0) {
+	set_has_side_effects();
+	Value* recv = stack_back(1);
+	Value* arg =  stack_top();
 
-				BasicBlock* fast = new_block("fast");
-				BasicBlock* dispatch = new_block("dispatch");
-				BasicBlock* tagnow = new_block("tagnow");
-				BasicBlock* cont = new_block("cont");
+	BasicBlock* fast = new_block("fast");
+	BasicBlock* dispatch = new_block("dispatch");
+	BasicBlock* tagnow = new_block("tagnow");
+	BasicBlock* cont = new_block("cont");
 
-				check_fixnums(recv, arg, fast, dispatch);
+	check_fixnums(recv, arg, fast, dispatch);
 
-				set_block(dispatch);
+	set_block(dispatch);
 
-				Value* called_value = simple_send(ls_->symbol("+"), 1);
+	Value* called_value = simple_send(ls_->symbol("+"), 1);
 
-				check_for_exception_then(called_value, cont);
+	check_for_exception_then(called_value, cont);
 
-				set_block(fast);
+	set_block(fast);
 
-				std::vector<const Type*> types;
-				types.push_back(FixnumTy);
-				types.push_back(FixnumTy);
+	std::vector<const Type*> types;
+	types.push_back(FixnumTy);
+	types.push_back(FixnumTy);
 
-				std::vector<const Type*> struct_types;
-				struct_types.push_back(FixnumTy);
-				struct_types.push_back(ls_->Int1Ty);
+	std::vector<const Type*> struct_types;
+	struct_types.push_back(FixnumTy);
+	struct_types.push_back(ls_->Int1Ty);
 
-				StructType* st = StructType::get(ls_->ctx(), struct_types);
+	StructType* st = StructType::get(ls_->ctx(), struct_types);
 
-				FunctionType* ft = FunctionType::get(st, types, false);
-				Function* func = cast<Function>(
+	FunctionType* ft = FunctionType::get(st, types, false);
+	Function* func = cast<Function>(
 					module_->getOrInsertFunction(ADD_WITH_OVERFLOW, ft));
 
-				Value* recv_int = tag_strip(recv);
-				Value* arg_int = tag_strip(arg);
-				Value* call_args[] = { recv_int, arg_int };
-				Value* res = b().CreateCall(func, call_args, call_args+2, "add.overflow");
+	Value* recv_int = tag_strip(recv);
+	Value* arg_int = tag_strip(arg);
+	Value* call_args[] = { recv_int, arg_int };
+	Value* res = b().CreateCall(func, call_args, call_args+2, "add.overflow");
 
-				Value* sum = b().CreateExtractValue(res, 0, "sum");
-				Value* dof = b().CreateExtractValue(res, 1, "did_overflow");
+	Value* sum = b().CreateExtractValue(res, 0, "sum");
+	Value* dof = b().CreateExtractValue(res, 1, "did_overflow");
 
-				b().CreateCondBr(dof, dispatch, tagnow);
+	b().CreateCondBr(dof, dispatch, tagnow);
 
-				set_block(tagnow);
-
-
-				Value* imm_value = fixnum_tag(sum);
-
-				b().CreateBr(cont);
-
-				set_block(cont);
-
-				PHINode* phi = b().CreatePHI(ObjType, "addition");
-				phi->addIncoming(called_value, dispatch);
-				phi->addIncoming(imm_value, tagnow);
+	set_block(tagnow);
 
 
-				stack_remove(2);
-				stack_push(phi);
-			} else {
-				visit_send_stack(name, 1);
-			}
-		}
+	Value* imm_value = fixnum_tag(sum);
 
-		void print_debug(){
-			Signature sig(ls_, ls_->VoidTy);
-			Value* call_args[] = {};
-			sig.call("rbx_print_debug", call_args, 0, "", b());
-		}
+	b().CreateBr(cont);
 
-		void dump_vm_state(){
-			Signature sig(ls_, ls_->VoidTy);
-			sig << "VM";
-			sig << "CallFrame";
+	set_block(cont);
 
-			Value* call_args[] = {
-				vm_,
-				call_frame_
-			};
-			sig.call("rbx_show_state", call_args, 2, "", b());
-		}
-
-		void dump_obj(Value* val){
-			Signature sig(ls_, ls_->VoidTy);
-			sig << "VM";
-			sig << "Object";
-
-			Value* call_args[] = {
-				vm_,
-				val
-			};
-			sig.call("rbx_show_obj", call_args, 2, "", b());
-		}
-
-		void dump_vars(Value* val){
-			Signature sig(ls_, ls_->VoidTy);
-			sig << "VM";
-			sig << "CallFrame";
-			sig << "StackVariables";
-
-			Value* call_args[] = {
-				vm_,
-				call_frame_,
-				val
-			};
-
-			sig.call("rbx_show_vars", call_args, 3, "", b());
-		}
-
-		void track_time(int timer){
-			Signature sig(ls_, ls_->VoidTy);
-			sig << "VM";
-			sig << ls_->Int32Ty;
-			Value* call_args[] = {
-				vm_,
-				int32(timer)
-			};
-			sig.call("rbx_track_time", call_args, 2, "", b());
-		}
-
-		void dump_local(opcode which){
-			Value* idx2[] = {
-				ConstantInt::get(ls_->Int32Ty, 0),
-				ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-				ConstantInt::get(ls_->Int32Ty, which)
-			};
-			Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
-			dump_obj(b().CreateLoad(pos, "local"));
-		}
-
-		void dump_int(int i){
-
-			Value* val = ConstantInt::get(ls_->Int32Ty, i);
-
-			Signature sig(ls_, ls_->VoidTy);
-			sig << ls_->Int32Ty;
-
-			Value* call_args[] = {
-				val
-			};
-			sig.call("rbx_show_int", call_args, 1, "", b());
-		}
-
-		void dump_int1(Value* val){
-			Signature sig(ls_, ls_->VoidTy);
-			sig << ls_->Int1Ty;
-			Value* call_args[] = {
-				val
-			};
-			sig.call("rbx_show_int", call_args, 1, "", b());
-		}
-
-		void dump_int32(Value* val){
-			Signature sig(ls_, ls_->VoidTy);
-			sig << ls_->Int32Ty;
-			Value* call_args[] = {
-				val
-			};
-			sig.call("rbx_show_int", call_args, 1, "", b());
-		}
+	PHINode* phi = b().CreatePHI(ObjType, "addition");
+	phi->addIncoming(called_value, dispatch);
+	phi->addIncoming(imm_value, tagnow);
 
 
+	stack_remove(2);
+	stack_push(phi);
+      } else {
+	visit_send_stack(name, 1);
+      }
+    }
 
-		// void dump_str(char* str){
+    void print_debug(){
+      Signature sig(ls_, ls_->VoidTy);
+      Value* call_args[] = {};
+      sig.call("rbx_print_debug", call_args, 0, "", b());
+    }
 
-		// 	vector<const Type*> arg_types;
-		// 	arg_types.push_back(PointerType::get(Type::SByteTy));
-		// 	Function* f = module_.getOrInsertFunction(
-		// 		"printf",
-		// 		FunctionType::get(Type::IntTy, arg_types, true));
+    void dump_vm_state(){
+      Signature sig(ls_, ls_->VoidTy);
+      sig << "VM";
+      sig << "CallFrame";
 
-		// 	Constant* constStr = ConstantArray::get(str);
-		// 	GlobalVariable* gv = new GlobalVariable(
-		// 		constStr->getType(), 
-		// 		true, GlobalValue::InternalLinkage, 
-		// 		constStr, "", module_);
+      Value* call_args[] = {
+	vm_,
+	call_frame_
+      };
+      sig.call("rbx_show_state", call_args, 2, "", b());
+    }
 
-		// 	std::vector<Constant*> geplist;
-		// 	geplist.push_back(ConstantUInt::get(Type::UIntTy,0));
-		// 	geplist.push_back(ConstantUInt::get(Type::UIntTy,0));
-		// 	Constant* gep = ConstantExpr::getGetElementPtr(gv,geplist);
+    void dump_obj(Value* val){
+      Signature sig(ls_, ls_->VoidTy);
+      sig << "VM";
+      sig << "Object";
 
-		// 	std::vector<Value*> args;
-		// 	args.push_back(gep);
+      Value* call_args[] = {
+	vm_,
+	val
+      };
+      sig.call("rbx_show_obj", call_args, 2, "", b());
+    }
 
-		// 	llvm::CallInst::Create(f, args.begin(), args.end(), "call_printf", b());
-		// }
+    void dump_vars(Value* val){
+      Signature sig(ls_, ls_->VoidTy);
+      sig << "VM";
+      sig << "CallFrame";
+      sig << "StackVariables";
+
+      Value* call_args[] = {
+	vm_,
+	call_frame_,
+	val
+      };
+
+      sig.call("rbx_show_vars", call_args, 3, "", b());
+    }
+
+    void track_time(int timer){
+      Signature sig(ls_, ls_->VoidTy);
+      sig << "VM";
+      sig << ls_->Int32Ty;
+      Value* call_args[] = {
+	vm_,
+	int32(timer)
+      };
+      sig.call("rbx_track_time", call_args, 2, "", b());
+    }
+
+    void dump_local(opcode which){
+      Value* idx2[] = {
+	ConstantInt::get(ls_->Int32Ty, 0),
+	ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+	ConstantInt::get(ls_->Int32Ty, which)
+      };
+      Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
+      dump_obj(b().CreateLoad(pos, "local"));
+    }
+
+    void dump_int(int i){
+
+      Value* val = ConstantInt::get(ls_->Int32Ty, i);
+
+      Signature sig(ls_, ls_->VoidTy);
+      sig << ls_->Int32Ty;
+
+      Value* call_args[] = {
+	val
+      };
+      sig.call("rbx_show_int", call_args, 1, "", b());
+    }
+
+    void dump_int1(Value* val){
+      Signature sig(ls_, ls_->VoidTy);
+      sig << ls_->Int1Ty;
+      Value* call_args[] = {
+	val
+      };
+      sig.call("rbx_show_int", call_args, 1, "", b());
+    }
+
+    void dump_int32(Value* val){
+      Signature sig(ls_, ls_->VoidTy);
+      sig << ls_->Int32Ty;
+      Value* call_args[] = {
+	val
+      };
+      sig.call("rbx_show_int", call_args, 1, "", b());
+    }
 
 
 
-	};
+    // void dump_str(char* str){
+
+    // 	vector<const Type*> arg_types;
+    // 	arg_types.push_back(PointerType::get(Type::SByteTy));
+    // 	Function* f = module_.getOrInsertFunction(
+    // 		"printf",
+    // 		FunctionType::get(Type::IntTy, arg_types, true));
+
+    // 	Constant* constStr = ConstantArray::get(str);
+    // 	GlobalVariable* gv = new GlobalVariable(
+    // 		constStr->getType(), 
+    // 		true, GlobalValue::InternalLinkage, 
+    // 		constStr, "", module_);
+
+    // 	std::vector<Constant*> geplist;
+    // 	geplist.push_back(ConstantUInt::get(Type::UIntTy,0));
+    // 	geplist.push_back(ConstantUInt::get(Type::UIntTy,0));
+    // 	Constant* gep = ConstantExpr::getGetElementPtr(gv,geplist);
+
+    // 	std::vector<Value*> args;
+    // 	args.push_back(gep);
+
+    // 	llvm::CallInst::Create(f, args.begin(), args.end(), "call_printf", b());
+    // }
+
+
+
+  };
 }
