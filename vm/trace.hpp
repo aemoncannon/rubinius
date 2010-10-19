@@ -77,7 +77,7 @@ namespace rubinius {
 
     bool bump_exit_hotness(){
       exit_counter++;
-      return exit_counter > 30;
+      return exit_counter > 3;
     }
 
     int exit_to_pc(){
@@ -119,11 +119,14 @@ namespace rubinius {
     TraceNode* parent_node;
     bool is_nested_trace;
     bool is_branch_trace;
+    int length;
 
 
     static const int RUN_MODE_NORM = 0;
     static const int RUN_MODE_NESTED = 1;
     static const int RUN_MODE_RECORD_NESTED = 2;
+
+    static const int MAX_TRACE_LENGTH = 200;
 
 
     enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };

@@ -113,6 +113,7 @@ namespace rubinius {
     ,parent_node(NULL)
     ,is_nested_trace(false)
     ,is_branch_trace(false)
+    ,length(0)
   {
     anchor = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
     head = anchor;
@@ -135,6 +136,7 @@ namespace rubinius {
     ,parent_node(NULL)
     ,is_nested_trace(false)
     ,is_branch_trace(false)
+    ,length(0)
   {}
 
 
@@ -197,10 +199,15 @@ namespace rubinius {
       return TRACE_OK;
     }
 
-    if(pc == anchor->pc && call_frame->cm == anchor->cm){
+    if(pc == anchor->pc && call_frame->cm == anchor->cm && 
+       head->op == InstructionSequence::insn_goto){
       head->next = anchor;
       head = anchor;
       return TRACE_FINISHED;
+    }
+    else if(length >= MAX_TRACE_LENGTH){
+      DEBUGLN("Canceling record due to exceeded max trace length of " << MAX_TRACE_LENGTH);
+      return TRACE_CANCEL;
     }
     else if(op == InstructionSequence::insn_raise_exc || 
 	    op == InstructionSequence::insn_raise_return ||
@@ -283,6 +290,8 @@ namespace rubinius {
       head->side_exit_pc = side_exit_pc;
       head->prev = prev;
       prev->next = head;
+
+      length++;
 
       return TRACE_OK;
     }
