@@ -174,7 +174,11 @@ namespace rubinius {
     Trace* branch = new Trace();
     branch->parent = this;
     branch->parent_node = exit_node;
-    branch->anchor = this->anchor;
+
+    TraceNode* anchor = new TraceNode(*(this->anchor));
+    anchor->trace = branch;
+    branch->anchor = anchor;
+
     branch->expected_exit_ip = -1;
     branch->is_branch_trace = true;
 
@@ -186,7 +190,8 @@ namespace rubinius {
     return branch;
   }
 
-  Trace::Status Trace::add_nested_trace_call(Trace* nested_trace, int nested_exit_pc, int pc, int sp, 
+  Trace::Status Trace::add_nested_trace_call(Trace* nested_trace, 
+					     int nested_exit_pc, int pc, int sp, 
 					     void** const ip_ptr, VMMethod* const vmm, 
 					     CallFrame* const call_frame){
 
