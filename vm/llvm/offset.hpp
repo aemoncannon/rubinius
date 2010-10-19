@@ -6,19 +6,12 @@ namespace offset {
   const static int trace_node_branch_trace = 0;
   const static int trace_node_branch_executor = 1;
   const static int trace_node_nested_executor = 2;
+  const static int trace_node_trace = 3;
 
   const static int trace_executor = 0;
+  const static int trace_expected_exit_ip = 1;
 
-  const static int trace_info_exit_ip = 0;
-  const static int trace_info_exit_stk = 1;
-  const static int trace_info_exit_cf = 2;
-  const static int trace_info_entry_cf = 3;
-  const static int trace_info_expected_exit_ip = 4;
-  const static int trace_info_nestable = 5;
-  const static int trace_info_recording = 6;
-  const static int trace_info_nested = 7;
-  const static int trace_info_next_ip = 8;
-  const static int trace_info_exit_trace_node = 9;
+  const static int trace_info_exit_trace_node = 0;
 
   const static int cf_previous = 0;
   const static int cf_static_scope = 1;

@@ -94,7 +94,6 @@ namespace rubinius {
     llvm::Value* call_frame_;
     llvm::Value* stack_;
     llvm::Value* vm_;
-    llvm::Value* out_trace_info_;
     llvm::Value* args_;
     llvm::Value* trace_info_;
     llvm::Value* block_env_;
@@ -107,6 +106,7 @@ namespace rubinius {
     llvm::Value* msg_;
     llvm::Value* arg_total_;
     llvm::Value* trace_result_;
+    llvm::Value* trace_run_mode_;
     int saved_sp_;
     int saved_last_sp_;
 
@@ -136,7 +136,7 @@ namespace rubinius {
     int called_args;
     std::vector<llvm::Value*>* stack_args;
 
-		typedef std::map<int, llvm::Value*> ValMap;
+    typedef std::map<int, llvm::Value*> ValMap;
 
     ValMap pre_allocated_args;
     ValMap pre_allocated_call_frames;
@@ -169,14 +169,6 @@ namespace rubinius {
 
     llvm::Value* vm() {
       return vm_;
-    }
-
-    void set_out_trace_info(llvm::Value* out_trace_info) {
-      out_trace_info_ = out_trace_info;
-    }
-
-    llvm::Value* out_trace_info() {
-      return out_trace_info_;
     }
 
     void set_args(llvm::Value* args) {
@@ -279,6 +271,14 @@ namespace rubinius {
       return call_frame_;
     }
 
+    void set_trace_run_mode(llvm::Value* val) {
+      trace_run_mode_ = val;
+    }
+
+    llvm::Value* trace_run_mode() {
+      return trace_run_mode_;
+    }
+
     void set_stack(llvm::Value* val) {
       stack_ = val;
     }
@@ -315,27 +315,27 @@ namespace rubinius {
       return_phi_->addIncoming(val, block);
     }
 
-		void init_return_pad();
+    void init_return_pad();
 
-		void init_trace_exit_pad();
+    void init_trace_exit_pad();
 
     void set_parent_info(JITMethodInfo* info) {
       parent_info_ = info;
       args_ = info->out_args();
-			init_globals(info);
+      init_globals(info);
     }
 
-		void init_globals(JITMethodInfo* info){
+    void init_globals(JITMethodInfo* info){
       vm_ = info->vm();
       counter_ = info->counter();
-			root = info->root_info();
-			out_trace_info_ = info->out_trace_info();
-			trace_info_ = info->trace_info();
-			return_phi_ = info->return_phi();
-			return_pad_ = info->return_pad();
-			trace_exit_pad_ = info->trace_exit_pad();
+      root = info->root_info();
+      trace_info_ = info->trace_info();
+      return_phi_ = info->return_phi();
+      return_pad_ = info->return_pad();
+      trace_exit_pad_ = info->trace_exit_pad();
+      trace_run_mode_ = info->trace_run_mode();
       set_function(info->function());
-		}
+    }
 
     llvm::Value* parent_call_frame() {
       if(parent_info_) {
@@ -689,17 +689,17 @@ namespace rubinius {
     }
 
     llvm::CallInst* call(const char* name, llvm::Value** start, int size,
-												 const char* inst_name, llvm::BasicBlock* block) {
+			 const char* inst_name, llvm::BasicBlock* block) {
       return llvm::CallInst::Create(function(name), start, start+size, inst_name, block);
     }
 
     llvm::CallInst* call(const char* name, llvm::Value** start, int size,
-												 const char* inst_name, llvm::IRBuilder<>& builder) {
+			 const char* inst_name, llvm::IRBuilder<>& builder) {
       return builder.CreateCall(function(name), start, start+size, inst_name);
     }
 
     llvm::CallInst* call(const char* name, std::vector<llvm::Value*> args,
-												 const char* inst_name, llvm::IRBuilder<>& builder) {
+			 const char* inst_name, llvm::IRBuilder<>& builder) {
       return builder.CreateCall(function(name), args.begin(), args.end(), inst_name);
     }
 

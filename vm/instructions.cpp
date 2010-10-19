@@ -163,15 +163,12 @@ Object* VMMethod::resumable_interpreter(STATE,
   {
     TRACK_TIME(TRACE_SETUP_TIMER);
     TraceInfo ti; 
-    ti.entry_call_frame = call_frame; 
-    ti.recording = false; 
-    ti.nested = false; 
     Trace* trace = vmm->traces[cur_ip];
     assert(trace);
 
     DEBUGLN("\nRunning trace at " << cur_ip);
     TRACK_TIME(ON_TRACE_TIMER);
-    trace->executor(state, call_frame, &ti); 
+    trace->executor(state, call_frame, &ti, Trace::RUN_MODE_NORM); 
     TRACK_TIME(TRACE_SETUP_TIMER);
     DEBUGLN("Run finished.");
     DEBUGLN("Resuming at: " << call_frame->ip());
@@ -213,13 +210,10 @@ Object* VMMethod::resumable_interpreter(STATE,
     sp = stack_ptr - call_frame->stk;
 
     TraceInfo ti; 
-    ti.entry_call_frame = call_frame; 
-    ti.nested = true; 
-    ti.recording = true; 
     Trace* nested_trace = vmm->traces[cur_ip];
     DEBUGLN("Running nested trace while recording.\n"); 
     TRACK_TIME(ON_TRACE_TIMER);
-    int result = nested_trace->executor(state, call_frame, &ti); 
+    int result = nested_trace->executor(state, call_frame, &ti, Trace::RUN_MODE_RECORD_NESTED); 
     TRACK_TIME(TRACE_SETUP_TIMER);
 
     /* If result is -1, the nested trace must have bailed into */ 
@@ -235,7 +229,7 @@ Object* VMMethod::resumable_interpreter(STATE,
       /* trace exited politely and we've successfully recorded a call to  */ 
       /* a nested trace. */
       DEBUGLN("Polite exit, saving nested trace..\n"); 
-      state->recording_trace->add_nested_trace_call(nested_trace, ti.exit_ip, cur_ip, sp, ip_ptr, vmm, call_frame);
+      state->recording_trace->add_nested_trace_call(nested_trace, ti.exit_trace_node->pc, cur_ip, sp, ip_ptr, vmm, call_frame);
     }
 
     ip_ptr = vmm->addresses + call_frame->ip(); 

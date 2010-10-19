@@ -40,6 +40,7 @@ namespace rubinius {
       ftypes.push_back(ls_->ptr_type("VM"));
       ftypes.push_back(ls_->ptr_type("CallFrame"));
       ftypes.push_back(ls_->ptr_type("TraceInfo"));
+      ftypes.push_back(ls_->Int32Ty);
 
       FunctionType* ft = FunctionType::get(ls_->Int32Ty, ftypes, false);
 
@@ -60,6 +61,10 @@ namespace rubinius {
       Value* trace_info = ai++;
       trace_info->setName("trace_info");
 
+
+      // Get the trace run-mode
+      Value* run_mode = ai++;
+
       BasicBlock* block = BasicBlock::Create(ls_->ctx(), "entry", func);
       builder_.SetInsertPoint(block);
 
@@ -67,6 +72,7 @@ namespace rubinius {
       info_->set_vm(vm);
       info_->set_call_frame(call_frame);
       info_->set_trace_info(trace_info);
+      info_->set_trace_run_mode(run_mode);
       info_->set_entry(block);
 
       BasicBlock* body = BasicBlock::Create(ls_->ctx(), "method_body", func);
@@ -95,9 +101,6 @@ namespace rubinius {
 
       info_->set_out_args(b().CreateAlloca(ls_->type("Arguments"), 0, "out_args"));
 
-      // Allocate traceinfo that will be used to store info about nested and branch traces
-      info_->set_out_trace_info(b().CreateAlloca(ls_->type("TraceInfo"), 0, "out_trace_info"));
-			
       // ip
       Value* ip_mem = get_field(call_frame, offset::cf_ip);
       b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), ip_mem);

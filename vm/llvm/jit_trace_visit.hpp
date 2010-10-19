@@ -149,33 +149,23 @@ namespace rubinius {
       // finishing, or if we are otherwise exiting in a polite way,
       // and should simply return to caller.
 
-      Value* recording_pos = get_field(info()->trace_info(), offset::trace_info_recording);
-      Value* recording = b().CreateIntCast(b().CreateLoad(recording_pos, "recording"), ls_->Int1Ty, "recording");
+      Value* recording = b().CreateICmpEQ(info()->trace_run_mode(), int32(2), "is recording");
       Value* not_recording = b().CreateNot(recording, "not_recording");
 
-      Value* nested_pos = get_field(info()->trace_info(), offset::trace_info_nested);
-      Value* nested = b().CreateIntCast(b().CreateLoad(nested_pos, "nested"), ls_->Int1Ty, "nested");
-      Value* not_nested = b().CreateNot(nested, "not_nested");
+      Value* nested = b().CreateICmpEQ(info()->trace_run_mode(), int32(1), "is nested");
+      Value* not_nested = b().CreateNot(recording, "not_nested");
 
-      Value* entry_cf_pos = get_field(info()->trace_info(), offset::trace_info_entry_cf);
-      Value* entry_call_frame = b().CreateLoad(entry_cf_pos, "save_entry_call_frame");
+      Value* entry_call_frame = info()->root_info()->call_frame();
 
-      Value* exp_exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_expected_exit_ip);
-      Value* expected_exit_ip = b().CreateLoad(exp_exit_ip_pos, "save_expected_exit_ip");
-
-      Value* exit_ip_pos = get_field(info()->trace_info(), offset::trace_info_exit_ip);
-      Value* exit_trace_node_pos = get_field(info()->trace_info(), offset::trace_info_exit_trace_node);
-
-      Value* exit_cf_pos = get_field(info()->trace_info(), offset::trace_info_exit_cf);
+      Value* trace = load_field(exit_trace_node, offset::trace_node_trace, "trace");
+      Value* expected_exit_ip = load_field(trace, offset::trace_expected_exit_ip, "expected exit ip");
 
       Value* ip_cmp = b().CreateICmpEQ(exit_pc, expected_exit_ip, "exiting_at_expected_ip_p");
       Value* cf_cmp = b().CreateICmpEQ(entry_call_frame, exit_cf, "at_expected_call_frame_p");
 
       // Store information about exit into TraceInfo
-      b().CreateStore(exit_pc, exit_ip_pos);
-      // So we know where in the trace we exited
-      b().CreateStore(exit_trace_node, exit_trace_node_pos);
-      b().CreateStore(exit_cf, exit_cf_pos);
+      // so we know where in the trace we exited
+      store_field(info()->trace_info(), offset::trace_info_exit_trace_node, exit_trace_node);
 
       BasicBlock* cont = new_block("continue");
       BasicBlock* exit = new_block("exit");
@@ -222,23 +212,16 @@ namespace rubinius {
 				   offset::trace_node_branch_executor, 
 				   "executor");
 
-      // Setup out traceinfo here
-      Value* ti_out = info()->out_trace_info();
-
-      // All branch traces are expected to loop back to trace anchor
-      store_field(ti_out, offset::trace_info_expected_exit_ip, int32(trace_->anchor->pc));
-
-      store_field(ti_out, offset::trace_info_nested, int32(0));
-      store_field(ti_out, offset::trace_info_recording, int32(0));
-      store_field(ti_out, offset::trace_info_entry_cf, exit_cf);
-      store_field(ti_out, offset::trace_info_exit_trace_node, exit_trace_node);
+      // Will need this info if branch fails and we have to recover to interpreter..
+      store_field(info()->trace_info(), offset::trace_info_exit_trace_node, exit_trace_node);
 
       Value* call_args[] = {
 	info()->vm(),
 	exit_cf,
-	ti_out
+	info()->trace_info(),
+	int32(Trace::RUN_MODE_NORM)
       };
-      Value* ret = b().CreateCall(executor, call_args, call_args+3, "call_branch_trace");
+      Value* ret = b().CreateCall(executor, call_args, call_args+4, "call_branch_trace");
 
       TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 
@@ -284,20 +267,13 @@ namespace rubinius {
       Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
       Value* executor = load_field(exit_trace_node, offset::trace_node_nested_executor, "nested executor");
 
-      // Setup out traceinfo here
-      Value* ti_out = info()->out_trace_info();
-      Value* expected_exit_pc = int32(cur_trace_node_->nested_trace->expected_exit_ip);
-      store_field(ti_out, offset::trace_info_expected_exit_ip, expected_exit_pc);
-      store_field(ti_out, offset::trace_info_nested, int32(1));
-      store_field(ti_out, offset::trace_info_recording, int32(0));
-      store_field(ti_out, offset::trace_info_entry_cf, info()->call_frame());
-
       Value* call_args[] = {
 	info()->vm(),
 	info()->call_frame(),
-	ti_out
+	info()->trace_info(),
+	int32(Trace::RUN_MODE_NESTED)
       };
-      Value* ret = b().CreateCall(executor, call_args, call_args+3, "call_branch_trace");
+      Value* ret = b().CreateCall(executor, call_args, call_args+4, "call_nested_trace");
 
       TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 

@@ -17,15 +17,6 @@ namespace rubinius {
 
 	class TraceInfo {
 	public:
-		int exit_ip;
-		Object** exit_stack;
-		CallFrame* exit_call_frame;
-		CallFrame* entry_call_frame;
-		int expected_exit_ip;
-		int nestable;
-		int recording;
-		int nested;
-		int next_ip;
 		TraceNode* exit_trace_node;
 
 		TraceInfo();
