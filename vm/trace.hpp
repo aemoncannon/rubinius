@@ -125,9 +125,7 @@ namespace rubinius {
     static const int RUN_MODE_NORM = 0;
     static const int RUN_MODE_NESTED = 1;
     static const int RUN_MODE_RECORD_NESTED = 2;
-
     static const int MAX_TRACE_LENGTH = 200;
-
 
     enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
 
