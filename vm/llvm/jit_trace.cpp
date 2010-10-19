@@ -39,7 +39,9 @@ namespace rubinius {
       std::vector<const Type*> ftypes;
       ftypes.push_back(ls_->ptr_type("VM"));
       ftypes.push_back(ls_->ptr_type("CallFrame"));
-      ftypes.push_back(ls_->ptr_type("TraceInfo"));
+      ftypes.push_back(ls_->ptr_type("Trace"));
+      ftypes.push_back(ls_->ptr_type("Trace"));
+      ftypes.push_back(ls_->ptr_type("TraceNode"));
       ftypes.push_back(ls_->Int32Ty);
 
       FunctionType* ft = FunctionType::get(ls_->Int32Ty, ftypes, false);
@@ -57,10 +59,13 @@ namespace rubinius {
       call_frame = ai++; 
       call_frame->setName("call_frame");
 
-      // Get the vars pointer
-      Value* trace_info = ai++;
-      trace_info->setName("trace_info");
+      Value* trace = ai++;
+      trace->setName("trace");
 
+      // Skip exit trace
+      ai++;
+      // Skip exit node
+      ai++;
 
       // Get the trace run-mode
       Value* run_mode = ai++;
@@ -71,7 +76,7 @@ namespace rubinius {
       info_->set_function(func);
       info_->set_vm(vm);
       info_->set_call_frame(call_frame);
-      info_->set_trace_info(trace_info);
+      info_->set_trace(trace);
       info_->set_trace_run_mode(run_mode);
       info_->set_entry(block);
 

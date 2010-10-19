@@ -20,19 +20,20 @@ namespace rubinius {
   class Symbol;
   class JITVisit;
   class TraceInfo;
+  class TraceNode;
   class Trace;
   class TraceIterator;
 
 
   typedef uintptr_t opcode;
-  typedef int (*trace_executor)(VM*, CallFrame*, TraceInfo*, int);
+  typedef int (*trace_executor)(VM*, CallFrame*, Trace*, Trace*, TraceNode*, int);
 
   class TraceNode {
   public:
     Trace* branch_trace;
     trace_executor branch_executor;
+    Trace* nested_trace;
     trace_executor nested_executor;
-    Trace* trace;
     opcode op;
     int pc;
     int sp;
@@ -49,20 +50,16 @@ namespace rubinius {
     int trace_pc;
     int pc_base;
     int call_depth;
-    Trace* nested_trace;
     bool jump_taken;
     int exit_counter;
     int side_exit_pc;
-
-
 
     int total_size;
     int numargs;
     intptr_t arg1;
     intptr_t arg2;
 
-
-    TraceNode(Trace* trace, int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+    TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
     void pretty_print(STATE, std::ostream& out);
 
@@ -103,7 +100,7 @@ namespace rubinius {
   };
 
 
-  int missing_branch_handler(STATE, CallFrame* call_frame, TraceInfo* ti, int run_mode);
+  int missing_branch_handler(STATE, CallFrame* call_frame, Trace* trace, Trace* exit_trace, TraceNode* exit_node, int run_mode);
 
   class Trace {
   public:
@@ -117,7 +114,7 @@ namespace rubinius {
     int entry_sp;
     Trace* parent;
     TraceNode* parent_node;
-    bool is_nested_copy;
+    bool is_nested_trace;
     bool is_branch_trace;
 
 
@@ -163,7 +160,7 @@ namespace rubinius {
     }
 
     bool is_nested(){
-      return is_nested_copy;
+      return is_nested_trace;
     }
 
     int init_ip(){

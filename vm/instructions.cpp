@@ -162,13 +162,11 @@ Object* VMMethod::resumable_interpreter(STATE,
  run_trace:
   {
     TRACK_TIME(TRACE_SETUP_TIMER);
-    TraceInfo ti; 
     Trace* trace = vmm->traces[cur_ip];
     assert(trace);
-
     DEBUGLN("\nRunning trace at " << cur_ip);
     TRACK_TIME(ON_TRACE_TIMER);
-    trace->executor(state, call_frame, &ti, Trace::RUN_MODE_NORM); 
+    trace->executor(state, call_frame, trace, NULL, NULL, Trace::RUN_MODE_NORM); 
     TRACK_TIME(TRACE_SETUP_TIMER);
     DEBUGLN("Run finished.");
     DEBUGLN("Resuming at: " << call_frame->ip());
@@ -209,27 +207,28 @@ Object* VMMethod::resumable_interpreter(STATE,
     TRACK_TIME(TRACE_SETUP_TIMER);
     sp = stack_ptr - call_frame->stk;
 
-    TraceInfo ti; 
     Trace* nested_trace = vmm->traces[cur_ip];
     DEBUGLN("Running nested trace while recording.\n"); 
     TRACK_TIME(ON_TRACE_TIMER);
-    int result = nested_trace->executor(state, call_frame, &ti, Trace::RUN_MODE_RECORD_NESTED); 
+    int result = nested_trace->executor(state, call_frame, 
+					nested_trace, NULL, NULL, 
+					Trace::RUN_MODE_RECORD_NESTED); 
     TRACK_TIME(TRACE_SETUP_TIMER);
 
     /* If result is -1, the nested trace must have bailed into */ 
     /* uncommon interpreter, we consider this recording invalidated.  */ 
     if(result == -1){
-      DEBUGLN("Exit at trace_pc: " << ti.exit_trace_node->pc << "\n"); 
       DEBUGLN("Failed to record nested trace, throwing away recording\n"); 
       delete state->recording_trace; 
       state->recording_trace = NULL; 
-    }																																
+    }
     else{
       /* Otherwise, we know that the */ 
       /* trace exited politely and we've successfully recorded a call to  */ 
       /* a nested trace. */
-      DEBUGLN("Polite exit, saving nested trace..\n"); 
-      state->recording_trace->add_nested_trace_call(nested_trace, ti.exit_trace_node->pc, cur_ip, sp, ip_ptr, vmm, call_frame);
+      DEBUGLN("Polite exit, saving nested trace..\n");
+      state->recording_trace->add_nested_trace_call(nested_trace, call_frame->ip(),
+						    cur_ip, sp, ip_ptr, vmm, call_frame);
     }
 
     ip_ptr = vmm->addresses + call_frame->ip(); 
@@ -255,7 +254,8 @@ Object* VMMethod::resumable_interpreter(STATE,
 	/*Not currently recording. Hit an ip with a stored trace...*/	\
 	goto run_trace;							\
       }									\
-      else if(state->recording_trace != NULL &&				\
+      else if(state->trace_exec_enabled &&				\
+	      state->recording_trace != NULL &&				\
 	      vmm->traces[cur_ip] != NULL &&				\
 	      !(vmm->traces[cur_ip]->parent_of(state->recording_trace))){ \
 	/*Recording. Hit an ip with a stored trace...*/			\

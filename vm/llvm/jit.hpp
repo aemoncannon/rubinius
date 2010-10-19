@@ -95,6 +95,7 @@ namespace rubinius {
     llvm::Value* stack_;
     llvm::Value* vm_;
     llvm::Value* args_;
+    llvm::Value* trace_;
     llvm::Value* trace_info_;
     llvm::Value* block_env_;
     llvm::Value* top_scope_;
@@ -185,6 +186,14 @@ namespace rubinius {
 
     llvm::Value* trace_info() {
       return trace_info_;
+    }
+
+    void set_trace(llvm::Value* trace) {
+      trace_ = trace;
+    }
+
+    llvm::Value* trace() {
+      return trace_;
     }
 
     llvm::BasicBlock* trace_exit_pad() {
@@ -330,6 +339,7 @@ namespace rubinius {
       counter_ = info->counter();
       root = info->root_info();
       trace_info_ = info->trace_info();
+      trace_ = info->trace();
       return_phi_ = info->return_phi();
       return_pad_ = info->return_pad();
       trace_exit_pad_ = info->trace_exit_pad();

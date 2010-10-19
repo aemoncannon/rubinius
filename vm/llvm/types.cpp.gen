@@ -380,25 +380,26 @@ std::vector<const Type*>StructTy_struct_rubinius__Trace_fields;
 std::vector<const Type*>FuncTy_34_args;
 FuncTy_34_args.push_back(PointerTy_17);
 FuncTy_34_args.push_back(PointerTy_18);
-std::vector<const Type*>StructTy_struct_rubinius__TraceInfo_fields;
-std::vector<const Type*>StructTy_struct_rubinius__TraceNode_fields;
 PATypeHolder StructTy_struct_rubinius__Trace_fwd = OpaqueType::get(getGlobalContext());
-PointerType* PointerTy_37 = PointerType::get(StructTy_struct_rubinius__Trace_fwd, 0);
+PointerType* PointerTy_35 = PointerType::get(StructTy_struct_rubinius__Trace_fwd, 0);
 
-StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_37);
+FuncTy_34_args.push_back(PointerTy_35);
+FuncTy_34_args.push_back(PointerTy_35);
+std::vector<const Type*>StructTy_struct_rubinius__TraceNode_fields;
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_35);
 PATypeHolder PointerTy_33_fwd = OpaqueType::get(getGlobalContext());
 StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_33_fwd);
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_35);
 StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_33_fwd);
-StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_37);
 StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(getGlobalContext(), 64));
 StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(getGlobalContext(), 32));
 StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(getGlobalContext(), 32));
 StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_18);
 StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_14);
 StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_14);
-PointerType* PointerTy_38 = PointerType::get(PointerTy_2, 0);
+PointerType* PointerTy_37 = PointerType::get(PointerTy_2, 0);
 
-StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_38);
+StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_37);
 PATypeHolder PointerTy_36_fwd = OpaqueType::get(getGlobalContext());
 StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_36_fwd);
 StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_36_fwd);
@@ -409,7 +410,6 @@ StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_36_fwd);
 StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(getGlobalContext(), 32));
 StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(getGlobalContext(), 32));
 StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(getGlobalContext(), 32));
-StructTy_struct_rubinius__TraceNode_fields.push_back(PointerTy_37);
 StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(getGlobalContext(), 8));
 StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(getGlobalContext(), 32));
 StructTy_struct_rubinius__TraceNode_fields.push_back(IntegerType::get(getGlobalContext(), 32));
@@ -425,13 +425,7 @@ cast<OpaqueType>(PointerTy_36_fwd.get())->refineAbstractTypeTo(PointerTy_36);
 PointerTy_36 = cast<PointerType>(PointerTy_36_fwd.get());
 
 
-StructTy_struct_rubinius__TraceInfo_fields.push_back(PointerTy_36);
-StructType* StructTy_struct_rubinius__TraceInfo = StructType::get(mod->getContext(), StructTy_struct_rubinius__TraceInfo_fields, /*isPacked=*/false);
-mod->addTypeName("struct.rubinius::TraceInfo", StructTy_struct_rubinius__TraceInfo);
-
-PointerType* PointerTy_35 = PointerType::get(StructTy_struct_rubinius__TraceInfo, 0);
-
-FuncTy_34_args.push_back(PointerTy_35);
+FuncTy_34_args.push_back(PointerTy_36);
 FuncTy_34_args.push_back(IntegerType::get(getGlobalContext(), 32));
 FunctionType* FuncTy_34 = FunctionType::get(
   /*Result=*/IntegerType::get(getGlobalContext(), 32),
@@ -451,7 +445,7 @@ StructTy_struct_rubinius__Trace_fields.push_back(PointerTy_36);
 StructTy_struct_rubinius__Trace_fields.push_back(IntegerType::get(getGlobalContext(), 64));
 StructTy_struct_rubinius__Trace_fields.push_back(IntegerType::get(getGlobalContext(), 32));
 StructTy_struct_rubinius__Trace_fields.push_back(IntegerType::get(getGlobalContext(), 32));
-StructTy_struct_rubinius__Trace_fields.push_back(PointerTy_37);
+StructTy_struct_rubinius__Trace_fields.push_back(PointerTy_35);
 StructTy_struct_rubinius__Trace_fields.push_back(PointerTy_36);
 StructTy_struct_rubinius__Trace_fields.push_back(IntegerType::get(getGlobalContext(), 8));
 StructTy_struct_rubinius__Trace_fields.push_back(IntegerType::get(getGlobalContext(), 8));
@@ -461,7 +455,11 @@ cast<OpaqueType>(StructTy_struct_rubinius__Trace_fwd.get())->refineAbstractTypeT
 StructTy_struct_rubinius__Trace = cast<StructType>(StructTy_struct_rubinius__Trace_fwd.get());
 
 
+std::vector<const Type*>StructTy_struct_rubinius__TraceInfo_fields;
+StructTy_struct_rubinius__TraceInfo_fields.push_back(PointerTy_36);
+StructType* StructTy_struct_rubinius__TraceInfo = StructType::get(mod->getContext(), StructTy_struct_rubinius__TraceInfo_fields, /*isPacked=*/false);
 mod->addTypeName("struct.rubinius::TraceInfo", StructTy_struct_rubinius__TraceInfo);
+
 mod->addTypeName("struct.rubinius::TraceNode", StructTy_struct_rubinius__TraceNode);
 mod->addTypeName("struct.rubinius::Tuple", StructTy_struct_rubinius__Tuple);
 mod->addTypeName("struct.rubinius::TypeInfo", OpaqueTy_struct_rubinius__TypeInfo);

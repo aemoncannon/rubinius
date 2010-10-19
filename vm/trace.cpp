@@ -21,12 +21,12 @@
 namespace rubinius {
 
 
-  TraceNode::TraceNode(Trace* trace, int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
+  TraceNode::TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
     : 
     branch_trace(NULL),
     branch_executor(&missing_branch_handler),
+    nested_trace(NULL),
     nested_executor(&missing_branch_handler),
-    trace(NULL),
     op(op),
     pc(pc),
     sp(sp),
@@ -43,13 +43,11 @@ namespace rubinius {
     trace_pc(0),
     pc_base(pc_base),
     call_depth(depth),
-    nested_trace(NULL),
     jump_taken(false),
     exit_counter(0),
     side_exit_pc(-1)
 
   {
-    this->trace = trace;
 #include "vm/gen/instruction_trace_record.hpp"
   }
 
@@ -100,18 +98,14 @@ namespace rubinius {
   }
 
 
-  int missing_branch_handler(STATE, CallFrame* call_frame, TraceInfo* ti, int run_mode){
+  int missing_branch_handler(STATE, CallFrame* call_frame, Trace* trace, Trace* exit_trace, TraceNode* exit_node, int run_mode){
     TRACK_TIME(IN_EXIT_TIMER);
-
     DEBUGLN("No branch to continue on. Exiting."); 
-
-    TraceNode* exit_node = ti->exit_trace_node;
-    assert(exit_node);
 
     // Maybe start recording a branch trace...
     if(exit_node->bump_exit_hotness()){
-      DEBUGLN("Exit node at " << ti->exit_trace_node->pc << " got hot! Recording branch...");
-      state->recording_trace = exit_node->trace->create_branch_at(exit_node);
+      DEBUGLN("Exit node at " << exit_node->pc << " got hot! Recording branch...");
+      state->recording_trace = exit_trace->create_branch_at(exit_node);
       exit_node->clear_hotness();
     }
 
@@ -143,10 +137,10 @@ namespace rubinius {
     ,entry_sp(sp)
     ,parent(NULL)
     ,parent_node(NULL)
-    ,is_nested_copy(false)
+    ,is_nested_trace(false)
     ,is_branch_trace(false)
   {
-    anchor = new TraceNode(this, 0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
+    anchor = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
     head = anchor;
     entry = anchor;
     entry_sp = sp;
@@ -165,7 +159,7 @@ namespace rubinius {
     ,entry_sp(-1)
     ,parent(NULL)
     ,parent_node(NULL)
-    ,is_nested_copy(false)
+    ,is_nested_trace(false)
     ,is_branch_trace(false)
   {}
 
@@ -176,7 +170,6 @@ namespace rubinius {
     branch->parent_node = exit_node;
 
     TraceNode* anchor = new TraceNode(*(this->anchor));
-    anchor->trace = branch;
     branch->anchor = anchor;
 
     branch->expected_exit_ip = -1;
@@ -202,18 +195,11 @@ namespace rubinius {
 
     // Create a copy, modified to suit the context of the nesting
     Trace* nested = new Trace(*nested_trace);
-    nested->is_nested_copy = true;
+    nested->is_nested_trace = true;
     nested->parent = this;
     nested->parent_node = adapter_node;
     nested->expected_exit_ip = nested_exit_pc;
     adapter_node->nested_trace = nested;
-
-    // Update node->trace pointers. Hrm, this sucks.
-    TraceIterator it = nested->iter();
-    while(it.has_next()){
-      TraceNode* node = it.next();
-      node->trace = nested;
-    }
 
     return TRACE_OK;
   }
@@ -229,7 +215,7 @@ namespace rubinius {
 	entry = head;
 	return TRACE_FINISHED;
       }
-      head = new TraceNode(this, 0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
+      head = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
       entry = head;
       pc_base_counter = 0;
       expected_exit_ip = -1;
@@ -317,7 +303,7 @@ namespace rubinius {
 	}
       }
 
-      head = new TraceNode(this, call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
+      head = new TraceNode(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
       head->active_send = active_send;
       head->parent_send = parent_send;
       head->side_exit_pc = side_exit_pc;

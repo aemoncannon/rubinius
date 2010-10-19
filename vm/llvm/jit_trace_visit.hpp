@@ -140,7 +140,6 @@ namespace rubinius {
       // Emit code for entering the uncommon interpreter.
       // This is used in exit stubs, when the trace bails for some reason.
       // Inputs to the exit pad
-			
       Value* exit_trace_node = info()->root_info()->trace_node_phi;
       Value* exit_pc = info()->root_info()->exit_ip_phi;
       Value* exit_cf = info()->root_info()->exit_cf_phi;
@@ -157,15 +156,11 @@ namespace rubinius {
 
       Value* entry_call_frame = info()->root_info()->call_frame();
 
-      Value* trace = load_field(exit_trace_node, offset::trace_node_trace, "trace");
+      Value* trace = info()->trace();
       Value* expected_exit_ip = load_field(trace, offset::trace_expected_exit_ip, "expected exit ip");
 
       Value* ip_cmp = b().CreateICmpEQ(exit_pc, expected_exit_ip, "exiting_at_expected_ip_p");
       Value* cf_cmp = b().CreateICmpEQ(entry_call_frame, exit_cf, "at_expected_call_frame_p");
-
-      // Store information about exit into TraceInfo
-      // so we know where in the trace we exited
-      store_field(info()->trace_info(), offset::trace_info_exit_trace_node, exit_trace_node);
 
       BasicBlock* cont = new_block("continue");
       BasicBlock* exit = new_block("exit");
@@ -208,20 +203,23 @@ namespace rubinius {
 
 
       // Otherwise look up a branch for this location (this needs to be faster)
+      Value* branch_trace = load_field(exit_trace_node, 
+				       offset::trace_node_branch_trace, 
+				       "branch trace");
+
       Value* executor = load_field(exit_trace_node, 
 				   offset::trace_node_branch_executor, 
 				   "executor");
 
-      // Will need this info if branch fails and we have to recover to interpreter..
-      store_field(info()->trace_info(), offset::trace_info_exit_trace_node, exit_trace_node);
-
       Value* call_args[] = {
 	info()->vm(),
 	exit_cf,
-	info()->trace_info(),
+	branch_trace,
+	info()->trace(),
+	exit_trace_node,
 	int32(Trace::RUN_MODE_NORM)
       };
-      Value* ret = b().CreateCall(executor, call_args, call_args+4, "call_branch_trace");
+      Value* ret = b().CreateCall(executor, call_args, call_args + 6, "call_branch_trace");
 
       TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 
@@ -265,15 +263,22 @@ namespace rubinius {
 
       // Otherwise look up a branch for this location (this needs to be faster)
       Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
-      Value* executor = load_field(exit_trace_node, offset::trace_node_nested_executor, "nested executor");
+      Value* nested_trace = load_field(exit_trace_node,
+				       offset::trace_node_nested_trace, 
+				       "nested executor");
+      Value* executor = load_field(exit_trace_node, 
+				   offset::trace_node_nested_executor, 
+				   "nested executor");
 
       Value* call_args[] = {
 	info()->vm(),
 	info()->call_frame(),
-	info()->trace_info(),
+	nested_trace,
+	info()->trace(),
+	exit_trace_node,
 	int32(Trace::RUN_MODE_NESTED)
       };
-      Value* ret = b().CreateCall(executor, call_args, call_args+4, "call_nested_trace");
+      Value* ret = b().CreateCall(executor, call_args, call_args+6, "call_nested_trace");
 
       TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 
@@ -583,7 +588,7 @@ namespace rubinius {
       TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
       ensure_trace_exit_pad();
       BasicBlock* cur = current_block();
-      info()->root_info()->exit_ip_phi->addIncoming(int32(cur_trace_node_->pc), cur);
+      info()->root_info()->exit_ip_phi->addIncoming(int32(next_ip), cur);
       info()->root_info()->trace_node_phi->addIncoming(constant(
 								cur_trace_node_, 
 								ls_->ptr_type("TraceNode")),
