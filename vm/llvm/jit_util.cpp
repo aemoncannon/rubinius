@@ -41,64 +41,64 @@ extern "C" {
 
   void rbx_show_int(int i)
   {
-		std::cout << "DEBUG: " << i << "\n";
+    std::cout << "DEBUG: " << i << "\n";
   }
 
   void rbx_show_vars(STATE, CallFrame* call_frame, StackVariables* vars)
   {
-		CompiledMethod* cm = call_frame->cm;
-		VMMethod* vmm = cm->backend_method();
-		int number_of_locals = vmm->number_of_locals;
-		for(int i = 0; i < number_of_locals; i++){
-			Object* obj = vars->get_local(i);
-			String* s = obj->to_s(state);
-			std::cout << "  " << i << ": " << s->c_str() << "\n";
-		}
+    CompiledMethod* cm = call_frame->cm;
+    VMMethod* vmm = cm->backend_method();
+    int number_of_locals = vmm->number_of_locals;
+    for(int i = 0; i < number_of_locals; i++){
+      Object* obj = vars->get_local(i);
+      String* s = obj->to_s(state);
+      std::cout << "  " << i << ": " << s->c_str() << "\n";
+    }
   }
 
   void rbx_show_obj(STATE, Object* obj)
   {
-		if(obj == NULL){
-			std::cout << "NULL Object pointer.\n";
-		}
-		else{
-			obj->type_info(state)->show(state, obj, 1);
-		}
+    if(obj == NULL){
+      std::cout << "NULL Object pointer.\n";
+    }
+    else{
+      obj->type_info(state)->show(state, obj, 1);
+    }
   }
 
 
   void rbx_show_state(STATE, CallFrame* call_frame)
   {
-		Object** stk = call_frame->stk;
-		StackVariables* vars = call_frame->scope;
-		CompiledMethod* cm = call_frame->cm;
-		VMMethod* vmm = cm->backend_method();
-		int stack_size = vmm->stack_size;
-		int number_of_locals = vmm->number_of_locals;
-		std::cout << "---------------------" << "\n";
-		std::cout << "stack size = " << stack_size << "\n";
-		std::cout << "number of locals = " << number_of_locals << "\n";
-		std::cout << "Stack: " << "\n";
+    Object** stk = call_frame->stk;
+    StackVariables* vars = call_frame->scope;
+    CompiledMethod* cm = call_frame->cm;
+    VMMethod* vmm = cm->backend_method();
+    int stack_size = vmm->stack_size;
+    int number_of_locals = vmm->number_of_locals;
+    std::cout << "---------------------" << "\n";
+    std::cout << "stack size = " << stack_size << "\n";
+    std::cout << "number of locals = " << number_of_locals << "\n";
+    std::cout << "Stack: " << "\n";
 
-		for(int i = 0; i < stack_size; i++){
-			Object* obj = stk[i];
-			String* s = obj->to_s(state);
-			std::cout << "  " << i << ": " << s->c_str() << "\n";
-		}
-		std::cout << "Locals: " << "\n";
+    for(int i = 0; i < stack_size; i++){
+      Object* obj = stk[i];
+      String* s = obj->to_s(state);
+      std::cout << "  " << i << ": " << s->c_str() << "\n";
+    }
+    std::cout << "Locals: " << "\n";
 
-		for(int i = 0; i < number_of_locals; i++){
-			Object* obj = vars->get_local(i);
-			String* s = obj->to_s(state);
-			std::cout << "  " << i << ": " << s->c_str() << "\n";
-		}
-		std::cout << "---------------------" << "\n";
+    for(int i = 0; i < number_of_locals; i++){
+      Object* obj = vars->get_local(i);
+      String* s = obj->to_s(state);
+      std::cout << "  " << i << ": " << s->c_str() << "\n";
+    }
+    std::cout << "---------------------" << "\n";
 
   }
 
   void rbx_print_debug()
   {
-		std::cout << "trace debug!" << "\n";
+    std::cout << "trace debug!" << "\n";
   }
 
 
@@ -150,7 +150,7 @@ extern "C" {
   }
 
   Object* rbx_splat_send(STATE, CallFrame* call_frame, Symbol* name,
-												 int count, Object** args) {
+			 int count, Object** args) {
     Object* recv = args[0];
     Arguments out_args(recv, args[count+2], count, args+1);
     Dispatch dis(name);
@@ -163,7 +163,7 @@ extern "C" {
   }
 
   Object* rbx_splat_send_private(STATE, CallFrame* call_frame, Symbol* name,
-																 int count, Object** args) {
+				 int count, Object** args) {
     Object* recv = args[0];
     Arguments out_args(recv, args[count+2], count, args+1);
     LookupData lookup(recv, recv->lookup_begin(state), true);
@@ -177,7 +177,7 @@ extern "C" {
   }
 
   Object* rbx_super_send(STATE, CallFrame* call_frame, Symbol* name,
-												 int count, Object** args) {
+			 int count, Object** args) {
     Object* recv = call_frame->self();
     Arguments out_args(recv, args[count], count, args);
     LookupData lookup(recv, call_frame->module()->superclass(), true);
@@ -187,7 +187,7 @@ extern "C" {
   }
 
   Object* rbx_super_splat_send(STATE, CallFrame* call_frame, Symbol* name,
-															 int count, Object** args) {
+			       int count, Object** args) {
     Object* recv = call_frame->self();
     Arguments out_args(recv, args[count+1], count, args);
     LookupData lookup(recv, call_frame->module()->superclass(), true);
@@ -245,7 +245,7 @@ extern "C" {
   Object* rbx_arg_error(STATE, CallFrame* call_frame, Dispatch& msg, Arguments& args,
                         int required) {
     Exception* exc =
-			Exception::make_argument_error(state, required, args.total(), msg.name);
+      Exception::make_argument_error(state, required, args.total(), msg.name);
     exc->locations(state, System::vm_backtrace(state, Fixnum::from(0), call_frame));
     state->thread_state()->raise_exception(exc);
 
@@ -429,7 +429,7 @@ extern "C" {
                            int serial, Object* recv)
   {
     if(cache->update_and_validate(state, call_frame, recv) &&
-			 cache->method->serial()->to_native() == serial) {
+       cache->method->serial()->to_native() == serial) {
       return Qtrue;
     }
 
@@ -437,10 +437,10 @@ extern "C" {
   }
 
   Object* rbx_check_serial_private(STATE, CallFrame* call_frame, InlineCache* cache,
-																	 int serial, Object* recv)
+				   int serial, Object* recv)
   {
     if(cache->update_and_validate(state, call_frame, recv) &&
-			 cache->method->serial()->to_native() == serial) {
+       cache->method->serial()->to_native() == serial) {
       return Qtrue;
     }
 
@@ -572,7 +572,7 @@ extern "C" {
 
     if(both_fixnum_p(left, right)) {
       return reinterpret_cast<Fixnum*>(left)->sub(state,
-																									reinterpret_cast<Fixnum*>(right));
+						  reinterpret_cast<Fixnum*>(right));
 
     }
 
@@ -690,7 +690,7 @@ extern "C" {
   }
 
   Object* rbx_push_local_depth(STATE, CallFrame* call_frame,
-															 int depth, int index) {
+			       int depth, int index) {
     if(depth == 0) {
       return call_frame->scope->get_local(index);
     } else {
@@ -940,112 +940,38 @@ extern "C" {
   }
 
   
+  int rbx_side_exit(STATE, CallFrame* call_frame, Trace* exit_trace, TraceNode* exit_node, int run_mode){
+    TRACK_TIME(IN_EXIT_TIMER);
+    DEBUGLN("No branch to continue on. Exiting."); 
 
+    // Maybe start recording a branch trace...
+    if(exit_node->bump_exit_hotness()){
+      DEBUGLN("Exit node at " << exit_node->pc << " got hot! Recording branch...");
+      state->recording_trace = exit_trace->create_branch_at(exit_node);
+      exit_node->clear_hotness();
+    }
 
-//  int rbx_side_exit(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
-//  {
-//		TRACK_TIME(IN_EXIT_TIMER);
-//		DEBUGLN("Side-exited"); 
-//		IF_DEBUG(call_frame->dump());
-//
-//		bool save_expected = ti->expected_exit_ip;
-//		bool save_nested = ti->nested;
-//		bool save_recording = ti->recording;
-//		CallFrame* save_entry = ti->entry_call_frame;
-//		Trace* save_trace = ti->trace;
-//		
-//		VMMethod* vmm = call_frame->cm->backend_method();
-//		Trace* trace = vmm->traces[start_pc];
-//		DEBUGLN("Looking for trace at " << vmm << ", " << start_pc << "..."); 		
-//		if(trace != NULL && trace->parent == ti->trace){
-//			DEBUGLN("Found branch trace..."); 
-//			// There's a side trace to try...
-//			ti->expected_exit_ip = expected_exit_pc;
-//			ti->nested = false;
-//			ti->recording = false;
-//			ti->entry_call_frame = call_frame;
-//			ti->trace = trace;
-//			TRACK_TIME(ON_TRACE_TIMER);
-//			int result = trace->executor(state, call_frame, ti);
-//			TRACK_TIME(IN_EXIT_TIMER);
-//			DEBUGLN("Result of branch is " << result); 
-//			ti->expected_exit_ip = save_expected;
-//			ti->nested = save_nested;
-//			ti->recording = save_recording;
-//			ti->entry_call_frame = save_entry;
-//			ti->trace = save_trace;
-//			ti->exit_ip = exit_pc;
-//			ti->exit_trace_pc = trace_pc;
-//			return result;
-//		}
-//		else{
-//			DEBUGLN("No branch to continue on. Exiting."); 
-//			// There's no side trace to try :(
-//			ti->exit_call_frame = call_frame;
-//			ti->exit_ip = exit_pc;
-//			ti->exit_trace_pc = trace_pc;
-//
-//			// Maybe start recording a branch trace...
-//			Trace* exiting_trace = ti->trace;
-//			TraceNode* exit_node = exiting_trace->node_at(trace_pc);
-//			assert(exit_node);
-//			if(exit_node->bump_exit_hotness()){
-//				DEBUGLN("Exit node at " << ti->exit_ip << " got hot! Recording branch...");
-//				state->recording_trace = new Trace(exiting_trace, exit_node);
-//				exit_node->clear_hotness();
-//			}
-//
-//			// Bail to uncommon if we've stacked up call_frames before the exit.
-//			// Or if a nested trace exited unexpectedly (we don't know _where_ it
-//			// ended up)...
-//			if(call_frame->is_traced_frame() || ti->nested){
-//				rbx_continue_uncommon(state, call_frame);
-//			}
-//
-//			// Otherwise, just return directly to caller...
-//			TRACK_TIME(ON_TRACE_TIMER);
-//			return -1;
-//		}
-//  }
+    // Bail to uncommon if we've stacked up call_frames before the exit.
+    // Or if a nested trace exited unexpectedly (we don't know _where_ it
+    // ended up)...
+    if(call_frame->is_traced_frame() 
+       // Why is this necessary?
+       || run_mode == Trace::RUN_MODE_NESTED || run_mode == Trace::RUN_MODE_RECORD_NESTED){
+
+      VMMethod* vmm = call_frame->cm->backend_method();
+      VMMethod::uncommon_interpreter(state, vmm, call_frame);
+    }
+    // Otherwise, just return directly to caller...
+    TRACK_TIME(ON_TRACE_TIMER);
+    return -1;
+  }
 
 
 
-//  int rbx_call_nested_trace(STATE, CallFrame* call_frame, int start_pc, int exit_pc, int expected_exit_pc, int trace_pc, TraceInfo* ti)
-//  {
-//		TRACK_TIME(IN_EXIT_TIMER);
-//		bool save_expected = ti->expected_exit_ip;
-//		bool save_nested = ti->nested;
-//		bool save_recording = ti->recording;
-//		CallFrame* save_entry = ti->entry_call_frame;
-//		Trace* save_trace = ti->trace;
-//
-//		Trace* trace = call_frame->cm->backend_method()->traces[start_pc];
-//		assert(trace);
-//		ti->expected_exit_ip = expected_exit_pc;
-//		ti->nested = true;
-//		ti->recording = false;
-//		ti->entry_call_frame = call_frame;
-//		ti->trace = trace;
-//
-//		// call the nested trace
-//		TRACK_TIME(ON_TRACE_TIMER);
-//		int result = trace->executor(state, call_frame, ti);
-//		TRACK_TIME(IN_EXIT_TIMER);
-//
-//		ti->expected_exit_ip = save_expected;
-//		ti->exit_ip = exit_pc;
-//		ti->exit_trace_pc = trace_pc;
-//		ti->nested = save_nested;
-//		ti->recording = save_recording;
-//		ti->entry_call_frame = save_entry;
-//		ti->trace = save_trace;
-//		TRACK_TIME(ON_TRACE_TIMER);
-//		return result;
-//  }
 
 
   void rbx_track_time(STATE, int timer) {
-		state->start_trace_timer(timer);
+    state->start_trace_timer(timer);
   }
 
   Object* rbx_restart_interp(STATE, CallFrame* call_frame, Dispatch& msg, Arguments& args) {

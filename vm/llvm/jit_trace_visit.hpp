@@ -144,25 +144,79 @@ namespace rubinius {
       Value* exit_pc = info()->root_info()->exit_ip_phi;
       Value* exit_cf = info()->root_info()->exit_cf_phi;
 
+
+      // Otherwise look up a branch for this location (this needs to be faster)
+      Value* branch_trace = load_field(exit_trace_node, 
+				       offset::trace_node_branch_trace, 
+				       "branch trace");
+
+      Value* executor = load_field(exit_trace_node, 
+				   offset::trace_node_branch_executor, 
+				   "executor");
+
+      Value* branch_found_p = b().CreateICmpNE(executor, constant(0, executor->getType()), "bailed_p");
+      BasicBlock* no_branch_b = new_block("no_branch_b");
+      BasicBlock* run_branch_b = new_block("run_branch_b");
+
+      b().CreateCondBr(branch_found_p, run_branch_b, no_branch_b);
+
+      set_block(run_branch_b);
+
+      Value* call_args[] = {
+	info()->vm(),
+	exit_cf,
+	branch_trace,
+	info()->trace(),
+	exit_trace_node,
+	int32(Trace::RUN_MODE_NORM)
+      };
+      Value* ret = b().CreateCall(executor, call_args, call_args + 6, "call_branch_trace");
+
+      // Did the branch-trace bail? Parent trace should collapse, too.
+      Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
+
+      BasicBlock* cont = new_block("continue");
+      BasicBlock* collapse_b = new_block("collapse_b");
+      b().CreateCondBr(bailed_p, collapse_b, cont);
+
+      set_block(collapse_b);
+      return_value(ret);
+      set_block(cont);
+
+      if(!(trace_->is_branch())){
+	// If we got to here, that means that a branch of this trace was
+	// run successfully, which by definition must have looped
+	// back to the anchor.
+	TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
+	skip_to_anchor();
+      }
+      else{
+	// If we got to here, that means that a branch trace called
+	// from a branch trace was run successfully. 
+	// We return immediately, which hands control back up to the 
+	// parent trace, which will (per above) jump to the anchor
+	TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
+	return_value(int32(0));
+      }
+
+      set_block(no_branch_b);
+
       // Do fast checks to see if we are a nested trace that is
       // finishing, or if we are otherwise exiting in a polite way,
       // and should simply return to caller.
 
       Value* recording = b().CreateICmpEQ(info()->trace_run_mode(), int32(2), "is recording");
       Value* not_recording = b().CreateNot(recording, "not_recording");
-
       Value* nested = b().CreateICmpEQ(info()->trace_run_mode(), int32(1), "is nested");
       Value* not_nested = b().CreateNot(recording, "not_nested");
-
       Value* entry_call_frame = info()->root_info()->call_frame();
-
       Value* trace = info()->trace();
       Value* expected_exit_ip = load_field(trace, offset::trace_expected_exit_ip, "expected exit ip");
 
       Value* ip_cmp = b().CreateICmpEQ(exit_pc, expected_exit_ip, "exiting_at_expected_ip_p");
       Value* cf_cmp = b().CreateICmpEQ(entry_call_frame, exit_cf, "at_expected_call_frame_p");
 
-      BasicBlock* cont = new_block("continue");
+      cont = new_block("continue");
       BasicBlock* exit = new_block("exit");
 
       // If we are recording (which makes this trace a nested trace candidate by definition), 
@@ -201,55 +255,23 @@ namespace rubinius {
       return_value(int32(0));
       set_block(cont);
 
+      std::vector<const Type*> types;
+      types.push_back(VMTy);
+      types.push_back(CallFrameTy);
+      types.push_back(ls_->ptr_type("Trace"));
+      types.push_back(ls_->ptr_type("TraceNode"));
+      types.push_back(ls_->Int32Ty);
 
-      // Otherwise look up a branch for this location (this needs to be faster)
-      Value* branch_trace = load_field(exit_trace_node, 
-				       offset::trace_node_branch_trace, 
-				       "branch trace");
-
-      Value* executor = load_field(exit_trace_node, 
-				   offset::trace_node_branch_executor, 
-				   "executor");
-
-      Value* call_args[] = {
+      FunctionType* ft = FunctionType::get(ls_->Int32Ty, types, false);
+      Function* func = cast<Function>(module_->getOrInsertFunction("rbx_side_exit", ft));
+      Value* bail_call_args[] = {
 	info()->vm(),
 	exit_cf,
-	branch_trace,
 	info()->trace(),
 	exit_trace_node,
-	int32(Trace::RUN_MODE_NORM)
+	info()->trace_run_mode()
       };
-      Value* ret = b().CreateCall(executor, call_args, call_args + 6, "call_branch_trace");
-
-      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
-
-      // Did the branch-trace bail? Parent trace should collapse, too.
-      Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
-
-      cont = new_block("continue");
-      BasicBlock* collapse_b = new_block("collapse_b");
-      b().CreateCondBr(bailed_p, collapse_b, cont);
-
-      set_block(collapse_b);
-      return_value(ret);
-      set_block(cont);
-
-      if(!(trace_->is_branch())){
-	// If we got to here, that means that a branch of this trace was
-	// run successfully, which by definition must have looped
-	// back to the anchor.
-	TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
-	skip_to_anchor();
-      }
-      else{
-	// If we got to here, that means that a branch trace called
-	// from a branch trace was run successfully. 
-	// We return immediately, which hands control back up to the 
-	// parent trace, which will (per above) jump to the anchor
-	TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
-	return_value(int32(0));
-      }
-
+      return_value(b().CreateCall(func, bail_call_args, bail_call_args + 5, "call side_exit"));
     }
 
 

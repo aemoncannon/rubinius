@@ -24,9 +24,9 @@ namespace rubinius {
   TraceNode::TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
     : 
     branch_trace(NULL),
-    branch_executor(&missing_branch_handler),
+    branch_executor(NULL),
     nested_trace(NULL),
-    nested_executor(&missing_branch_handler),
+    nested_executor(NULL),
     op(op),
     pc(pc),
     sp(sp),
@@ -97,32 +97,6 @@ namespace rubinius {
     }
   }
 
-
-  int missing_branch_handler(STATE, CallFrame* call_frame, Trace* trace, Trace* exit_trace, TraceNode* exit_node, int run_mode){
-    TRACK_TIME(IN_EXIT_TIMER);
-    DEBUGLN("No branch to continue on. Exiting."); 
-
-    // Maybe start recording a branch trace...
-    if(exit_node->bump_exit_hotness()){
-      DEBUGLN("Exit node at " << exit_node->pc << " got hot! Recording branch...");
-      state->recording_trace = exit_trace->create_branch_at(exit_node);
-      exit_node->clear_hotness();
-    }
-
-    // Bail to uncommon if we've stacked up call_frames before the exit.
-    // Or if a nested trace exited unexpectedly (we don't know _where_ it
-    // ended up)...
-    if(call_frame->is_traced_frame() 
-       // Why is this necessary?
-       || run_mode == Trace::RUN_MODE_NESTED || run_mode == Trace::RUN_MODE_RECORD_NESTED){
-
-      VMMethod* vmm = call_frame->cm->backend_method();
-      VMMethod::uncommon_interpreter(state, vmm, call_frame);
-    }
-    // Otherwise, just return directly to caller...
-    TRACK_TIME(ON_TRACE_TIMER);
-    return -1;
-  }
 
 
   // Standard constructor for initializing a new trace

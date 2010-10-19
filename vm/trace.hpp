@@ -67,6 +67,10 @@ namespace rubinius {
 
     int arg_count();
 
+    bool is_on_home_call_frame(){
+      return active_send == NULL;
+    }
+
     int interp_jump_target(){
       return arg1 - pc_base;
     }
@@ -100,7 +104,6 @@ namespace rubinius {
   };
 
 
-  int missing_branch_handler(STATE, CallFrame* call_frame, Trace* trace, Trace* exit_trace, TraceNode* exit_node, int run_mode);
 
   class Trace {
   public:

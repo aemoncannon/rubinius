@@ -219,8 +219,8 @@ Object* VMMethod::resumable_interpreter(STATE,
     /* uncommon interpreter, we consider this recording invalidated.  */ 
     if(result == -1){
       DEBUGLN("Failed to record nested trace, throwing away recording\n"); 
-      delete state->recording_trace; 
-      state->recording_trace = NULL; 
+      delete state->recording_trace;
+      state->recording_trace = NULL;
     }
     else{
       /* Otherwise, we know that the */ 
