@@ -3,11 +3,11 @@
 
 
 
-#define DUMP_BITCODE false
+#define DUMP_BITCODE true
 #define GDB_BREAK __asm__("int3")
 
 
-//#define DEBUG true
+#define DEBUG true
 
 
 #ifdef DEBUG
