@@ -1,4 +1,8 @@
 
+Sun Oct 24, 11:17
+  So the reason nested_funcs.rb is failing in exit-on-exception branch is because of the new benchmarking harness. For whatever reason, if we run the interpreted version prior to running th traced version, in the same Ruby process, the tracer will generate a nested trace and all will work. But, if we just run the traced version, the tracer will 'outerline' the outer loop and we get a crash. Take-aways: 1) need to figure out why running interp version first would make any difference. 2) need to figure out where the outerlining crash is coming from.
+
+
 Trace runtime interfaces
 -------------------------
 

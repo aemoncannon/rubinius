@@ -1,5 +1,7 @@
 ITERATIONS = ARGV[0].to_i
 MODE = ARGV[1]
+puts ITERATIONS
+puts MODE
 
 def enable_tracing
   Ruby.primitive :vm_enable_tracing  

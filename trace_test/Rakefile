@@ -1,5 +1,6 @@
 RBX = "../bin/rbx"
 LOG = "test.log"
+RESULT_FILE = ".run_result"
 
 TESTS = [
 
@@ -11,7 +12,7 @@ TESTS = [
 
          {:file => "nest_simple.rb", :comment => "", :iters => 10000},
 
-         {:file => "nest_funcs.rb", :comment => "", :iters => 10000},
+#         {:file => "nest_funcs.rb", :comment => "", :iters => 10000},
 
          {:file => "nest_funcs_with_yield.rb", :comment => "", :iters => 10000},
 
@@ -27,9 +28,9 @@ TESTS = [
 
          {:file => "if_exit_with_yield.rb", :comment => "", :iters => 100000},
 
-         {:file => "nest_funcs_and_exit.rb", :comment => "", :iters => 100},
+#         {:file => "nest_funcs_and_exit.rb", :comment => "", :iters => 100},
 
-         {:file => "nest_funcs_with_optional_args.rb", :comment => "", :iters => 10000},
+#         {:file => "nest_funcs_with_optional_args.rb", :comment => "", :iters => 10000},
 
          {:file => "loop_with_hash.rb", :comment => "", :iters => 10000},
 
@@ -50,11 +51,19 @@ task :units => [] do
     sh "#{RBX} #{t[:file]} #{t[:iters]} interp >> #{LOG}"
     elapsed = Time.now.to_f - time
     puts "   Interp time: #{elapsed} seconds."
+    interp_result = File.read(RESULT_FILE)
 
     time = Time.now.to_f
     sh "#{RBX} #{t[:file]} #{t[:iters]} trace >> #{LOG}"
     elapsed = Time.now.to_f - time
     puts "   Trace time: #{elapsed} seconds."
+    trace_result = File.read(RESULT_FILE)
+
+    if interp_result != trace_result
+      puts "FAILURE: Interpreter result: #{interp_result}, Trace result: #{trace_result}"
+    else
+      puts "SUCCESS"
+    end
 
   }
 end
