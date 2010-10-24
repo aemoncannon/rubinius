@@ -14,7 +14,7 @@ def run()
   j
 end
 
-expect(ITERATIONS * 1000) do
+with_harness do
   run()
 end
 

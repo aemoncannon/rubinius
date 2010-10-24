@@ -7,6 +7,6 @@ def run
   JSON.parse(@src).to_json
 end
 
-expect(run()) do
+with_harness do
   run()
 end

@@ -29,7 +29,7 @@ def run()
   j
 end
 
-expect(run()) do
+with_harness do
   run()
 end
 

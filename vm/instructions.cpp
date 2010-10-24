@@ -188,6 +188,7 @@ Object* VMMethod::resumable_interpreter(STATE,
       IF_DEBUG(state->recording_trace->pretty_print(state, std::cout));
       TRACK_TIME(TRACE_COMPILER_TIMER);
       state->recording_trace->compile(state);
+			DEBUGLN("WTF just finished compiling");
       TRACK_TIME(TRACE_SETUP_TIMER);
       state->recording_trace->store();
       IF_DEBUG(state->recording_trace->ultimate_parent()->dump_to_graph(state));

@@ -8,7 +8,7 @@ def run()
   i
 end
 
-expect(ITERATIONS) do
+with_harness do
   run()
 end
 

@@ -213,6 +213,7 @@ namespace rubinius {
 	    op == InstructionSequence::insn_raise_return ||
 	    op == InstructionSequence::insn_raise_break ||
 	    op == InstructionSequence::insn_reraise){
+			GDB_BREAK;
       DEBUGLN("Canceling record due to exception condition.");
       return TRACE_CANCEL;
     }

@@ -1,4 +1,5 @@
 ITERATIONS = ARGV[0].to_i
+MODE = ARGV[1]
 
 def enable_tracing
   Ruby.primitive :vm_enable_tracing  
@@ -8,17 +9,19 @@ def disable_tracing
   Ruby.primitive :vm_disable_tracing
 end
 
-def expect(val)
-  if ARGV[1];enable_tracing;end
-  result = yield
-  if ARGV[1];disable_tracing;end
+def with_harness()
 
-  if result == val
-    puts "SUCCESS"
-    exit(0)
-  else
-    $stderr << "FAILURE: Expected #{val}, found #{result}.\n"
-    exit(1)
+  result = nil
+  if MODE == "trace"
+    enable_tracing
+    result = yield
+    disable_tracing
+  elsif MODE == "interp"
+    result = yield
   end
+
+  File.open(".run_result", "w"){ |f|
+    f << result
+  }
 
 end

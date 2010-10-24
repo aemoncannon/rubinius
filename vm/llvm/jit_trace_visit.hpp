@@ -124,12 +124,12 @@ namespace rubinius {
 
     virtual void check_for_exception_then(Value* val, BasicBlock* cont) {
       Value* null = Constant::getNullValue(ObjType);
-      Value* cmp = b().CreateICmpEQ(val, null, "null_check");
+      Value* null_p = b().CreateICmpEQ(val, null, "null_check");
 
       BasicBlock* current = current_block();
       BasicBlock* exit_stub = new_block("exit_stub");
 
-			b().CreateCondBr(cmp, exit_stub, cont);
+			b().CreateCondBr(null_p, exit_stub, cont);
 
       set_block(exit_stub);
       exit_trace(cur_trace_node_->pc);
@@ -631,7 +631,7 @@ namespace rubinius {
       Value* next_ip_val = int32(next_ip);
       Value* next_ip_pos = get_field(cf, offset::cf_ip);
       b().CreateStore(next_ip_val, next_ip_pos);
-      Value* stckp = int32(sp());
+      Value* stckp = int32(cur_trace_node_->sp);
       Value* exit_sp_pos = get_field(cf, offset::cf_sp);
       b().CreateStore(stckp, exit_sp_pos);
     }
