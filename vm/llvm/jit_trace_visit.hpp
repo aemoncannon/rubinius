@@ -48,12 +48,12 @@ namespace rubinius {
         JITBasicBlock& jbb = i->second;
         current_jbb_ = &jbb;
 
-	// Might need this stuff if we ever have branches in our
-	// traces..
+				// Might need this stuff if we ever have branches in our
+				// traces..
 				
         // if(BasicBlock* next = jbb.block) {
         //   if(!b().GetInsertBlock()->getTerminator()) {
-	// 		std::cout << "ACK! creating BR!!" << "\n";
+				// 		std::cout << "ACK! creating BR!!" << "\n";
         //     b().CreateBr(next);
         //   }
         //   next->moveAfter(b().GetInsertBlock());
@@ -115,21 +115,35 @@ namespace rubinius {
       ip_pos_ = b().CreateConstGEP2_32(call_frame_, 0, offset::cf_ip, "ip_pos");
 
       global_serial_pos = b().CreateIntToPtr(
-					     ConstantInt::get(ls_->IntPtrTy, (intptr_t)ls_->shared().global_serial_address()),
-					     PointerType::getUnqual(ls_->IntPtrTy), "cast_to_intptr");
+				ConstantInt::get(ls_->IntPtrTy, (intptr_t)ls_->shared().global_serial_address()),
+				PointerType::getUnqual(ls_->IntPtrTy), "cast_to_intptr");
 
       init_out_args();
 
     }
 
+    virtual void check_for_exception_then(Value* val, BasicBlock* cont) {
+      Value* null = Constant::getNullValue(ObjType);
+      Value* cmp = b().CreateICmpEQ(val, null, "null_check");
+
+      BasicBlock* current = current_block();
+      BasicBlock* exit_stub = new_block("exit_stub");
+
+			b().CreateCondBr(cmp, exit_stub, cont);
+
+      set_block(exit_stub);
+      exit_trace(cur_trace_node_->pc);
+      set_block(current);
+    }
+
     void ensure_trace_exit_pad(){
       if(!emitted_exit_){
-	BasicBlock* cur = current_block();
-	info()->root_info()->init_trace_exit_pad();
-	set_block(info()->trace_exit_pad());
-	emit_trace_exit_pad();
-	emitted_exit_ = true;
-	set_block(cur);
+				BasicBlock* cur = current_block();
+				info()->root_info()->init_trace_exit_pad();
+				set_block(info()->trace_exit_pad());
+				emit_trace_exit_pad();
+				emitted_exit_ = true;
+				set_block(cur);
       }
     }
 
@@ -147,12 +161,12 @@ namespace rubinius {
 
       // Otherwise look up a branch for this location (this needs to be faster)
       Value* branch_trace = load_field(exit_trace_node, 
-				       offset::trace_node_branch_trace, 
-				       "branch trace");
+																			 offset::trace_node_branch_trace, 
+																			 "branch trace");
 
       Value* executor = load_field(exit_trace_node, 
-				   offset::trace_node_branch_executor, 
-				   "executor");
+																	 offset::trace_node_branch_executor, 
+																	 "executor");
 
       Value* branch_found_p = b().CreateICmpNE(executor, constant(0, executor->getType()), "bailed_p");
       BasicBlock* no_branch_b = new_block("no_branch_b");
@@ -163,12 +177,12 @@ namespace rubinius {
       set_block(run_branch_b);
 
       Value* call_args[] = {
-	info()->vm(),
-	exit_cf,
-	branch_trace,
-	info()->trace(),
-	exit_trace_node,
-	int32(Trace::RUN_MODE_NORM)
+				info()->vm(),
+				exit_cf,
+				branch_trace,
+				info()->trace(),
+				exit_trace_node,
+				int32(Trace::RUN_MODE_NORM)
       };
       Value* ret = b().CreateCall(executor, call_args, call_args + 6, "call_branch_trace");
 
@@ -184,19 +198,19 @@ namespace rubinius {
       set_block(cont);
 
       if(!(trace_->is_branch())){
-	// If we got to here, that means that a branch of this trace was
-	// run successfully, which by definition must have looped
-	// back to the anchor.
-	TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
-	skip_to_anchor();
+				// If we got to here, that means that a branch of this trace was
+				// run successfully, which by definition must have looped
+				// back to the anchor.
+				TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
+				skip_to_anchor();
       }
       else{
-	// If we got to here, that means that a branch trace called
-	// from a branch trace was run successfully. 
-	// We return immediately, which hands control back up to the 
-	// parent trace, which will (per above) jump to the anchor
-	TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
-	return_value(int32(0));
+				// If we got to here, that means that a branch trace called
+				// from a branch trace was run successfully. 
+				// We return immediately, which hands control back up to the 
+				// parent trace, which will (per above) jump to the anchor
+				TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
+				return_value(int32(0));
       }
 
       set_block(no_branch_b);
@@ -265,11 +279,11 @@ namespace rubinius {
       FunctionType* ft = FunctionType::get(ls_->Int32Ty, types, false);
       Function* func = cast<Function>(module_->getOrInsertFunction("rbx_side_exit", ft));
       Value* bail_call_args[] = {
-	info()->vm(),
-	exit_cf,
-	info()->trace(),
-	exit_trace_node,
-	info()->trace_run_mode()
+				info()->vm(),
+				exit_cf,
+				info()->trace(),
+				exit_trace_node,
+				info()->trace_run_mode()
       };
       return_value(b().CreateCall(func, bail_call_args, bail_call_args + 5, "call side_exit"));
     }
@@ -286,19 +300,19 @@ namespace rubinius {
       // Otherwise look up a branch for this location (this needs to be faster)
       Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
       Value* nested_trace = load_field(exit_trace_node,
-				       offset::trace_node_nested_trace, 
-				       "nested executor");
+																			 offset::trace_node_nested_trace, 
+																			 "nested executor");
       Value* executor = load_field(exit_trace_node, 
-				   offset::trace_node_nested_executor, 
-				   "nested executor");
+																	 offset::trace_node_nested_executor, 
+																	 "nested executor");
 
       Value* call_args[] = {
-	info()->vm(),
-	info()->call_frame(),
-	nested_trace,
-	info()->trace(),
-	exit_trace_node,
-	int32(Trace::RUN_MODE_NESTED)
+				info()->vm(),
+				info()->call_frame(),
+				nested_trace,
+				info()->trace(),
+				exit_trace_node,
+				int32(Trace::RUN_MODE_NESTED)
       };
       Value* ret = b().CreateCall(executor, call_args, call_args+6, "call_nested_trace");
 
@@ -328,7 +342,7 @@ namespace rubinius {
 
       FunctionType* ft = FunctionType::get(ObjType, types, false);
       Function* func = cast<Function>(
-				      module_->getOrInsertFunction("rbx_check_interrupts", ft));
+				module_->getOrInsertFunction("rbx_check_interrupts", ft));
 
       func->setDoesNotCapture(0, true);
       func->setDoesNotCapture(1, true);
@@ -353,14 +367,14 @@ namespace rubinius {
       // the anchor, in which case we do want to jump because
       // the anchor is emitted first, not last.)
       if(cur_trace_node_->next->trace_pc == (int)ip &&
-	 cur_trace_node_->next != trace_->anchor){
-	return;
+				 cur_trace_node_->next != trace_->anchor){
+				return;
       }
 
       // Omit unconditional jump if this is a branch trace
       // and we're at the last node before the terminator.
       if(trace_->is_branch() && cur_trace_node_->next == trace_->anchor){
-	return;
+				return;
       }
 
       BasicBlock* bb = block_map_[ip].block;
@@ -372,64 +386,51 @@ namespace rubinius {
 
     void visit_end() {
       if(trace_->is_branch()){
-	return_value(int32(0));
+				return_value(int32(0));
       }
     }
-   
+
     void visit_goto_if_false(opcode ip) {
-      Value* cond = stack_pop();
-      Value* i = b().CreatePtrToInt(
-				    cond, ls_->IntPtrTy, "as_int");
-      Value* anded = b().CreateAnd(
-				   i,
-				   ConstantInt::get(ls_->IntPtrTy, FALSE_MASK), 
-				   "and");
-      Value* cmp = b().CreateICmpEQ(
-				    anded,
-				    ConstantInt::get(ls_->IntPtrTy, cFalse), 
-				    "is_true");
-
-      BasicBlock* cont = new_block("continue");
-      BasicBlock* exit_stub = new_block("exit_stub");
-
-      int exit_to_pc;
-      if(cur_trace_node_->jump_taken){
-	b().CreateCondBr(cmp, cont, exit_stub);
-	exit_to_pc = cur_trace_node_->pc + 1 + cur_trace_node_->numargs;
-      }
-      else{
-	b().CreateCondBr(cmp, exit_stub, cont);
-	exit_to_pc = cur_trace_node_->interp_jump_target();
-      }
-      set_block(exit_stub);
-      exit_trace(exit_to_pc);
-      set_block(cont);
-    }
+			emit_goto_if(ip, false);
+		}
 
     void visit_goto_if_true(opcode ip) {
+			emit_goto_if(ip, true);
+		}
+   
+    void emit_goto_if(opcode ip, bool affirmative) {
       Value* cond = stack_pop();
       Value* i = b().CreatePtrToInt(
-				    cond, ls_->IntPtrTy, "as_int");
+				cond, ls_->IntPtrTy, "as_int");
       Value* anded = b().CreateAnd(
-				   i,
-				   ConstantInt::get(ls_->IntPtrTy, FALSE_MASK), "and");
+				i,
+				ConstantInt::get(ls_->IntPtrTy, FALSE_MASK), 
+				"and");
 
-      Value* cmp = b().CreateICmpNE(
-				    anded,
-				    ConstantInt::get(ls_->IntPtrTy, cFalse), "is_true");
+      Value* cmp;
+
+			if(affirmative){
+				cmp = b().CreateICmpNE(
+					anded,
+					ConstantInt::get(ls_->IntPtrTy, cFalse), "is_true");
+			}
+			else{
+				cmp = b().CreateICmpEQ(
+					anded,
+					ConstantInt::get(ls_->IntPtrTy, cFalse), "is_true");
+			}
 
       BasicBlock* cont = new_block("continue");
       BasicBlock* exit_stub = new_block("exit_stub");
 
-
       int exit_to_pc;
       if(cur_trace_node_->jump_taken){
-	b().CreateCondBr(cmp, cont, exit_stub);
-	exit_to_pc = cur_trace_node_->pc + 1 + cur_trace_node_->numargs;
+				b().CreateCondBr(cmp, cont, exit_stub);
+				exit_to_pc = cur_trace_node_->pc + 1 + cur_trace_node_->numargs;
       }
       else{
-	b().CreateCondBr(cmp, exit_stub, cont);
-	exit_to_pc = cur_trace_node_->interp_jump_target();
+				b().CreateCondBr(cmp, exit_stub, cont);
+				exit_to_pc = cur_trace_node_->interp_jump_target();
       }
       set_block(exit_stub);
       exit_trace(exit_to_pc);
@@ -467,22 +468,22 @@ namespace rubinius {
 
         // FunctionType* ft = FunctionType::get(ls_->Int1Ty, types, false);
         // Function* func = cast<Function>(
-	// 	module_->getOrInsertFunction("rbx_raising_exception", ft));
+				// 	module_->getOrInsertFunction("rbx_raising_exception", ft));
 
         // Value* call_args[] = { vm_ };
 
 				
-	// Check if the raised condition is an exception..
+				// Check if the raised condition is an exception..
         // Value* isit = b().CreateCall(func, call_args, call_args+1, "rae");
 
-	BasicBlock* exit_stub = new_block("exit_stub");
-	set_block(exit_stub);
-	exit_trace(where);
-	set_block(code);
+				BasicBlock* exit_stub = new_block("exit_stub");
+				set_block(exit_stub);
+				exit_trace(where);
+				set_block(code);
 
 				
         // If it's not an exception, we're going to want to pass to 
-	// a surrounding handler. If no such handler exists, we bail.
+				// a surrounding handler. If no such handler exists, we bail.
         // BasicBlock* next = 0;
         // if(has_exception_handler()) {
         //   next = exception_handler();
@@ -490,16 +491,16 @@ namespace rubinius {
         //   next = exit_stub;
         // }
 
-	// Now, if it was an exception, run the rescue clause. Otherwise,
-	// pass to surrounding handler or bail.
+				// Now, if it was an exception, run the rescue clause. Otherwise,
+				// pass to surrounding handler or bail.
         // b().CreateCondBr(isit, jbb.block, next);
 
-	// Currently we're being babies and just bailing out at any 
-	// exceptional condition. 
+				// Currently we're being babies and just bailing out at any 
+				// exceptional condition. 
 
-	// See todo.org for what we should be doing.
+				// See todo.org for what we should be doing.
 
-	b().CreateBr(exit_stub);
+				b().CreateBr(exit_stub);
 
 
         set_block(orig);
@@ -522,60 +523,60 @@ namespace rubinius {
       // parent_info exists if this call_frame
       // was activated on this trace
       if(info()->parent_info()){
-	method_info_ = info()->parent_info();
-	vm_ = info()->vm();
-	args_ = info()->args();
-	call_frame_ = info()->call_frame();
-	vars_ = info()->variables();
-	stack_ = info()->stack();
-	sp_ = info()->saved_sp();
-	last_sp_ = info()->saved_last_sp();
-	out_args_ = info()->out_args();
+				method_info_ = info()->parent_info();
+				vm_ = info()->vm();
+				args_ = info()->args();
+				call_frame_ = info()->call_frame();
+				vars_ = info()->variables();
+				stack_ = info()->stack();
+				sp_ = info()->saved_sp();
+				last_sp_ = info()->saved_last_sp();
+				out_args_ = info()->out_args();
       }
       else{
-	// Otherwise, we're returning from
-	// a call_frame that wasn't created on
-	// this trace. We need to grab all the
-	// info by other means.
+				// Otherwise, we're returning from
+				// a call_frame that wasn't created on
+				// this trace. We need to grab all the
+				// info by other means.
 
-	vm_ = info()->vm();
+				vm_ = info()->vm();
 
-	// Hmmmm, shouln't do this unless there's def. a block
-	Value* prev_block_env_pos = get_field(info()->variables(), offset::vars_block);
-	Value* block_env = b().CreateLoad(prev_block_env_pos, "previous_block_env");
-	block_env = b().CreateBitCast(block_env, ls_->ptr_type("BlockEnvironment"),"block_env");
+				// Hmmmm, shouln't do this unless there's def. a block
+				Value* prev_block_env_pos = get_field(info()->variables(), offset::vars_block);
+				Value* block_env = b().CreateLoad(prev_block_env_pos, "previous_block_env");
+				block_env = b().CreateBitCast(block_env, ls_->ptr_type("BlockEnvironment"),"block_env");
 
-	Value* cf_pos = get_field(info()->call_frame(), offset::cf_previous);
-	call_frame_ = b().CreateLoad(cf_pos, "previous_cf");
+				Value* cf_pos = get_field(info()->call_frame(), offset::cf_previous);
+				call_frame_ = b().CreateLoad(cf_pos, "previous_cf");
 				
-	Value* vars_pos = get_field(call_frame_, offset::cf_scope);
-	vars_ = b().CreateLoad(vars_pos, "vars");
+				Value* vars_pos = get_field(call_frame_, offset::cf_scope);
+				vars_ = b().CreateLoad(vars_pos, "vars");
 
-	Value* args_pos = get_field(call_frame_, offset::cf_arguments);
-	args_ = b().CreateLoad(args_pos, "args");
+				Value* args_pos = get_field(call_frame_, offset::cf_arguments);
+				args_ = b().CreateLoad(args_pos, "args");
 
-	Value* stk_base = get_field(call_frame_, offset::cf_stk);
-	stack_ = b().CreateBitCast(stk_base, ObjArrayTy, "obj_ary_type");
+				Value* stk_base = get_field(call_frame_, offset::cf_stk);
+				stack_ = b().CreateBitCast(stk_base, ObjArrayTy, "obj_ary_type");
 
-	out_args_ = b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
+				out_args_ = b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
 
-	JITMethodInfo* prev_info = info();
-	method_info_ = new JITMethodInfo(info()->context(), info()->method(), info()->vm_method());
-	info()->is_block = false; // <---- this will be wrong if returning to a block...
-	info()->set_block_env(block_env);
-	info()->init_globals(prev_info);
-	info()->context().set_root(info()->root_info());
-	info()->set_call_frame(call_frame_);
-	info()->set_variables(vars_);
-	info()->set_stack(stack_);
-	info()->set_vm(vm_);
-	info()->set_args(args_);
-	info()->set_out_args(out_args_);
+				JITMethodInfo* prev_info = info();
+				method_info_ = new JITMethodInfo(info()->context(), info()->method(), info()->vm_method());
+				info()->is_block = false; // <---- this will be wrong if returning to a block...
+				info()->set_block_env(block_env);
+				info()->init_globals(prev_info);
+				info()->context().set_root(info()->root_info());
+				info()->set_call_frame(call_frame_);
+				info()->set_variables(vars_);
+				info()->set_stack(stack_);
+				info()->set_vm(vm_);
+				info()->set_args(args_);
+				info()->set_out_args(out_args_);
 
-	// Leave room for return value..
-	sp_ = cur_trace_node_->next->sp - 1; 
+				// Leave room for return value..
+				sp_ = cur_trace_node_->next->sp - 1; 
 
-	last_sp_ = sp_;
+				last_sp_ = sp_;
       }
 
       stack_push(ret_val);
@@ -612,9 +613,9 @@ namespace rubinius {
       BasicBlock* cur = current_block();
       info()->root_info()->exit_ip_phi->addIncoming(int32(next_ip), cur);
       info()->root_info()->trace_node_phi->addIncoming(constant(
-								cur_trace_node_, 
-								ls_->ptr_type("TraceNode")),
-						       cur);
+																												 cur_trace_node_, 
+																												 ls_->ptr_type("TraceNode")),
+																											 cur);
       info()->root_info()->exit_cf_phi->addIncoming(info()->call_frame(), cur);
 
       flush_current_call_frame(next_ip);
@@ -641,61 +642,61 @@ namespace rubinius {
       TraceNode* node = cur_trace_node_->active_send;
       while(node != NULL){
 
-	assert(node->traced_send || node->traced_yield);
-	Value* cf = NULL;
-	TraceNode* cf_creator_node = node->active_send;
-	if(cf_creator_node != NULL){
-	  cf = info()->root_info()->pre_allocated_call_frames[cf_creator_node->trace_pc];	
-	}
-	else{
-	  cf = info()->root_info()->call_frame();
-	}
+				assert(node->traced_send || node->traced_yield);
+				Value* cf = NULL;
+				TraceNode* cf_creator_node = node->active_send;
+				if(cf_creator_node != NULL){
+					cf = info()->root_info()->pre_allocated_call_frames[cf_creator_node->trace_pc];	
+				}
+				else{
+					cf = info()->root_info()->call_frame();
+				}
 
-	cf = b().CreateBitCast(cf, CallFrameTy, "call_frame");
-	assert(cf);
+				cf = b().CreateBitCast(cf, CallFrameTy, "call_frame");
+				assert(cf);
 
-	Value* stckp = NULL;
-	Value* next_ip = NULL;
+				Value* stckp = NULL;
+				Value* next_ip = NULL;
 
-	if(node->op == InstructionSequence::insn_send_stack){
-	  int sp = node->sp - node->arg2 - 1;
-	  stckp = ConstantInt::get(ls_->Int32Ty, sp);
-	  next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
-	}
-	else if(node->op == InstructionSequence::insn_send_stack_with_block){
-	  stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 2);
-	  next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
-	}
-	else if(node->op == InstructionSequence::insn_yield_stack){
-	  stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg1);
-	  next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
-	}
-	else if(node->op == InstructionSequence::insn_send_method){
-	  stckp = ConstantInt::get(ls_->Int32Ty, node->sp - 1);
-	  next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
-	}
-	else{
-	  stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 1);
-	  next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
-	}
+				if(node->op == InstructionSequence::insn_send_stack){
+					int sp = node->sp - node->arg2 - 1;
+					stckp = ConstantInt::get(ls_->Int32Ty, sp);
+					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
+				}
+				else if(node->op == InstructionSequence::insn_send_stack_with_block){
+					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 2);
+					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
+				}
+				else if(node->op == InstructionSequence::insn_yield_stack){
+					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg1);
+					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
+				}
+				else if(node->op == InstructionSequence::insn_send_method){
+					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - 1);
+					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
+				}
+				else{
+					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 1);
+					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
+				}
 
-	Value* next_ip_pos = get_field(cf, offset::cf_ip);
-	b().CreateStore(next_ip, next_ip_pos);
+				Value* next_ip_pos = get_field(cf, offset::cf_ip);
+				b().CreateStore(next_ip, next_ip_pos);
 
-	Value* exit_sp_pos = get_field(cf, offset::cf_sp);
-	b().CreateStore(stckp, exit_sp_pos);
+				Value* exit_sp_pos = get_field(cf, offset::cf_sp);
+				b().CreateStore(stckp, exit_sp_pos);
 
-	node = node->active_send;
+				node = node->active_send;
       }
     }
 
     void visit_push_has_block() {
       // We're in a traced method, so we know if there is a block staticly.
       if(info()->traced_block_supplied()) {
-	stack_push(constant(Qtrue));
+				stack_push(constant(Qtrue));
       }
       else{
-	stack_push(constant(Qfalse));
+				stack_push(constant(Qfalse));
       }
     }
 
@@ -710,16 +711,16 @@ namespace rubinius {
 #include "vm/llvm/jit_trace_send.hpp"
     void visit_send_stack(opcode which, opcode args) {
       if(cur_trace_node_->traced_send){
-	emit_traced_send(which, args, false);
+				emit_traced_send(which, args, false);
       }
       else{
-	InlineCache* cache = reinterpret_cast<InlineCache*>(which);
-	set_has_side_effects();
-	Value* ret = inline_cache_send(args, cache);
-	stack_remove(args + 1);
-	check_for_exception(ret);
-	stack_push(ret);
-	allow_private_ = false;
+				InlineCache* cache = reinterpret_cast<InlineCache*>(which);
+				set_has_side_effects();
+				Value* ret = inline_cache_send(args, cache);
+				stack_remove(args + 1);
+				check_for_exception(ret);
+				stack_push(ret);
+				allow_private_ = false;
       }
     }
 
@@ -745,12 +746,12 @@ namespace rubinius {
 
       FunctionType* ft = FunctionType::get(ObjType, types, false);
       Function* func = cast<Function>(
-				      module_->getOrInsertFunction("rbx_create_block", ft));
+				module_->getOrInsertFunction("rbx_create_block", ft));
 
       Value* call_args[] = {
-	vm_,
-	call_frame_,
-	ConstantInt::get(ls_->Int32Ty, which)
+				vm_,
+				call_frame_,
+				ConstantInt::get(ls_->Int32Ty, which)
       };
 
       stack_set_top(b().CreateCall(func, call_args, call_args+3, "create_block"));
@@ -764,28 +765,28 @@ namespace rubinius {
 
       if(cur_trace_node_->traced_send){
 
-	if(!block_on_stack) {
-	  emit_create_block(current_block_);
-	}
+				if(!block_on_stack) {
+					emit_create_block(current_block_);
+				}
 
-	emit_traced_send(which, args, true);
+				emit_traced_send(which, args, true);
 
       }
       else{
-	set_has_side_effects();
+				set_has_side_effects();
 
-	// Detect a literal block being created and passed here.
-	if(!block_on_stack) {
-	  emit_create_block(current_block_);
-	}
+				// Detect a literal block being created and passed here.
+				if(!block_on_stack) {
+					emit_create_block(current_block_);
+				}
 
-	Value* ret = block_send(cache, args, allow_private_);
-	stack_remove(args + 2);
-	check_for_return(ret);
-	allow_private_ = false;
+				Value* ret = block_send(cache, args, allow_private_);
+				stack_remove(args + 2);
+				check_for_return(ret);
+				allow_private_ = false;
 
-	// Clear the current block
-	current_block_ = -1;
+				// Clear the current block
+				current_block_ = -1;
       }
     }
 
@@ -793,36 +794,36 @@ namespace rubinius {
 #include "vm/llvm/jit_trace_yield.hpp"
     void visit_yield_stack(opcode count) {
       if(cur_trace_node_->traced_yield){
-	emit_traced_yield_stack(count);
+				emit_traced_yield_stack(count);
       }
       else{
-	set_has_side_effects();
-	Value* vars = vars_;
-	if(JITMethodInfo* home = info()->home_info()) {
-	  vars = home->variables();
-	}
-	Signature sig(ls_, ObjType);
-	sig << VMTy;
-	sig << CallFrameTy;
-	sig << "Object";
-	sig << ls_->Int32Ty;
-	sig << ObjArrayTy;
-	Value* block_obj = b().CreateLoad(
-					  b().CreateConstGEP2_32(vars, 0, offset::vars_block),
-					  "block");
+				set_has_side_effects();
+				Value* vars = vars_;
+				if(JITMethodInfo* home = info()->home_info()) {
+					vars = home->variables();
+				}
+				Signature sig(ls_, ObjType);
+				sig << VMTy;
+				sig << CallFrameTy;
+				sig << "Object";
+				sig << ls_->Int32Ty;
+				sig << ObjArrayTy;
+				Value* block_obj = b().CreateLoad(
+					b().CreateConstGEP2_32(vars, 0, offset::vars_block),
+					"block");
 
-	Value* call_args[] = {
-	  vm_,
-	  call_frame_,
-	  block_obj,
-	  ConstantInt::get(ls_->Int32Ty, count),
-	  stack_objects(count)
-	};
-	flush_ip();
-	Value* val = sig.call("rbx_yield_stack", call_args, 5, "ys", b());
-	stack_remove(count);
-	check_for_exception(val);
-	stack_push(val);
+				Value* call_args[] = {
+					vm_,
+					call_frame_,
+					block_obj,
+					ConstantInt::get(ls_->Int32Ty, count),
+					stack_objects(count)
+				};
+				flush_ip();
+				Value* val = sig.call("rbx_yield_stack", call_args, 5, "ys", b());
+				stack_remove(count);
+				check_for_exception(val);
+				stack_push(val);
       }
     }
 
@@ -833,9 +834,9 @@ namespace rubinius {
 
     void visit_push_local(opcode which) {
       Value* idx2[] = {
-	ConstantInt::get(ls_->Int32Ty, 0),
-	ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-	ConstantInt::get(ls_->Int32Ty, which)
+				ConstantInt::get(ls_->Int32Ty, 0),
+				ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+				ConstantInt::get(ls_->Int32Ty, which)
       };
       Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
       stack_push(b().CreateLoad(pos, "local"));
@@ -844,67 +845,67 @@ namespace rubinius {
     void visit_meta_send_op_plus(opcode name) {
       InlineCache* cache = reinterpret_cast<InlineCache*>(name);
       if(cache->classes_seen() == 0) {
-	set_has_side_effects();
-	Value* recv = stack_back(1);
-	Value* arg =  stack_top();
+				set_has_side_effects();
+				Value* recv = stack_back(1);
+				Value* arg =  stack_top();
 
-	BasicBlock* fast = new_block("fast");
-	BasicBlock* dispatch = new_block("dispatch");
-	BasicBlock* tagnow = new_block("tagnow");
-	BasicBlock* cont = new_block("cont");
+				BasicBlock* fast = new_block("fast");
+				BasicBlock* dispatch = new_block("dispatch");
+				BasicBlock* tagnow = new_block("tagnow");
+				BasicBlock* cont = new_block("cont");
 
-	check_fixnums(recv, arg, fast, dispatch);
+				check_fixnums(recv, arg, fast, dispatch);
 
-	set_block(dispatch);
+				set_block(dispatch);
 
-	Value* called_value = simple_send(ls_->symbol("+"), 1);
+				Value* called_value = simple_send(ls_->symbol("+"), 1);
 
-	check_for_exception_then(called_value, cont);
+				check_for_exception_then(called_value, cont);
 
-	set_block(fast);
+				set_block(fast);
 
-	std::vector<const Type*> types;
-	types.push_back(FixnumTy);
-	types.push_back(FixnumTy);
+				std::vector<const Type*> types;
+				types.push_back(FixnumTy);
+				types.push_back(FixnumTy);
 
-	std::vector<const Type*> struct_types;
-	struct_types.push_back(FixnumTy);
-	struct_types.push_back(ls_->Int1Ty);
+				std::vector<const Type*> struct_types;
+				struct_types.push_back(FixnumTy);
+				struct_types.push_back(ls_->Int1Ty);
 
-	StructType* st = StructType::get(ls_->ctx(), struct_types);
+				StructType* st = StructType::get(ls_->ctx(), struct_types);
 
-	FunctionType* ft = FunctionType::get(st, types, false);
-	Function* func = cast<Function>(
+				FunctionType* ft = FunctionType::get(st, types, false);
+				Function* func = cast<Function>(
 					module_->getOrInsertFunction(ADD_WITH_OVERFLOW, ft));
 
-	Value* recv_int = tag_strip(recv);
-	Value* arg_int = tag_strip(arg);
-	Value* call_args[] = { recv_int, arg_int };
-	Value* res = b().CreateCall(func, call_args, call_args+2, "add.overflow");
+				Value* recv_int = tag_strip(recv);
+				Value* arg_int = tag_strip(arg);
+				Value* call_args[] = { recv_int, arg_int };
+				Value* res = b().CreateCall(func, call_args, call_args+2, "add.overflow");
 
-	Value* sum = b().CreateExtractValue(res, 0, "sum");
-	Value* dof = b().CreateExtractValue(res, 1, "did_overflow");
+				Value* sum = b().CreateExtractValue(res, 0, "sum");
+				Value* dof = b().CreateExtractValue(res, 1, "did_overflow");
 
-	b().CreateCondBr(dof, dispatch, tagnow);
+				b().CreateCondBr(dof, dispatch, tagnow);
 
-	set_block(tagnow);
-
-
-	Value* imm_value = fixnum_tag(sum);
-
-	b().CreateBr(cont);
-
-	set_block(cont);
-
-	PHINode* phi = b().CreatePHI(ObjType, "addition");
-	phi->addIncoming(called_value, dispatch);
-	phi->addIncoming(imm_value, tagnow);
+				set_block(tagnow);
 
 
-	stack_remove(2);
-	stack_push(phi);
+				Value* imm_value = fixnum_tag(sum);
+
+				b().CreateBr(cont);
+
+				set_block(cont);
+
+				PHINode* phi = b().CreatePHI(ObjType, "addition");
+				phi->addIncoming(called_value, dispatch);
+				phi->addIncoming(imm_value, tagnow);
+
+
+				stack_remove(2);
+				stack_push(phi);
       } else {
-	visit_send_stack(name, 1);
+				visit_send_stack(name, 1);
       }
     }
 
@@ -920,8 +921,8 @@ namespace rubinius {
       sig << "CallFrame";
 
       Value* call_args[] = {
-	vm_,
-	call_frame_
+				vm_,
+				call_frame_
       };
       sig.call("rbx_show_state", call_args, 2, "", b());
     }
@@ -932,8 +933,8 @@ namespace rubinius {
       sig << "Object";
 
       Value* call_args[] = {
-	vm_,
-	val
+				vm_,
+				val
       };
       sig.call("rbx_show_obj", call_args, 2, "", b());
     }
@@ -945,9 +946,9 @@ namespace rubinius {
       sig << "StackVariables";
 
       Value* call_args[] = {
-	vm_,
-	call_frame_,
-	val
+				vm_,
+				call_frame_,
+				val
       };
 
       sig.call("rbx_show_vars", call_args, 3, "", b());
@@ -958,17 +959,17 @@ namespace rubinius {
       sig << "VM";
       sig << ls_->Int32Ty;
       Value* call_args[] = {
-	vm_,
-	int32(timer)
+				vm_,
+				int32(timer)
       };
       sig.call("rbx_track_time", call_args, 2, "", b());
     }
 
     void dump_local(opcode which){
       Value* idx2[] = {
-	ConstantInt::get(ls_->Int32Ty, 0),
-	ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-	ConstantInt::get(ls_->Int32Ty, which)
+				ConstantInt::get(ls_->Int32Ty, 0),
+				ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+				ConstantInt::get(ls_->Int32Ty, which)
       };
       Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
       dump_obj(b().CreateLoad(pos, "local"));
@@ -982,7 +983,7 @@ namespace rubinius {
       sig << ls_->Int32Ty;
 
       Value* call_args[] = {
-	val
+				val
       };
       sig.call("rbx_show_int", call_args, 1, "", b());
     }
@@ -991,7 +992,7 @@ namespace rubinius {
       Signature sig(ls_, ls_->VoidTy);
       sig << ls_->Int1Ty;
       Value* call_args[] = {
-	val
+				val
       };
       sig.call("rbx_show_int", call_args, 1, "", b());
     }
@@ -1000,7 +1001,7 @@ namespace rubinius {
       Signature sig(ls_, ls_->VoidTy);
       sig << ls_->Int32Ty;
       Value* call_args[] = {
-	val
+				val
       };
       sig.call("rbx_show_int", call_args, 1, "", b());
     }

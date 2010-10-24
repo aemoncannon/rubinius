@@ -309,7 +309,7 @@ namespace rubinius {
       }
     }
 
-    void check_for_exception_then(Value* val, BasicBlock* cont) {
+    virtual void check_for_exception_then(Value* val, BasicBlock* cont) {
       Value* null = Constant::getNullValue(ObjType);
 
       Value* cmp = b().CreateICmpEQ(val, null, "null_check");

@@ -3,7 +3,7 @@
 
 
 
-#define DUMP_BITCODE true
+#define DUMP_BITCODE false
 #define GDB_BREAK __asm__("int3")
 
 
