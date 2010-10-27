@@ -220,7 +220,7 @@ namespace rubinius {
       DEBUGLN("Canceling record due to splat.");
       return TRACE_CANCEL;
     }
-    else if(op == InstructionSequence::insn_ret && call_frame == anchor->call_frame){
+    else if(op == InstructionSequence::insn_ret && call_frame->cm == anchor->cm){
       DEBUGLN("Canceling record due to return from home frame.");
       return TRACE_CANCEL;
     }

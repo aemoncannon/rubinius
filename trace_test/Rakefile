@@ -20,8 +20,8 @@ TESTS = [
          {:name => "nest_simple", :comment => "", :iters => 10000, 
            :bench_iters => [1000, 10000]},
 
-         #         {:name => "nest_funcs", :comment => "", :iters => 10000, 
-         #  :bench_iters => [1000, 10000]},
+         {:name => "nest_funcs", :comment => "", :iters => 10000, 
+           :bench_iters => [1000, 10000]},
 
          {:name => "nest_funcs_with_yield", :comment => "", :iters => 10000, 
            :bench_iters => [1000, 10000]},
@@ -44,11 +44,11 @@ TESTS = [
          {:name => "if_exit_with_yield", :comment => "", :iters => 100000, 
            :bench_iters => [1000, 10000, 100000]},
 
-         #         {:name => "nest_funcs_and_exit", :comment => "", :iters => 100, 
-         #  :bench_iters => [100, 1000]},
+         {:name => "nest_funcs_and_exit", :comment => "", :iters => 100, 
+           :bench_iters => [100, 1000]},
 
-         #         {:name => "nest_funcs_with_optional_args", :comment => "", :iters => 10000, 
-         #  :bench_iters => [100, 1000, 10000]},
+         {:name => "nest_funcs_with_optional_args", :comment => "", :iters => 10000, 
+           :bench_iters => [100, 1000, 10000]},
 
          {:name => "loop_with_hash", :comment => "", :iters => 10000, 
            :bench_iters => [100, 1000, 10000]},

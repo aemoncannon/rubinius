@@ -1,5 +1,4 @@
 
-
 Sun Oct 26, 1:42
   Ok, outerlining is crashing because I never accounted for side-exits in traces that have already returned from the home frame. So in a nested function situation, when a branch outerlines a loop, returning back into the caller, its possible to have side-exits that would require us to pop the trace home frame. :(  My take: let's just disallow traces that return from the anchor's home frame. We can still do outerlining, just not in nested function situtations.
 
