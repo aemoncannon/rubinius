@@ -308,6 +308,10 @@ namespace rubinius {
       return method_.get();
     }
 
+    void set_method(CompiledMethod* meth) {
+      return method_.set(meth);
+    }
+
     VMMethod* vm_method() {
       return vmm;
     }

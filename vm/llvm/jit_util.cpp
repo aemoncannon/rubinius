@@ -942,7 +942,8 @@ extern "C" {
   
   int rbx_side_exit(STATE, CallFrame* call_frame, Trace* exit_trace, TraceNode* exit_node, int run_mode){
     TRACK_TIME(IN_EXIT_TIMER);
-    DEBUGLN("No branch to continue on. Exiting."); 
+    DEBUGLN("No branch to continue on. Exiting from " << exit_node->pc << ", trace-pc = " << exit_node->trace_pc);
+    IF_DEBUG(call_frame->dump());
 
     // Maybe start recording a branch trace...
     if(exit_node->bump_exit_hotness()){

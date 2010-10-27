@@ -174,8 +174,8 @@ namespace rubinius {
     bool parent_of(Trace* trace){
       Trace* t = trace->parent;
       while(t != NULL){
-	if(t == this) return true;
-	t = t->parent;
+				if(t == this) return true;
+				t = t->parent;
       }
       return false;
     }
@@ -183,7 +183,7 @@ namespace rubinius {
     Trace* ultimate_parent(){
       Trace* t = this;
       while(t->parent != NULL){
-	t = t->parent;
+				t = t->parent;
       }
       return t;
     }
@@ -202,20 +202,20 @@ namespace rubinius {
       v.at_ip(node->trace_pc);
 
       switch(op) {
-#define HANDLE_INST0(code, name)			\
-	case code:					\
-	  if(v.before(op)) { v.visit_ ## name();}	\
-	  break;
+#define HANDLE_INST0(code, name)									\
+				case code:																\
+					if(v.before(op)) { v.visit_ ## name();}	\
+					break;
 
-#define HANDLE_INST1(code, name)				\
-	case code:						\
-	  if(v.before(op, arg1)) { v.visit_ ## name(arg1);}	\
-	  break;
+#define HANDLE_INST1(code, name)														\
+				case code:																					\
+					if(v.before(op, arg1)) { v.visit_ ## name(arg1);}	\
+					break;
 
-#define HANDLE_INST2(code, name)					\
-	case code:							\
-	  if(v.before(op, arg1, arg2)) { v.visit_ ## name(arg1, arg2);}	\
-	  break;
+#define HANDLE_INST2(code, name)																				\
+				case code:																											\
+					if(v.before(op, arg1, arg2)) { v.visit_ ## name(arg1, arg2);}	\
+					break;
 			
 #include "vm/gen/instruction_visitors.hpp"
 
@@ -231,8 +231,8 @@ namespace rubinius {
     void walk(T& walker) {
       TraceIterator it = iter();
       while(it.has_next()){
-	TraceNode* node = it.next();
-	walker.call(this, node);
+				TraceNode* node = it.next();
+				walker.call(this, node);
       }
     }
 

@@ -160,9 +160,9 @@ namespace rubinius {
   }
 
   Trace::Status Trace::add_nested_trace_call(Trace* nested_trace, 
-					     int nested_exit_pc, int pc, int sp, 
-					     void** const ip_ptr, VMMethod* const vmm, 
-					     CallFrame* const call_frame){
+																						 int nested_exit_pc, int pc, int sp, 
+																						 void** const ip_ptr, VMMethod* const vmm, 
+																						 CallFrame* const call_frame){
 
     this->add(InstructionSequence::insn_nested_trace, pc, sp, ip_ptr, vmm, call_frame);
     TraceNode* adapter_node = this->head;
@@ -186,10 +186,10 @@ namespace rubinius {
     if(this->is_branch() && head == NULL){
       // Possible the side-exit jumps straight to the anchor...
       if(pc == anchor->pc && call_frame->cm == anchor->cm){
-	DEBUGLN("Recording branch directly to anchor.");
-	head = anchor;
-	entry = head;
-	return TRACE_FINISHED;
+				DEBUGLN("Recording branch directly to anchor.");
+				head = anchor;
+				entry = head;
+				return TRACE_FINISHED;
       }
       head = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
       entry = head;
@@ -210,10 +210,9 @@ namespace rubinius {
       return TRACE_CANCEL;
     }
     else if(op == InstructionSequence::insn_raise_exc || 
-	    op == InstructionSequence::insn_raise_return ||
-	    op == InstructionSequence::insn_raise_break ||
-	    op == InstructionSequence::insn_reraise){
-			GDB_BREAK;
+						op == InstructionSequence::insn_raise_return ||
+						op == InstructionSequence::insn_raise_break ||
+						op == InstructionSequence::insn_reraise){
       DEBUGLN("Canceling record due to exception condition.");
       return TRACE_CANCEL;
     }
@@ -235,54 +234,54 @@ namespace rubinius {
       int side_exit_pc = -1;
 
       if(prev->call_frame != call_frame){
-	if(prev->op == InstructionSequence::insn_ret){
-	  active_send = prev->parent_send;
-	  if(prev->parent_send){
-	    parent_send = prev->parent_send->active_send;
-	  }
-	  if(prev->active_send){
-	    pc_base = prev->active_send->pc_base;
-	  }
-	  else{
-	    pc_base_counter += prev->cm->backend_method()->total;
-	    pc_base = pc_base_counter;
-	  }
-	  call_depth -= 1;
-	}
-	else if(prev->op == InstructionSequence::insn_send_stack ||
-		prev->op == InstructionSequence::insn_send_method ||
-		prev->op == InstructionSequence::insn_send_stack_with_block ||
-		prev->op == InstructionSequence::insn_yield_stack){
+				if(prev->op == InstructionSequence::insn_ret){
+					active_send = prev->parent_send;
+					if(prev->parent_send){
+						parent_send = prev->parent_send->active_send;
+					}
+					if(prev->active_send){
+						pc_base = prev->active_send->pc_base;
+					}
+					else{
+						pc_base_counter += prev->cm->backend_method()->total;
+						pc_base = pc_base_counter;
+					}
+					call_depth -= 1;
+				}
+				else if(prev->op == InstructionSequence::insn_send_stack ||
+								prev->op == InstructionSequence::insn_send_method ||
+								prev->op == InstructionSequence::insn_send_stack_with_block ||
+								prev->op == InstructionSequence::insn_yield_stack){
 
-	  pc_base_counter += prev->cm->backend_method()->total;
-	  pc_base = pc_base_counter;
+					pc_base_counter += prev->cm->backend_method()->total;
+					pc_base = pc_base_counter;
 
-	  if(prev->op == InstructionSequence::insn_yield_stack){
-	    prev->traced_yield = true;
-	  }
-	  else{
-	    prev->traced_send = true;
-	  }
-	  prev->send_cm = cm;
+					if(prev->op == InstructionSequence::insn_yield_stack){
+						prev->traced_yield = true;
+					}
+					else{
+						prev->traced_send = true;
+					}
+					prev->send_cm = cm;
 
-	  parent_send = prev->active_send;
-	  active_send = prev;
-	  call_depth += 1;
-	}
+					parent_send = prev->active_send;
+					active_send = prev;
+					call_depth += 1;
+				}
       }
       else{ // In the same callframe as last node..
-	if(prev->op == InstructionSequence::insn_goto_if_true ||
-	   prev->op == InstructionSequence::insn_goto_if_false){
+				if(prev->op == InstructionSequence::insn_goto_if_true ||
+					 prev->op == InstructionSequence::insn_goto_if_false){
 
-	  if(pc == prev->interp_jump_target()){
-	    prev->jump_taken = true;
-	    side_exit_pc = prev->pc + 2;
-	  }
-	  else{
-	    side_exit_pc = prev->interp_jump_target();
-	  }
+					if(pc == prev->interp_jump_target()){
+						prev->jump_taken = true;
+						side_exit_pc = prev->pc + 2;
+					}
+					else{
+						side_exit_pc = prev->interp_jump_target();
+					}
 
-	}
+				}
       }
 
       head = new TraceNode(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
@@ -340,11 +339,11 @@ namespace rubinius {
       s << node->next->graph_node_name(state);
       s << ";\n";
       if(node->branch_trace != NULL){
-	s << node->graph_node_name(state);
-	s << " -> ";
-	s << node->branch_trace->entry->graph_node_name(state);
-	s << ";\n";
-	s << node->branch_trace->to_graph_data(state);
+				s << node->graph_node_name(state);
+				s << " -> ";
+				s << node->branch_trace->entry->graph_node_name(state);
+				s << ";\n";
+				s << node->branch_trace->to_graph_data(state);
       }
     }
     std::string result = s.str();

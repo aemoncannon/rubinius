@@ -166,6 +166,7 @@ Object* VMMethod::resumable_interpreter(STATE,
     assert(trace);
     DEBUGLN("\nRunning trace at " << cur_ip);
     TRACK_TIME(ON_TRACE_TIMER);
+    assert(trace->executor);
     trace->executor(state, call_frame, trace, NULL, NULL, Trace::RUN_MODE_NORM); 
     TRACK_TIME(TRACE_SETUP_TIMER);
     DEBUGLN("Run finished.");

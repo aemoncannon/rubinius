@@ -561,7 +561,13 @@ namespace rubinius {
 				out_args_ = b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
 
 				JITMethodInfo* prev_info = info();
-				method_info_ = new JITMethodInfo(info()->context(), info()->method(), info()->vm_method());
+
+				// Trace should never end on a return..
+				assert(cur_trace_node_->next); 
+
+				CompiledMethod* cm = cur_trace_node_->next->cm;
+				VMMethod* vmm = cm->backend_method();
+				method_info_ = new JITMethodInfo(info()->context(), cm, vmm);
 				info()->is_block = false; // <---- this will be wrong if returning to a block...
 				info()->set_block_env(block_env);
 				info()->init_globals(prev_info);
@@ -573,6 +579,7 @@ namespace rubinius {
 				info()->set_args(args_);
 				info()->set_out_args(out_args_);
 
+				assert(cur_trace_node_->next);
 				// Leave room for return value..
 				sp_ = cur_trace_node_->next->sp - 1; 
 
@@ -608,6 +615,7 @@ namespace rubinius {
     }
 
     void exit_trace(int next_ip){
+			DEBUGLN("Emitting exit from " << cur_trace_node_->pc << " to " << next_ip);
       TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
       ensure_trace_exit_pad();
       BasicBlock* cur = current_block();
@@ -628,12 +636,8 @@ namespace rubinius {
     void flush_current_call_frame(int next_ip){
       // Flush ip and sp of active current frame
       Value* cf = info()->call_frame();
-      Value* next_ip_val = int32(next_ip);
-      Value* next_ip_pos = get_field(cf, offset::cf_ip);
-      b().CreateStore(next_ip_val, next_ip_pos);
-      Value* stckp = int32(cur_trace_node_->sp);
-      Value* exit_sp_pos = get_field(cf, offset::cf_sp);
-      b().CreateStore(stckp, exit_sp_pos);
+			store_field(cf, offset::cf_ip, int32(next_ip));
+			store_field(cf, offset::cf_sp, int32(cur_trace_node_->sp));
     }
 
 
