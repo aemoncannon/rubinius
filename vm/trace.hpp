@@ -37,8 +37,8 @@ namespace rubinius {
     opcode op;
     int pc;
     int sp;
-    CallFrame* call_frame;
-    CompiledMethod* cm;
+    CallFrame* const call_frame;
+    CompiledMethod* const cm;
     CompiledMethod* send_cm;
     void** ip_ptr;
     TraceNode* prev;
@@ -59,7 +59,7 @@ namespace rubinius {
     intptr_t arg1;
     intptr_t arg2;
 
-    TraceNode();
+    TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
     void pretty_print(STATE, std::ostream& out);
 
@@ -107,12 +107,6 @@ namespace rubinius {
 
   class Trace {
   public:
-
-    static const int RUN_MODE_NORM = 0;
-    static const int RUN_MODE_NESTED = 1;
-    static const int RUN_MODE_RECORD_NESTED = 2;
-    static const int MAX_TRACE_LENGTH = 200;
-
     trace_executor executor;
     int expected_exit_ip;
     TraceNode* anchor;
@@ -126,8 +120,12 @@ namespace rubinius {
     bool is_nested_trace;
     bool is_branch_trace;
     int length;
-		int cur_node;
-		TraceNode node_buffer[MAX_TRACE_LENGTH + 1];
+
+
+    static const int RUN_MODE_NORM = 0;
+    static const int RUN_MODE_NESTED = 1;
+    static const int RUN_MODE_RECORD_NESTED = 2;
+    static const int MAX_TRACE_LENGTH = 200;
 
     enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
 
@@ -135,8 +133,6 @@ namespace rubinius {
 
     Trace();
 
-		TraceNode* new_node(int depth, int pc_base, opcode op, int pc, int sp, 
-												void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 
     Status add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
 

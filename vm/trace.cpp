@@ -21,13 +21,19 @@
 namespace rubinius {
 
 
-  TraceNode::TraceNode()
+  TraceNode::TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
     : 
     branch_trace(NULL),
     branch_executor(NULL),
     nested_trace(NULL),
     nested_executor(NULL),
+    op(op),
+    pc(pc),
+    sp(sp),
+    call_frame(call_frame),
+    cm(call_frame->cm),
     send_cm(NULL),
+    ip_ptr(ip_ptr),
     prev(NULL),
     next(NULL),
     traced_send(false),
@@ -35,12 +41,15 @@ namespace rubinius {
     active_send(NULL),
     parent_send(NULL),
     trace_pc(0),
+    pc_base(pc_base),
+    call_depth(depth),
     jump_taken(false),
-		exit_counter(0),
-		side_exit_pc(-1)
-  {}
+    exit_counter(0),
+    side_exit_pc(-1)
 
-
+  {
+#include "vm/gen/instruction_trace_record.hpp"
+  }
 
   std::string TraceNode::cm_name(STATE){
     std::string result = cm->name()->c_str(state);
@@ -105,9 +114,8 @@ namespace rubinius {
     ,is_nested_trace(false)
     ,is_branch_trace(false)
     ,length(0)
-    ,cur_node(0)
   {
-    anchor = new_node(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
+    anchor = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
     head = anchor;
     entry = anchor;
     entry_sp = sp;
@@ -129,29 +137,7 @@ namespace rubinius {
     ,is_nested_trace(false)
     ,is_branch_trace(false)
     ,length(0)
-		,cur_node(0)
   {}
-
-  TraceNode* Trace::new_node(int depth, int pc_base, opcode op, int pc, int sp, 
-														 void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame
-														 ){
-
-		TraceNode* node = node_buffer + cur_node;
-		cur_node++;
-
-    node->op = op;
-    node->pc = pc;
-		node->sp = sp;
-		node->call_frame = call_frame;
-		node->cm = call_frame->cm;
-		node->ip_ptr = ip_ptr;
-		node->pc_base = pc_base;
-		node->call_depth = depth;
-
-#include "vm/gen/instruction_trace_record.hpp"
-
-		return node;
-	}
 
 
   Trace* Trace::create_branch_at(TraceNode* exit_node){
@@ -205,7 +191,7 @@ namespace rubinius {
 				entry = head;
 				return TRACE_FINISHED;
       }
-      head = new_node(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
+      head = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
       entry = head;
       pc_base_counter = 0;
       expected_exit_ip = -1;
@@ -298,7 +284,7 @@ namespace rubinius {
 				}
       }
 
-      head = new_node(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
+      head = new TraceNode(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
       head->active_send = active_send;
       head->parent_send = parent_send;
       head->side_exit_pc = side_exit_pc;

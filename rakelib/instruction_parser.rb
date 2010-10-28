@@ -722,14 +722,14 @@ EOM
         if enum = obj.opcode_enum
           file.puts "case #{obj.bytecode}:"
           obj.arguments.each_with_index do |arg, i|
-            file.puts "node->arg#{i+1} = (intptr_t)(*(ip_ptr + #{i + 1}));"
+            file.puts "this->arg#{i+1} = (intptr_t)(*(ip_ptr + #{i + 1}));"
           end
-          file.puts "node->numargs = #{obj.arguments.length};"
+          file.puts "this->numargs = #{obj.arguments.length};"
 
           # Transform PCs for trace..
-          file.puts "node->trace_pc = pc_base + node->pc;"
+          file.puts "this->trace_pc = pc_base + this->pc;"
           if obj.control_flow == :branch or obj.control_flow == :handler
-             file.puts "node->arg1 += pc_base;"
+             file.puts "this->arg1 += pc_base;"
           end
 
           file.puts "break;"
