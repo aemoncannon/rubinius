@@ -9,49 +9,49 @@ RESULT_FILE = ".run_result"
 TESTS = [
 
          {:name => "loop", :comment => "", :iters => 1000000, 
-           :bench_iters => [1000, 10000, 100000, 1000000]},
+           :bench_iters => [10000, 100000, 1000000]},
 
          {:name => "sqrt", :comment => "(digs into stdlib)", :iters => 10000, 
-           :bench_iters => [1000, 10000]},
+           :bench_iters => [10000, 100000]},
 
          {:name => "sqrt_int", :comment => "(setup_unwind,pop_unwind, nothing thrown)", :iters => 10000, 
-           :bench_iters => [1000, 10000]},
+           :bench_iters => [10000, 100000]},
 
          {:name => "nest_simple", :comment => "", :iters => 10000, 
-           :bench_iters => [1000, 10000]},
+           :bench_iters => [10000, 100000]},
 
          {:name => "nest_funcs", :comment => "", :iters => 10000, 
-           :bench_iters => [1000, 10000]},
+           :bench_iters => [10000, 100000]},
 
          {:name => "nest_funcs_with_yield", :comment => "", :iters => 10000, 
-           :bench_iters => [1000, 10000]},
+           :bench_iters => [10000, 100000]},
 
          {:name => "if_exit", :comment => "", :iters => 1000000, 
-           :bench_iters => [1000, 10000, 100000, 1000000]},
+           :bench_iters => [10000, 100000, 1000000]},
 
          {:name => "if_exit_in_func", :comment => "", :iters => 1000000, 
-           :bench_iters => [1000, 10000, 100000, 1000000]},
+           :bench_iters => [10000, 100000, 1000000]},
 
          {:name => "if_exit_in_two_funcs", :comment => "", :iters => 10000, 
-           :bench_iters => [1000, 10000]},
+           :bench_iters => [10000, 100000]},
 
          {:name => "if_exit_in_deep_nesting1", :comment => "", :iters => 100000, 
-           :bench_iters => [1000, 10000, 100000]},
+           :bench_iters => [10000, 100000]},
 
          {:name => "if_exit_with_yield_simple", :comment => "", :iters => 10000, 
-           :bench_iters => [1000, 10000]},
+           :bench_iters => [10000, 100000]},
 
          {:name => "if_exit_with_yield", :comment => "", :iters => 100000, 
-           :bench_iters => [1000, 10000, 100000]},
+           :bench_iters => [10000, 100000, 1000000]},
 
          {:name => "nest_funcs_and_exit", :comment => "", :iters => 100, 
-           :bench_iters => [100, 1000]},
+           :bench_iters => [1000, 10000]},
 
          {:name => "nest_funcs_with_optional_args", :comment => "", :iters => 10000, 
-           :bench_iters => [100, 1000, 10000]},
+           :bench_iters => [10000, 100000]},
 
          {:name => "loop_with_hash", :comment => "", :iters => 10000, 
-           :bench_iters => [100, 1000, 10000]},
+           :bench_iters => [10000, 100000]},
 
          {:name => "loop_with_puts", :comment => "", :iters => 1000, 
            :bench_iters => [100, 1000]},
@@ -106,6 +106,9 @@ def average_of_times(cmd, n)
   sum / n
 end
 
+
+BENCH_RUNS = 10
+
 task :bench => [] do
 
   bench_run_id = Time.now.to_i
@@ -117,15 +120,20 @@ task :bench => [] do
       puts "#{t[:name]}.rb #{t[:comment]}"
       puts "-------------------"
 
+      file = t[:name] + ".rb"
+
       t[:bench_iters].each{ |iters|
-        elapsed = average_of_times("#{RBX} #{t[:name]}.rb #{iters} interp >> #{LOG}", 5)
+
+        name = "#{t[:name]} - #{iters} iterations"
+
+        elapsed = average_of_times("#{RBX} #{t[:name]}.rb #{iters} interp >> #{LOG}", BENCH_RUNS)
         puts "   Interp time: #{elapsed} seconds."
-        write_data_point({:bench_run_id => bench_run_id, :name => t[:name], :config => "interp_#{iters}", 
+        write_data_point({:bench_run_id => bench_run_id, :file => file, :name => name, :config => "interp",
                            :time => Time.now.to_i, :commit => commit_id, :elapsed => (elapsed.to_f * 1000.0)})
 
-        elapsed = average_of_times("#{RBX} #{t[:name]}.rb #{iters} trace >> #{LOG}", 5)
+        elapsed = average_of_times("#{RBX} #{t[:name]}.rb #{iters} trace >> #{LOG}", BENCH_RUNS)
         puts "   Trace time: #{elapsed} seconds."
-        write_data_point({:bench_run_id => bench_run_id, :name => t[:name], :config => "trace_#{iters}", 
+        write_data_point({:bench_run_id => bench_run_id, :file => file, :name => name, :config => "trace",
                            :time => Time.now.to_i, :commit => commit_id, :elapsed => (elapsed.to_f * 1000.0)})
       }
     }
@@ -193,6 +201,7 @@ def build_graph_data()
     point = JSON.parse(File.read(f))
     test = tests[point["name"]] || {}
     test["name"] = point["name"]
+    test["file"] = point["file"]
     test_points = test["points"] || []
     test_points << point
     test["points"] = test_points
@@ -200,7 +209,7 @@ def build_graph_data()
   }
 
   tests.each{|name,test|
-    test["source"] = File.read("#{name}.rb")
+    test["source"] = File.read(test["file"])
     points = test["points"]
     bench_runs = {}
 
@@ -243,7 +252,7 @@ def build_graph_data()
     test["dataSet"] = configs.values.sort{|a,b| a["name"] <=> b["name"] }
   }
 
-  graph_data = tests.values
+  graph_data = tests.values.sort{|a,b| a["name"] <=> b["name"]}
 
   File.open("bench_www/graph_data.js", "w"){ |f|
     f << "var graphs = "
@@ -251,9 +260,18 @@ def build_graph_data()
     f << ";"
   }
 
+  publish_benchmarks!
+
+end
+
+
+task :publish_benchmarks => [] do 
+  publish_benchmarks!
+end
+
+def publish_benchmarks!
   puts "Press enter to publish benchmarks."
   STDIN.gets.chomp 
   sh "scp -r bench_www www@aemon.com:~/public/aemon/file_dump"
-
 end
 

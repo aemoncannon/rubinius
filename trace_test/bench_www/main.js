@@ -43,11 +43,11 @@ function drawGraph(graph) {
     var sets = [];
     for (var i = 0; i < dsets.length; i++) {
         var dataRadius = 2.0;
-		var isTracing = dsets[i].name.indexOf("trace_") == 0;
+		var isTracing = dsets[i].name.indexOf("trace") == 0;
         sets[i] = {
-            lines: { show: true },
+            lines: { show: true, lineWidth: isTracing ? 3.0 : 2.0 },
             points: { show: true,
-                      fillColor: isTracing ? "#ff0000" : "#ffffff"
+                      fillColor: isTracing ? "#000000" : "#ffffff"
                     },
             borderWidth: 1.5,
             borderColor: "#BEBEBE",
