@@ -149,8 +149,6 @@ namespace rubinius {
 
     void emit_trace_exit_pad() {
 
-      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
-
       // Emit code for entering the uncommon interpreter.
       // This is used in exit stubs, when the trace bails for some reason.
       // Inputs to the exit pad
