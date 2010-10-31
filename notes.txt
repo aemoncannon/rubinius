@@ -1,4 +1,10 @@
 
+Sat Oct 30, 9:44
+  TODO: Probably ok to ditch the bail and bail fast shit from the trace setup, since all the exception checks now branch to side exit stubs.
+
+
+
+
 Sun Oct 26, 1:51
   Ok, disabled outerlining that returns from anchor context and things are passing again. Next thing we need to do is restore exception context when side-exiting from 
 traces. That should be a fully static operation...

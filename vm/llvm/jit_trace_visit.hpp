@@ -186,7 +186,8 @@ namespace rubinius {
       Value* ret = b().CreateCall(executor, call_args, call_args + 6, "call_branch_trace");
 
       // Did the branch-trace bail? Parent trace should collapse, too.
-      Value* bailed_p = b().CreateICmpEQ(ret, int32(-1), "bailed_p");
+      Value* bailed_p = b().CreateICmpEQ(ret, int32(Trace::RETURN_SIDE_EXITED), 
+																				 "bailed_p");
 
       BasicBlock* cont = new_block("continue");
       BasicBlock* collapse_b = new_block("collapse_b");
@@ -209,7 +210,7 @@ namespace rubinius {
 				// We return immediately, which hands control back up to the 
 				// parent trace, which will (per above) jump to the anchor
 				TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
-				return_value(int32(0));
+				return_value(int32(Trace::RETURN_OK));
       }
 
       set_block(no_branch_b);
@@ -240,7 +241,7 @@ namespace rubinius {
       b().CreateCondBr(anded, exit, cont);
       set_block(exit);
 			flush_call_frame(exit_cf, exit_pc, exit_sp);
-      return_value(int32(1));
+      return_value(int32(Trace::RETURN_NESTED_OK));
       set_block(cont);
 
       // If we are not recording, and this was a nested trace, and the current call_frame is 
@@ -255,7 +256,7 @@ namespace rubinius {
       b().CreateCondBr(anded, exit, cont);
       set_block(exit);
 			flush_call_frame(exit_cf, exit_pc, exit_sp);
-      return_value(int32(1));
+      return_value(int32(Trace::RETURN_NESTED_OK));
       set_block(cont);
 
       // If we are not recording, and this trace is not being run as a nested trace, and  current call_frame 
@@ -268,7 +269,7 @@ namespace rubinius {
       b().CreateCondBr(anded, exit, cont);
       set_block(exit);
 			flush_call_frame(exit_cf, exit_pc, exit_sp);
-      return_value(int32(0));
+      return_value(int32(Trace::RETURN_OK));
       set_block(cont);
 
       std::vector<const Type*> types;
@@ -315,7 +316,8 @@ namespace rubinius {
 
       TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
 
-      Value* not_nestable = b().CreateICmpEQ(ret, int32(-1), "nestable_p");
+      Value* not_nestable = b().CreateICmpEQ(ret, int32(Trace::RETURN_SIDE_EXITED), 
+																						 "nestable_p");
 
       BasicBlock* cont = new_block("continue");
       BasicBlock* not_nestable_b = new_block("not_nestable");
@@ -383,7 +385,7 @@ namespace rubinius {
 
     void visit_end() {
       if(trace_->is_branch()){
-				return_value(int32(0));
+				return_value(int32(Trace::RETURN_OK));
       }
     }
 

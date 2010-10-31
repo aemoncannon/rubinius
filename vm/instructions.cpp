@@ -416,7 +416,12 @@ Object* VMMethod::uncommon_interpreter(STATE,
     call_frame = call_frame->previous;
     vmm = call_frame->cm->backend_method();
 		DEBUGLN("Pushing interp return value...");
-    call_frame->stk_push(result);
+		// if(result == NULL){
+		// 	// need to propagate exception to next call_frame
+		// }
+		// else{
+			call_frame->stk_push(result);
+//		}
   }
 
   state->trace_exec_enabled = true;

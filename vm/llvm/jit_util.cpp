@@ -1024,11 +1024,19 @@ extern "C" {
 			 || run_mode == Trace::RUN_MODE_NESTED || run_mode == Trace::RUN_MODE_RECORD_NESTED){
 
 			VMMethod* vmm = call_frame->cm->backend_method();
+			//Object* result = 
 			VMMethod::uncommon_interpreter(state, vmm, call_frame);
+
+			// if(result == NULL){
+			// 	TRACK_TIME(ON_TRACE_TIMER);
+			// 	return Trace::RETURN_PROPAGATE_EXCEPTION;
+			// }
+
 		}
+
 		// Otherwise, just return directly to caller...
 		TRACK_TIME(ON_TRACE_TIMER);
-		return -1;
+		return Trace::RETURN_SIDE_EXITED;
 	}
 
 
