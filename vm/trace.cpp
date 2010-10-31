@@ -231,7 +231,7 @@ namespace rubinius {
       CompiledMethod* cm = call_frame->cm;
       int pc_base = prev->pc_base;
       int call_depth = prev->call_depth;
-      int side_exit_pc = -1;
+      int side_exit_pc = pc;
 
       if(prev->call_frame != call_frame){
 				if(prev->op == InstructionSequence::insn_ret){
@@ -275,10 +275,10 @@ namespace rubinius {
 
 					if(pc == prev->interp_jump_target()){
 						prev->jump_taken = true;
-						side_exit_pc = prev->pc + 2;
+						prev->side_exit_pc = prev->pc + 2;
 					}
 					else{
-						side_exit_pc = prev->interp_jump_target();
+						prev->side_exit_pc = prev->interp_jump_target();
 					}
 
 				}

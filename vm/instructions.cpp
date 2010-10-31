@@ -128,7 +128,8 @@ Object* VMMethod::resumable_interpreter(STATE,
 #endif
 
   if(synthetic){
-    DEBUGLN("Resuming at " << call_frame->ip());
+    DEBUGLN("\nResuming at " << call_frame->ip());
+		IF_DEBUG(call_frame->dump());
     ip_ptr = vmm->addresses + call_frame->ip();
     stack_ptr = call_frame->stk + call_frame->sp();
   }
@@ -414,6 +415,7 @@ Object* VMMethod::uncommon_interpreter(STATE,
     TRACK_TIME(UNCOMMON_INTERP_TIMER);
     call_frame = call_frame->previous;
     vmm = call_frame->cm->backend_method();
+		DEBUGLN("Pushing interp return value...");
     call_frame->stk_push(result);
   }
 

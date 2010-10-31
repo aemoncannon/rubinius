@@ -145,6 +145,7 @@ namespace rubinius {
 
     llvm::PHINode* trace_node_phi;
     llvm::PHINode* exit_ip_phi;
+    llvm::PHINode* exit_sp_phi;
     llvm::PHINode* exit_cf_phi;
 
 
@@ -342,7 +343,6 @@ namespace rubinius {
       vm_ = info->vm();
       counter_ = info->counter();
       root = info->root_info();
-      trace_info_ = info->trace_info();
       trace_ = info->trace();
       return_phi_ = info->return_phi();
       return_pad_ = info->return_pad();

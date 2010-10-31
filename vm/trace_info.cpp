@@ -9,7 +9,9 @@
 namespace rubinius {
 
 	TraceInfo::TraceInfo()
-		:  exit_trace_node(NULL)
+		:  previous(NULL)
+		,exit_trace(NULL)
+		,exit_trace_node(NULL)
 	{}
 
 }

@@ -150,7 +150,7 @@ extern "C" {
   }
 
   Object* rbx_splat_send(STATE, CallFrame* call_frame, Symbol* name,
-			 int count, Object** args) {
+												 int count, Object** args) {
     Object* recv = args[0];
     Arguments out_args(recv, args[count+2], count, args+1);
     Dispatch dis(name);
@@ -163,7 +163,7 @@ extern "C" {
   }
 
   Object* rbx_splat_send_private(STATE, CallFrame* call_frame, Symbol* name,
-				 int count, Object** args) {
+																 int count, Object** args) {
     Object* recv = args[0];
     Arguments out_args(recv, args[count+2], count, args+1);
     LookupData lookup(recv, recv->lookup_begin(state), true);
@@ -177,7 +177,7 @@ extern "C" {
   }
 
   Object* rbx_super_send(STATE, CallFrame* call_frame, Symbol* name,
-			 int count, Object** args) {
+												 int count, Object** args) {
     Object* recv = call_frame->self();
     Arguments out_args(recv, args[count], count, args);
     LookupData lookup(recv, call_frame->module()->superclass(), true);
@@ -187,7 +187,7 @@ extern "C" {
   }
 
   Object* rbx_super_splat_send(STATE, CallFrame* call_frame, Symbol* name,
-			       int count, Object** args) {
+															 int count, Object** args) {
     Object* recv = call_frame->self();
     Arguments out_args(recv, args[count+1], count, args);
     LookupData lookup(recv, call_frame->module()->superclass(), true);
@@ -437,7 +437,7 @@ extern "C" {
   }
 
   Object* rbx_check_serial_private(STATE, CallFrame* call_frame, InlineCache* cache,
-				   int serial, Object* recv)
+																	 int serial, Object* recv)
   {
     if(cache->update_and_validate(state, call_frame, recv) &&
        cache->method->serial()->to_native() == serial) {
@@ -572,7 +572,7 @@ extern "C" {
 
     if(both_fixnum_p(left, right)) {
       return reinterpret_cast<Fixnum*>(left)->sub(state,
-						  reinterpret_cast<Fixnum*>(right));
+																									reinterpret_cast<Fixnum*>(right));
 
     }
 
@@ -690,7 +690,7 @@ extern "C" {
   }
 
   Object* rbx_push_local_depth(STATE, CallFrame* call_frame,
-			       int depth, int index) {
+															 int depth, int index) {
     if(depth == 0) {
       return call_frame->scope->get_local(index);
     } else {
@@ -941,206 +941,270 @@ extern "C" {
 
   
   int rbx_side_exit(STATE, CallFrame* call_frame, Trace* exit_trace, TraceNode* exit_node, int run_mode){
+
+ 		assert(exit_node);
+
     TRACK_TIME(IN_EXIT_TIMER);
     DEBUGLN("No branch to continue on. Exiting from " << exit_node->pc << ", trace-pc = " << exit_node->trace_pc);
     IF_DEBUG(call_frame->dump());
 
-    // Maybe start recording a branch trace...
-    if(exit_node->bump_exit_hotness()){
-      DEBUGLN("Exit node at " << exit_node->pc << " got hot! Recording branch...");
-      state->recording_trace = exit_trace->create_branch_at(exit_node);
-      exit_node->clear_hotness();
-    }
+		int next_pc = exit_node->exit_to_pc();
+    DEBUGLN("Next pc: " << next_pc);
 
-    // Bail to uncommon if we've stacked up call_frames before the exit.
-    // Or if a nested trace exited unexpectedly (we don't know _where_ it
-    // ended up)...
-    if(call_frame->is_traced_frame() 
-       // Why is this necessary?
-       || run_mode == Trace::RUN_MODE_NESTED || run_mode == Trace::RUN_MODE_RECORD_NESTED){
+ 		// Flush the interpreter stack and pc information
+ 		// out to the call stack.
 
-      VMMethod* vmm = call_frame->cm->backend_method();
-      VMMethod::uncommon_interpreter(state, vmm, call_frame);
-    }
-    // Otherwise, just return directly to caller...
-    TRACK_TIME(ON_TRACE_TIMER);
-    return -1;
-  }
+		call_frame->set_ip(next_pc);
+ 		call_frame->set_sp(exit_node->sp);
+ 
+ 		CallFrame* cf = call_frame->previous;		
+ 		TraceNode* activator = exit_node->active_send;
+		Trace* cur_trace = exit_trace;
+
+ 		while(true){
+ 
+ 			if(activator == NULL) {
+				// Bridge gaps between traces (nested/branches)
+				if(cur_trace->parent_node != NULL){
+					activator = cur_trace->parent_node->active_send;
+					if(activator == NULL) break;
+					cur_trace = cur_trace->parent;
+				}
+				else {
+					break;
+				}
+			}
+ 
+			assert(cf);
+			assert(activator->traced_send || activator->traced_yield);
+ 
+			int stckp;
+			int next_pc;
+ 
+			if(activator->op == InstructionSequence::insn_send_stack){
+				stckp = activator->sp - activator->arg2 - 1;
+				next_pc = activator->pc + 3;
+			}
+			else if(activator->op == InstructionSequence::insn_send_stack_with_block){
+				stckp = activator->sp - activator->arg2 - 2;
+				next_pc = activator->pc + 3;
+			}
+			else if(activator->op == InstructionSequence::insn_yield_stack){
+				stckp = activator->sp - activator->arg1;
+				next_pc = activator->pc + 2;
+			}
+			else if(activator->op == InstructionSequence::insn_send_method){
+				stckp = activator->sp - 1;
+				next_pc = activator->pc + 2;
+			}
+			else{
+				stckp = activator->sp - activator->arg2 - 1;
+				next_pc = activator->pc + 3;
+			}
+			cf->set_ip(next_pc);
+			cf->set_sp(stckp);
+ 
+			activator = activator->active_send;
+			cf = cf->previous;
+		}
+
+
+		// Maybe start recording a branch trace...
+		if(exit_node->bump_exit_hotness()){
+			DEBUGLN("Exit node at " << exit_node->pc << " got hot! Recording branch...");
+			state->recording_trace = exit_trace->create_branch_at(exit_node);
+			exit_node->clear_hotness();
+		}
+
+		// Bail to uncommon if we've stacked up call_frames before the exit.
+		// Or if a nested trace exited unexpectedly (we don't know _where_ it
+		// ended up)...
+		if(call_frame->is_traced_frame() 
+			 // Why is this necessary?
+			 || run_mode == Trace::RUN_MODE_NESTED || run_mode == Trace::RUN_MODE_RECORD_NESTED){
+
+			VMMethod* vmm = call_frame->cm->backend_method();
+			VMMethod::uncommon_interpreter(state, vmm, call_frame);
+		}
+		// Otherwise, just return directly to caller...
+		TRACK_TIME(ON_TRACE_TIMER);
+		return -1;
+	}
 
 
 
 
 
-  void rbx_track_time(STATE, int timer) {
-    state->start_trace_timer(timer);
-  }
+	void rbx_track_time(STATE, int timer) {
+		state->start_trace_timer(timer);
+	}
 
-  Object* rbx_restart_interp(STATE, CallFrame* call_frame, Dispatch& msg, Arguments& args) {
-    return VMMethod::execute(state, call_frame, msg, args);
-  }
+	Object* rbx_restart_interp(STATE, CallFrame* call_frame, Dispatch& msg, Arguments& args) {
+		return VMMethod::execute(state, call_frame, msg, args);
+	}
 
-  Object* rbx_flush_scope(STATE, StackVariables* vars) {
-    vars->flush_to_heap(state);
-    return Qnil;
-  }
+	Object* rbx_flush_scope(STATE, StackVariables* vars) {
+		vars->flush_to_heap(state);
+		return Qnil;
+	}
 
-  // FFI helpers
-  native_int rbx_ffi_to_int(STATE, Object* obj, bool* valid) {
-    if(Integer* i = try_as<Integer>(obj)) {
-      *valid = true;
-      return i->to_native();
-    }
+	// FFI helpers
+	native_int rbx_ffi_to_int(STATE, Object* obj, bool* valid) {
+		if(Integer* i = try_as<Integer>(obj)) {
+			*valid = true;
+			return i->to_native();
+		}
 
-    Exception* exc =
-      Exception::make_type_error(state, Fixnum::type, obj, "invalid type for FFI");
-    state->thread_state()->raise_exception(exc);
+		Exception* exc =
+			Exception::make_type_error(state, Fixnum::type, obj, "invalid type for FFI");
+		state->thread_state()->raise_exception(exc);
 
-    *valid = false;
-    return 0;
-  }
+		*valid = false;
+		return 0;
+	}
 
-  float rbx_ffi_to_float(STATE, Object* obj, bool* valid) {
-    if(Float* i = try_as<Float>(obj)) {
-      *valid = true;
-      return i->val;
-    }
+	float rbx_ffi_to_float(STATE, Object* obj, bool* valid) {
+		if(Float* i = try_as<Float>(obj)) {
+			*valid = true;
+			return i->val;
+		}
 
-    Exception* exc =
-      Exception::make_type_error(state, Float::type, obj, "invalid type for FFI");
-    state->thread_state()->raise_exception(exc);
+		Exception* exc =
+			Exception::make_type_error(state, Float::type, obj, "invalid type for FFI");
+		state->thread_state()->raise_exception(exc);
 
-    *valid = false;
-    return 0.0;
-  }
+		*valid = false;
+		return 0.0;
+	}
 
-  double rbx_ffi_to_double(STATE, Object* obj, bool* valid) {
-    if(Float* i = try_as<Float>(obj)) {
-      *valid = true;
-      return i->val;
-    }
+	double rbx_ffi_to_double(STATE, Object* obj, bool* valid) {
+		if(Float* i = try_as<Float>(obj)) {
+			*valid = true;
+			return i->val;
+		}
 
-    Exception* exc =
-      Exception::make_type_error(state, Float::type, obj, "invalid type for FFI");
-    state->thread_state()->raise_exception(exc);
+		Exception* exc =
+			Exception::make_type_error(state, Float::type, obj, "invalid type for FFI");
+		state->thread_state()->raise_exception(exc);
 
-    *valid = false;
-    return 0.0;
-  }
+		*valid = false;
+		return 0.0;
+	}
 
-  uint64_t rbx_ffi_to_int64(STATE, Object* obj, bool* valid) {
-    if(Integer* i = try_as<Integer>(obj)) {
-      *valid = true;
-      return i->to_long_long();
-    }
+	uint64_t rbx_ffi_to_int64(STATE, Object* obj, bool* valid) {
+		if(Integer* i = try_as<Integer>(obj)) {
+			*valid = true;
+			return i->to_long_long();
+		}
 
-    Exception* exc =
-      Exception::make_type_error(state, Fixnum::type, obj, "invalid type for FFI");
-    state->thread_state()->raise_exception(exc);
+		Exception* exc =
+			Exception::make_type_error(state, Fixnum::type, obj, "invalid type for FFI");
+		state->thread_state()->raise_exception(exc);
 
-    *valid = false;
-    return 0ULL;
-  }
+		*valid = false;
+		return 0ULL;
+	}
 
-  void* rbx_ffi_to_ptr(STATE, Object* obj, bool* valid) {
-    if(MemoryPointer* ptr = try_as<MemoryPointer>(obj)) {
-      *valid = true;
-      return ptr->pointer;
-    } else if(obj->nil_p()) {
-      *valid = true;
-      return 0;
-    }
+	void* rbx_ffi_to_ptr(STATE, Object* obj, bool* valid) {
+		if(MemoryPointer* ptr = try_as<MemoryPointer>(obj)) {
+			*valid = true;
+			return ptr->pointer;
+		} else if(obj->nil_p()) {
+			*valid = true;
+			return 0;
+		}
 
-    Exception* exc =
-      Exception::make_type_error(state, Fixnum::type, obj, "invalid type for FFI");
-    state->thread_state()->raise_exception(exc);
+		Exception* exc =
+			Exception::make_type_error(state, Fixnum::type, obj, "invalid type for FFI");
+		state->thread_state()->raise_exception(exc);
 
-    *valid = false;
-    return 0;
-  }
+		*valid = false;
+		return 0;
+	}
 
-  char* rbx_ffi_to_string(STATE, Object* obj, bool* valid) {
-    if(String* str = try_as<String>(obj)) {
-      *valid = true;
-      return const_cast<char*>(str->c_str());
-    }
+	char* rbx_ffi_to_string(STATE, Object* obj, bool* valid) {
+		if(String* str = try_as<String>(obj)) {
+			*valid = true;
+			return const_cast<char*>(str->c_str());
+		}
 
-    Exception* exc =
-      Exception::make_type_error(state, Fixnum::type, obj, "invalid type for FFI");
-    state->thread_state()->raise_exception(exc);
+		Exception* exc =
+			Exception::make_type_error(state, Fixnum::type, obj, "invalid type for FFI");
+		state->thread_state()->raise_exception(exc);
 
-    *valid = false;
-    return 0;
-  }
+		*valid = false;
+		return 0;
+	}
 
-  Object* rbx_ffi_from_int32(STATE, int32_t ll) {
-    return Integer::from(state, ll);
-  }
+	Object* rbx_ffi_from_int32(STATE, int32_t ll) {
+		return Integer::from(state, ll);
+	}
 
-  Object* rbx_ffi_from_int64(STATE, int64_t ll) {
-    return Integer::from(state, ll);
-  }
+	Object* rbx_ffi_from_int64(STATE, int64_t ll) {
+		return Integer::from(state, ll);
+	}
 
-  Object* rbx_ffi_from_float(STATE, float val) {
-    return Float::create(state, val);
-  }
+	Object* rbx_ffi_from_float(STATE, float val) {
+		return Float::create(state, val);
+	}
 
-  Object* rbx_ffi_from_double(STATE, double val) {
-    return Float::create(state, val);
-  }
+	Object* rbx_ffi_from_double(STATE, double val) {
+		return Float::create(state, val);
+	}
 
-  Object* rbx_ffi_from_ptr(STATE, void* ptr) {
-    if(!ptr) return Qnil;
-    return MemoryPointer::create(state, ptr);
-  }
+	Object* rbx_ffi_from_ptr(STATE, void* ptr) {
+		if(!ptr) return Qnil;
+		return MemoryPointer::create(state, ptr);
+	}
 
-  Object* rbx_ffi_from_string(STATE, char* ptr) {
-    if(!ptr) return Qnil;
-    String* str = String::create(state, ptr);
-    str->taint(state);
-    return str;
-  }
+	Object* rbx_ffi_from_string(STATE, char* ptr) {
+		if(!ptr) return Qnil;
+		String* str = String::create(state, ptr);
+		str->taint(state);
+		return str;
+	}
 
-  Object* rbx_ffi_from_string_with_pointer(STATE, char* ptr) {
-    Object* s;
-    Object* p;
+	Object* rbx_ffi_from_string_with_pointer(STATE, char* ptr) {
+		Object* s;
+		Object* p;
 
-    if(ptr) {
-      s = String::create(state, ptr);
-      s->taint(state);
-      p = MemoryPointer::create(state, ptr);
-    } else {
-      s = p = Qnil;
-    }
+		if(ptr) {
+			s = String::create(state, ptr);
+			s->taint(state);
+			p = MemoryPointer::create(state, ptr);
+		} else {
+			s = p = Qnil;
+		}
 
-    Array* ary = Array::create(state, 2);
-    ary->set(state, 0, s);
-    ary->set(state, 1, p);
+		Array* ary = Array::create(state, 2);
+		ary->set(state, 0, s);
+		ary->set(state, 1, p);
 
-    return ary;
-  }
+		return ary;
+	}
 
-  Float* rbx_float_allocate(STATE) {
-    return Float::create(state, 0.0);
-  }
+	Float* rbx_float_allocate(STATE) {
+		return Float::create(state, 0.0);
+	}
 
-  Class* rbx_class_of(STATE, Object* obj) {
-    return obj->class_object(state);
-  }
+	Class* rbx_class_of(STATE, Object* obj) {
+		return obj->class_object(state);
+	}
 
-  Object* rbx_make_proc(STATE, CallFrame* call_frame) {
-    Object* obj = call_frame->scope->block();
-    if(RTEST(obj)) {
-      Object* prc = Proc::from_env(state, obj);
-      if(prc == Primitives::failure()) {
-        Exception::internal_error(state, call_frame, "invalid block type");
-        return 0;
-      }
+	Object* rbx_make_proc(STATE, CallFrame* call_frame) {
+		Object* obj = call_frame->scope->block();
+		if(RTEST(obj)) {
+			Object* prc = Proc::from_env(state, obj);
+			if(prc == Primitives::failure()) {
+				Exception::internal_error(state, call_frame, "invalid block type");
+				return 0;
+			}
 
-      return prc;
-    } else {
-      return Qnil;
-    }
-  }
+			return prc;
+		} else {
+			return Qnil;
+		}
+	}
 
 }
 

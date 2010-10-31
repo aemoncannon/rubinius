@@ -17,6 +17,8 @@ namespace rubinius {
 
 	class TraceInfo {
 	public:
+		TraceInfo* previous;
+		Trace* exit_trace;
 		TraceNode* exit_trace_node;
 
 		TraceInfo();

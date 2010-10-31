@@ -197,6 +197,10 @@ namespace rubinius {
       ip_ = new_ip;
     }
 
+    void set_sp(int new_sp) {
+      sp_ = new_sp;
+    }
+
     int dec_ip() {
       return ip_--;
     }

@@ -154,6 +154,7 @@ namespace rubinius {
       // Inputs to the exit pad
       Value* exit_trace_node = info()->root_info()->trace_node_phi;
       Value* exit_pc = info()->root_info()->exit_ip_phi;
+      Value* exit_sp = info()->root_info()->exit_sp_phi;
       Value* exit_cf = info()->root_info()->exit_cf_phi;
 
 
@@ -238,6 +239,7 @@ namespace rubinius {
       Value* anded = b().CreateAnd(recording, cf_cmp, "and");
       b().CreateCondBr(anded, exit, cont);
       set_block(exit);
+			flush_call_frame(exit_cf, exit_pc, exit_sp);
       return_value(int32(1));
       set_block(cont);
 
@@ -252,6 +254,7 @@ namespace rubinius {
       anded = b().CreateAnd(anded, ip_cmp, "and");
       b().CreateCondBr(anded, exit, cont);
       set_block(exit);
+			flush_call_frame(exit_cf, exit_pc, exit_sp);
       return_value(int32(1));
       set_block(cont);
 
@@ -264,6 +267,7 @@ namespace rubinius {
       anded = b().CreateAnd(anded, ip_cmp, "and");
       b().CreateCondBr(anded, exit, cont);
       set_block(exit);
+			flush_call_frame(exit_cf, exit_pc, exit_sp);
       return_value(int32(0));
       set_block(cont);
 
@@ -288,12 +292,7 @@ namespace rubinius {
 
 
     void visit_nested_trace() {
-
       TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
-
-      // Don't need to flush current call frame. Nested trace will take care of that if
-      // it side-exits.
-      flush_call_stack();
 
       // Otherwise look up a branch for this location (this needs to be faster)
       Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
@@ -618,24 +617,24 @@ namespace rubinius {
       ensure_trace_exit_pad();
       BasicBlock* cur = current_block();
       info()->root_info()->exit_ip_phi->addIncoming(int32(next_ip), cur);
+      info()->root_info()->exit_sp_phi->addIncoming(int32(cur_trace_node_->sp), cur);
       info()->root_info()->trace_node_phi->addIncoming(constant(
 																												 cur_trace_node_, 
 																												 ls_->ptr_type("TraceNode")),
 																											 cur);
       info()->root_info()->exit_cf_phi->addIncoming(info()->call_frame(), cur);
-
-      flush_current_call_frame(next_ip);
-      flush_call_stack();
-
       b().CreateBr(info()->trace_exit_pad());
     }
 
 
     void flush_current_call_frame(int next_ip){
       // Flush ip and sp of active current frame
-      Value* cf = info()->call_frame();
-			store_field(cf, offset::cf_ip, int32(next_ip));
-			store_field(cf, offset::cf_sp, int32(cur_trace_node_->sp));
+			flush_call_frame(info()->call_frame(), int32(next_ip), int32(cur_trace_node_->sp));
+    }
+
+    void flush_call_frame(Value* cf, Value* pc, Value* sp){
+			store_field(cf, offset::cf_ip, pc);
+			store_field(cf, offset::cf_sp, sp);
     }
 
 
