@@ -95,6 +95,7 @@ namespace rubinius {
     llvm::Value* stack_;
     llvm::Value* vm_;
     llvm::Value* args_;
+    llvm::Value* unwinds_;
     llvm::Value* trace_;
     llvm::Value* trace_info_;
     llvm::Value* block_env_;
@@ -142,6 +143,7 @@ namespace rubinius {
     ValMap pre_allocated_args;
     ValMap pre_allocated_call_frames;
     ValMap pre_allocated_vars;
+    ValMap pre_allocated_unwinds;
 
     llvm::PHINode* trace_node_phi;
     llvm::PHINode* exit_ip_phi;
@@ -195,6 +197,14 @@ namespace rubinius {
 
     llvm::Value* trace() {
       return trace_;
+    }
+
+		void set_unwinds(llvm::Value* unwinds) {
+      unwinds_ = unwinds;
+    }
+
+    llvm::Value* unwinds() {
+      return unwinds_;
     }
 
     llvm::BasicBlock* trace_exit_pad() {

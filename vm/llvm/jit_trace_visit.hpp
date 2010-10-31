@@ -447,73 +447,25 @@ namespace rubinius {
       b().CreateStore(val, pos);
     }
 
-    void visit_setup_unwind(opcode where, opcode type) {
-      BasicBlock* code;
+    void visit_setup_unwind(opcode where, opcode type){
+			Value* cur_unwind = load_field(
+				info()->call_frame(), offset::cf_current_unwind, "current_unwind");
+			Value* next_unwind = b().CreateAdd(cur_unwind, int32(1), "add_one");
+			store_field(info()->call_frame(), offset::cf_current_unwind, next_unwind);
 
-      JITBasicBlock& jbb = block_map_[where];
-      jbb.landing_pad = true;
-      assert(jbb.block);
-
-      if(type == cRescue) {
-        // Add a prologue block that checks if we should handle this
-        // exception.
-
-        BasicBlock* orig = current_block();
-        code = new_block("is_exception");
-        set_block(code);
-
-        // std::vector<const Type*> types;
-        // types.push_back(VMTy);
-
-        // FunctionType* ft = FunctionType::get(ls_->Int1Ty, types, false);
-        // Function* func = cast<Function>(
-				// 	module_->getOrInsertFunction("rbx_raising_exception", ft));
-
-        // Value* call_args[] = { vm_ };
-
-				
-				// Check if the raised condition is an exception..
-        // Value* isit = b().CreateCall(func, call_args, call_args+1, "rae");
-
-				BasicBlock* exit_stub = new_block("exit_stub");
-				set_block(exit_stub);
-				exit_trace(where);
-				set_block(code);
-
-				
-        // If it's not an exception, we're going to want to pass to 
-				// a surrounding handler. If no such handler exists, we bail.
-        // BasicBlock* next = 0;
-        // if(has_exception_handler()) {
-        //   next = exception_handler();
-        // } else {
-        //   next = exit_stub;
-        // }
-
-				// Now, if it was an exception, run the rescue clause. Otherwise,
-				// pass to surrounding handler or bail.
-        // b().CreateCondBr(isit, jbb.block, next);
-
-				// Currently we're being babies and just bailing out at any 
-				// exceptional condition. 
-
-				// See todo.org for what we should be doing.
-
-				b().CreateBr(exit_stub);
-
-
-        set_block(orig);
-
-        // Now, change jbb to point to code, so anyone branching there hits
-        // the check first.
-        jbb.prologue = code;
-      } else {
-        code = jbb.block;
-      }
+			Value* unwind = b().CreateGEP(info()->unwinds(), next_unwind, "local_pos");
+			store_field(unwind, offset::unwind_info_target_ip, int32(where));
+			store_field(unwind, offset::unwind_info_stack_depth, 
+									int32(cur_trace_node_->sp));
+			store_field(unwind, offset::unwind_info_type, int32(type));
     }
 
-
-
+    void visit_pop_unwind() {
+			Value* cur_unwind = load_field(
+				info()->call_frame(), offset::cf_current_unwind, "current_unwind");
+			Value* next_unwind = b().CreateSub(cur_unwind, int32(1), "add_one");
+			store_field(info()->call_frame(), offset::cf_current_unwind, next_unwind);
+		}
 
     void emit_traced_return(){
 
@@ -545,17 +497,15 @@ namespace rubinius {
 				Value* block_env = b().CreateLoad(prev_block_env_pos, "previous_block_env");
 				block_env = b().CreateBitCast(block_env, ls_->ptr_type("BlockEnvironment"),"block_env");
 
-				Value* cf_pos = get_field(info()->call_frame(), offset::cf_previous);
-				call_frame_ = b().CreateLoad(cf_pos, "previous_cf");
-				
-				Value* vars_pos = get_field(call_frame_, offset::cf_scope);
-				vars_ = b().CreateLoad(vars_pos, "vars");
-
-				Value* args_pos = get_field(call_frame_, offset::cf_arguments);
-				args_ = b().CreateLoad(args_pos, "args");
-
+				call_frame_ = load_field(info()->call_frame(), 
+																 offset::cf_previous, "previous_cf");
+				vars_ = load_field(call_frame_, offset::cf_scope, "vars");
+				args_ = load_field(call_frame_, offset::cf_arguments, "args");
 				Value* stk_base = get_field(call_frame_, offset::cf_stk);
 				stack_ = b().CreateBitCast(stk_base, ObjArrayTy, "obj_ary_type");
+
+				Value* unwinds = load_field(info()->call_frame(), 
+																		offset::cf_unwinds, "unwinds");
 
 				out_args_ = b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
 
@@ -577,6 +527,7 @@ namespace rubinius {
 				info()->set_vm(vm_);
 				info()->set_args(args_);
 				info()->set_out_args(out_args_);
+				info()->set_unwinds(unwinds);
 
 				assert(cur_trace_node_->next);
 				// Leave room for return value..
@@ -628,69 +579,9 @@ namespace rubinius {
       b().CreateBr(info()->trace_exit_pad());
     }
 
-
-    void flush_current_call_frame(int next_ip){
-      // Flush ip and sp of active current frame
-			flush_call_frame(info()->call_frame(), int32(next_ip), int32(cur_trace_node_->sp));
-    }
-
     void flush_call_frame(Value* cf, Value* pc, Value* sp){
 			store_field(cf, offset::cf_ip, pc);
 			store_field(cf, offset::cf_sp, sp);
-    }
-
-
-    void flush_call_stack(){
-      // Flush ip and sp of any stacked frames
-      TraceNode* node = cur_trace_node_->active_send;
-      while(node != NULL){
-
-				assert(node->traced_send || node->traced_yield);
-				Value* cf = NULL;
-				TraceNode* cf_creator_node = node->active_send;
-				if(cf_creator_node != NULL){
-					cf = info()->root_info()->pre_allocated_call_frames[cf_creator_node->trace_pc];	
-				}
-				else{
-					cf = info()->root_info()->call_frame();
-				}
-
-				cf = b().CreateBitCast(cf, CallFrameTy, "call_frame");
-				assert(cf);
-
-				Value* stckp = NULL;
-				Value* next_ip = NULL;
-
-				if(node->op == InstructionSequence::insn_send_stack){
-					int sp = node->sp - node->arg2 - 1;
-					stckp = ConstantInt::get(ls_->Int32Ty, sp);
-					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
-				}
-				else if(node->op == InstructionSequence::insn_send_stack_with_block){
-					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 2);
-					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
-				}
-				else if(node->op == InstructionSequence::insn_yield_stack){
-					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg1);
-					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
-				}
-				else if(node->op == InstructionSequence::insn_send_method){
-					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - 1);
-					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 2);
-				}
-				else{
-					stckp = ConstantInt::get(ls_->Int32Ty, node->sp - node->arg2 - 1);
-					next_ip = ConstantInt::get(ls_->Int32Ty, node->pc + 3);
-				}
-
-				Value* next_ip_pos = get_field(cf, offset::cf_ip);
-				b().CreateStore(next_ip, next_ip_pos);
-
-				Value* exit_sp_pos = get_field(cf, offset::cf_sp);
-				b().CreateStore(stckp, exit_sp_pos);
-
-				node = node->active_send;
-      }
     }
 
     void visit_push_has_block() {

@@ -41,6 +41,9 @@ namespace rubinius {
     CallFrame* previous;
     StaticScope* static_scope_;
 
+		UnwindInfo* unwinds_;
+		int current_unwind_;
+
     void* dispatch_data;
     CompiledMethod* cm;
 
@@ -64,6 +67,22 @@ namespace rubinius {
 
     int sp() {
       return sp_;
+    }
+
+    int current_unwind() {
+      return current_unwind_;
+    }
+
+		void set_current_unwind(int cur_unwind){
+			current_unwind_ = cur_unwind;
+		}
+
+    UnwindInfo* unwinds() {
+      return unwinds_;
+    }
+
+    void set_unwinds(UnwindInfo* unwinds) {
+      unwinds_ = unwinds;
     }
 
     void stk_push(Object* obj) {

@@ -58,6 +58,12 @@ void emit_traced_yield_stack(opcode args) {
  		cfstk, sizeof(CallFrame) / sizeof(Object*), "stack");
 	info()->set_stack(stack_);
 
+	Value* unwinds = info()->root_info()->pre_allocated_unwinds[
+		cur_trace_node_->trace_pc];
+	info()->set_unwinds(unwinds);
+	b().CreateStore(unwinds, get_field(call_frame_, offset::cf_unwinds));
+	b().CreateStore(int32(0), get_field(call_frame_, offset::cf_current_unwind));
+
 	Value* var_mem = info()->root_info()->pre_allocated_vars[cur_trace_node_->trace_pc];
 	vars_ = b().CreateBitCast(
 		var_mem,

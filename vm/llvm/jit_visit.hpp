@@ -1217,7 +1217,7 @@ namespace rubinius {
 
       Value* arg_ary = stack_objects(args);
 
-      Value* call_args[] = { vm_, call_frame_, arg_ary, cint(args) };
+      Value* call_args[] = { vm_, call_frame_, arg_ary, int32(args) };
 
       Value* ptr = b().CreateIntToPtr(
 				ConstantInt::get(ls_->IntPtrTy, reinterpret_cast<uintptr_t>(invoker)),

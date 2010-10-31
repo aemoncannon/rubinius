@@ -184,10 +184,6 @@ namespace rubinius {
       return call_frame_;
     }
 
-    Value* cint(int num) {
-      return ConstantInt::get(ls_->Int32Ty, num);
-    }
-
     // Type resolution and manipulation
     //
     const llvm::Type* ptr_type(std::string name) {
@@ -268,7 +264,7 @@ namespace rubinius {
     }
 
     Value* get_class_id(Value* cls) {
-      Value* idx[] = { zero_, cint(4) };
+      Value* idx[] = { zero_, int32(4) };
       Value* gep = create_gep(cls, idx, 2, "class_id_pos");
       return create_load(gep, "class_id");
     }
@@ -343,7 +339,7 @@ namespace rubinius {
       Value* klass = reference_class(obj);
       Value* class_id = get_class_id(klass);
 
-      Value* cmp = create_equal(class_id, cint(needed_id), "check_class_id");
+      Value* cmp = create_equal(class_id, int32(needed_id), "check_class_id");
 
       create_conditional_branch(body, failure, cmp);
 

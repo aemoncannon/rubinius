@@ -146,6 +146,11 @@ namespace rubinius {
 																							(sizeof(StackVariables) / sizeof(Object*)) + 
 																							node->send_cm->number_of_locals()),
 														 "var_mem");
+
+					info_->pre_allocated_unwinds[node->trace_pc] = 
+						b().CreateAlloca(ls_->type("UnwindInfo"), 
+														 ConstantInt::get(ls_->Int32Ty, kMaxUnwindInfos),
+														 "unwind_infos");
 				}
       }
     }
@@ -319,11 +324,6 @@ namespace rubinius {
 #include "gen/instruction_effects.hpp"
 
       bool before(opcode op, opcode arg1=0, opcode arg2=0) {
-				// Handle pop_unwind specially, so we always see it.
-				if(op == InstructionSequence::insn_pop_unwind) {
-					exception_handlers_.pop_back();
-				}
-
 				BlockMap::iterator i = map_.find(current_ip_);
 				if(i != map_.end()) {
 					//					std::cout << "Found block at " << current_ip_ << "\n";
@@ -458,25 +458,9 @@ namespace rubinius {
 				break_at(current_ip_ + 2);
       }
 
-      void visit_setup_unwind(opcode which, opcode type) {
-				// setup_unwind must always refer to an instruction further
-				// on in the stream
-				assert(current_ip_ < which);
+      void visit_setup_unwind(opcode which, opcode type) {}
 
-				JITBasicBlock* jbb = break_at(which);
-
-				// Install the handler...
-				exception_handlers_.push_back(jbb);
-
-				// Break at the next IP. When we advance to it, the logic
-				// above will install the handler we just installed on it.
-				break_at(current_ip_ + 3);
-      }
-
-      void visit_ret() {
-				// Ignore ret, since we're tracing and it won't be emitted anyhow
-				//				next_ip_too();
-      }
+      void visit_ret() {}
 
       void visit_raise_return() {
 				next_ip_too();

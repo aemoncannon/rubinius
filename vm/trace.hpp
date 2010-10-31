@@ -127,9 +127,9 @@ namespace rubinius {
     static const int RUN_MODE_RECORD_NESTED = 2;
 
     static const int RETURN_SIDE_EXITED = -1;
-    static const int RETURN_PROPAGATE_EXCEPTION = -2;
     static const int RETURN_OK = 0;
     static const int RETURN_NESTED_OK = 1;
+
 
     static const int MAX_TRACE_LENGTH = 200;
 

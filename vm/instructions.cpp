@@ -69,6 +69,9 @@ extern "C" {
   Object* send_slowly(STATE, VMMethod* vmm, InterpreterCallFrame* const call_frame,
                       Symbol* name, Object** stk_pos, size_t args);
 
+#define FLUSH_UNWINDS() call_frame->set_current_unwind(current_unwind);	\
+	call_frame->set_unwinds(unwinds);
+
 #define HANDLE_EXCEPTION(val) if(val == NULL) goto exception
 #define RUN_EXCEPTION() goto exception
 
@@ -121,24 +124,37 @@ Object* VMMethod::resumable_interpreter(STATE,
   InterpreterState is;
   Object** stack_ptr;
 
+	opcode op;
+  int cur_ip;
+  int sp;
+
 #ifdef X86_ESI_SPEEDUP
   register void** ip_ptr asm ("esi") = vmm->addresses;
 #else
   register void** ip_ptr = vmm->addresses;
 #endif
 
+	int current_unwind = 0;
+	UnwindInfo unwinds_[kMaxUnwindInfos];
+	UnwindInfo* unwinds = unwinds_;
+
+	// Is this an 'uncommon' interpreter invocation?
   if(synthetic){
     DEBUGLN("\nResuming at " << call_frame->ip());
 		IF_DEBUG(call_frame->dump());
     ip_ptr = vmm->addresses + call_frame->ip();
     stack_ptr = call_frame->stk + call_frame->sp();
+		unwinds = call_frame->unwinds();
+		current_unwind = call_frame->current_unwind();
+		ThreadState* th = state->thread_state();
+		if(th->raise_reason() != cNone){
+			DEBUGLN("Trace raised something, handling."); 
+			RUN_EXCEPTION();
+		}
   }
   else{
     stack_ptr = call_frame->stk - 1;
   }
-
-  int current_unwind = 0;
-  UnwindInfo unwinds[kMaxUnwindInfos];
 
   if(!state->check_stack(call_frame, &state)) return NULL;
 
@@ -154,9 +170,6 @@ Object* VMMethod::resumable_interpreter(STATE,
     if(!state->process_async(call_frame)) return NULL;
   }
 
-  opcode op;
-  int cur_ip;
-  int sp;
 
   goto continue_to_run;
 
@@ -168,15 +181,29 @@ Object* VMMethod::resumable_interpreter(STATE,
     DEBUGLN("\nRunning trace at " << cur_ip);
     TRACK_TIME(ON_TRACE_TIMER);
     assert(trace->executor);
-    trace->executor(state, call_frame, trace, NULL, NULL, Trace::RUN_MODE_NORM); 
+		FLUSH_UNWINDS();
+    int result = trace->executor(
+			state, call_frame, trace, NULL, NULL, Trace::RUN_MODE_NORM); 
+
     TRACK_TIME(TRACE_SETUP_TIMER);
-    DEBUGLN("Run finished.");
-    DEBUGLN("Resuming at: " << call_frame->ip());
-    IF_DEBUG(call_frame->dump());
+
+		DEBUGLN("Run finished.");
+		DEBUGLN("Resuming at: " << call_frame->ip());
+		IF_DEBUG(call_frame->dump());
 
     ip_ptr = vmm->addresses + call_frame->ip(); 
     stack_ptr = call_frame->stk + call_frame->sp();
+		current_unwind = call_frame->current_unwind();
+
+		if(result == Trace::RETURN_SIDE_EXITED){
+			ThreadState* th = state->thread_state();
+			if(th->raise_reason() != cNone){
+				DEBUGLN("Trace raised something, handling."); 
+				RUN_EXCEPTION();
+			}
+		}
     TRACK_TIME(INTERP_TIMER);
+
     goto continue_to_run; 
   }
 
@@ -212,6 +239,7 @@ Object* VMMethod::resumable_interpreter(STATE,
     Trace* nested_trace = vmm->traces[cur_ip];
     DEBUGLN("Running nested trace while recording.\n"); 
     TRACK_TIME(ON_TRACE_TIMER);
+		FLUSH_UNWINDS();
     int result = nested_trace->executor(state, call_frame, 
 																				nested_trace, NULL, NULL, 
 																				Trace::RUN_MODE_RECORD_NESTED); 
@@ -219,12 +247,12 @@ Object* VMMethod::resumable_interpreter(STATE,
 
     /* If result is -1, the nested trace must have bailed into */ 
     /* uncommon interpreter, we consider this recording invalidated.  */ 
-    if(result == -1){
+    if(result == Trace::RETURN_SIDE_EXITED){
       DEBUGLN("Failed to record nested trace, throwing away recording\n"); 
       delete state->recording_trace;
       state->recording_trace = NULL;
     }
-    else{
+		else {
       /* Otherwise, we know that the */ 
       /* trace exited politely and we've successfully recorded a call to  */ 
       /* a nested trace. */
@@ -235,7 +263,18 @@ Object* VMMethod::resumable_interpreter(STATE,
 
     ip_ptr = vmm->addresses + call_frame->ip(); 
     stack_ptr = call_frame->stk + call_frame->sp();
+		current_unwind = call_frame->current_unwind();
+
+		if(result == Trace::RETURN_SIDE_EXITED){
+			ThreadState* th = state->thread_state();
+			if(th->raise_reason() != cNone){
+				DEBUGLN("Nested trace record raised something, handling."); 
+				RUN_EXCEPTION();
+			}
+		}
+
     TRACK_TIME(INTERP_TIMER);
+
     goto continue_to_run; 
   }
 	
@@ -396,13 +435,14 @@ Object* VMMethod::uncommon_interpreter(STATE,
                                        VMMethod* const vmm_,
                                        CallFrame* const call_frame_)
 {
-
-  DEBUGLN("Entering uncommon...");
   TRACK_TIME(UNCOMMON_INTERP_TIMER);
+  DEBUGLN("Entering uncommon...");
 
   VMMethod* vmm = vmm_;
   CallFrame* call_frame = call_frame_;
-  Object* result = NULL;
+
+	// NULL signals exception, so init to -1
+  Object* result = (Object*)-1;
 
   // Disable tracing while executing synthetic frames.
   // Cheap way to avoid unbounded stack growth in 
@@ -411,17 +451,14 @@ Object* VMMethod::uncommon_interpreter(STATE,
 
   while(call_frame->is_traced_frame()){
     IF_DEBUG(call_frame->dump());
-    result = resumable_interpreter(state, vmm, call_frame, true);
+		result = resumable_interpreter(state, vmm, call_frame, true);
     TRACK_TIME(UNCOMMON_INTERP_TIMER);
     call_frame = call_frame->previous;
     vmm = call_frame->cm->backend_method();
 		DEBUGLN("Pushing interp return value...");
-		// if(result == NULL){
-		// 	// need to propagate exception to next call_frame
-		// }
-		// else{
+		if(result != NULL){
 			call_frame->stk_push(result);
-//		}
+		}
   }
 
   state->trace_exec_enabled = true;

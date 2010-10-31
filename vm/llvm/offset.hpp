@@ -15,18 +15,24 @@ namespace offset {
   const static int trace_info_exit_trace = 1;
   const static int trace_info_exit_trace_node = 2;
 
+  const static int unwind_info_target_ip = 0;
+  const static int unwind_info_stack_depth = 1;
+  const static int unwind_info_type = 2;
+
   const static int cf_previous = 0;
   const static int cf_static_scope = 1;
-  const static int cf_msg = 2;
-  const static int cf_cm = 3;
-  const static int cf_flags = 4;
-  const static int cf_ip = 5;
-  const static int cf_sp = 6;
-  const static int cf_jit_data = 7;
-  const static int cf_top_scope = 8;
-  const static int cf_scope = 9;
-  const static int cf_arguments = 10;
-  const static int cf_stk = 11;
+  const static int cf_unwinds = 2;
+  const static int cf_current_unwind = 3;
+  const static int cf_msg = 4;
+  const static int cf_cm = 5;
+  const static int cf_flags = 6;
+  const static int cf_ip = 7;
+  const static int cf_sp = 8;
+  const static int cf_jit_data = 9;
+  const static int cf_top_scope = 10;
+  const static int cf_scope = 11;
+  const static int cf_arguments = 12;
+  const static int cf_stk = 13;
 
   const static int args_recv = 0;
   const static int args_block = 1;
