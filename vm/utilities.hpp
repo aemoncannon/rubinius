@@ -7,7 +7,7 @@
 #define GDB_BREAK __asm__("int3")
 
 
-#define DEBUG true
+//#define DEBUG true
 
 
 #ifdef DEBUG
@@ -19,7 +19,7 @@
 #endif
 
 
-#define TRACE_PROFILE true
+//#define TRACE_PROFILE true
 
 int const NULL_TIMER = 0;
 int const ON_TRACE_TIMER = 1;
