@@ -1008,9 +1008,9 @@ extern "C" {
 			cf = cf->previous;
 		}
 
-
+		ThreadState* th = state->thread_state();
 		// Maybe start recording a branch trace...
-		if(exit_node->bump_exit_hotness()){
+		if(th->raise_reason() == cNone && exit_node->bump_exit_hotness()){
 			DEBUGLN("Exit node at " << exit_node->pc << " got hot! Recording branch...");
 			state->recording_trace = exit_trace->create_branch_at(exit_node);
 			exit_node->clear_hotness();

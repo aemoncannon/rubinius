@@ -7,6 +7,8 @@ RESULT_FILE = ".run_result"
 
 
 TESTS = [
+         {:name => "loop_with_div_by_zero", :comment => "", :iters => 1000, 
+           :bench_iters => [100, 1000]},
 
          {:name => "loop", :comment => "", :iters => 1000000, 
            :bench_iters => [10000, 100000, 1000000]},
@@ -54,15 +56,15 @@ TESTS = [
            :bench_iters => [10000, 100000]},
 
          {:name => "loop_with_puts", :comment => "", :iters => 1000, 
-           :bench_iters => [100, 1000]},
-
-         #         {:name => "loop_with_div_by_zero", :comment => "", :iters => 1000, 
-         #  :bench_iters => [100, 1000]},
+           :bench_iters => [100, 1000]}
 
         ]
 
 
 task :units => [] do
+
+  sh "truncate --size 0 #{LOG}"
+
   TESTS.each{|t|
     puts ""
     puts "#{t[:name]}.rb #{t[:comment]}"
@@ -110,6 +112,8 @@ end
 BENCH_RUNS = 10
 
 task :bench => [] do
+
+  sh "truncate --size 0 #{LOG}"
 
   bench_run_id = Time.now.to_i
   commit_id = git_commit_id

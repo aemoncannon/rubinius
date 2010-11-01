@@ -453,17 +453,17 @@ namespace rubinius {
 			Value* next_unwind = b().CreateAdd(cur_unwind, int32(1), "add_one");
 			store_field(info()->call_frame(), offset::cf_current_unwind, next_unwind);
 
-			Value* unwind = b().CreateGEP(info()->unwinds(), next_unwind, "local_pos");
+			Value* unwind_array = b().CreateConstGEP1_32(info()->unwinds(), 0, "unwind_array");
+			Value* unwind = b().CreateGEP(unwind_array, next_unwind, "local_pos");
 			store_field(unwind, offset::unwind_info_target_ip, int32(where));
-			store_field(unwind, offset::unwind_info_stack_depth, 
-									int32(cur_trace_node_->sp));
+			store_field(unwind, offset::unwind_info_stack_depth, int32(cur_trace_node_->sp));
 			store_field(unwind, offset::unwind_info_type, int32(type));
     }
 
     void visit_pop_unwind() {
 			Value* cur_unwind = load_field(
 				info()->call_frame(), offset::cf_current_unwind, "current_unwind");
-			Value* next_unwind = b().CreateSub(cur_unwind, int32(1), "add_one");
+			Value* next_unwind = b().CreateSub(cur_unwind, int32(1), "subtract_one");
 			store_field(info()->call_frame(), offset::cf_current_unwind, next_unwind);
 		}
 

@@ -93,6 +93,12 @@ namespace rubinius {
       stk_base = b().CreateBitCast(stk_base, obj_ary_type, "obj_ary_type");
       info_->set_stack(stk_base);
 
+      //unwinds
+      Value* unwinds_pos = get_field(call_frame, offset::cf_unwinds);
+      Value* unwinds = b().CreateLoad(unwinds_pos, "unwinds");
+      unwinds = b().CreateBitCast(unwinds, ls_->ptr_type("UnwindInfo"), "unwinds");
+      info_->set_unwinds(unwinds);
+
       //vars
       Value* vars_pos = get_field(call_frame, offset::cf_scope);
       Value* vars = b().CreateLoad(vars_pos, "vars");
