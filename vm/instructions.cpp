@@ -72,6 +72,9 @@ extern "C" {
 #define FLUSH_UNWINDS() call_frame->set_current_unwind(current_unwind);	\
 	call_frame->set_unwinds(unwinds);
 
+#define CANCEL_TRACE_RECORDING()  delete state->recording_trace;	\
+	state->recording_trace = NULL;
+
 #define HANDLE_EXCEPTION(val) if(val == NULL) goto exception
 #define RUN_EXCEPTION() goto exception
 
@@ -223,8 +226,7 @@ Object* VMMethod::resumable_interpreter(STATE,
       state->recording_trace = NULL; 
     } 
     else if(s == Trace::TRACE_CANCEL){
-      delete state->recording_trace; 
-      state->recording_trace = NULL;																
+			CANCEL_TRACE_RECORDING();
     }
     TRACK_TIME(INTERP_TIMER);
     goto **ip_ptr++;
@@ -249,8 +251,7 @@ Object* VMMethod::resumable_interpreter(STATE,
     /* uncommon interpreter, we consider this recording invalidated.  */ 
     if(result == Trace::RETURN_SIDE_EXITED){
       DEBUGLN("Failed to record nested trace, throwing away recording\n"); 
-      delete state->recording_trace;
-      state->recording_trace = NULL;
+			CANCEL_TRACE_RECORDING();
     }
 		else {
       /* Otherwise, we know that the */ 
@@ -355,6 +356,13 @@ Object* VMMethod::resumable_interpreter(STATE,
 
   // If control finds it's way down here, there is an exception.
  exception:
+
+	if(state->tracing_enabled &&
+		 state->recording_trace != NULL){
+		DEBUGLN("Canceling record due to exception.");
+		CANCEL_TRACE_RECORDING();
+	}
+
   ThreadState* th = state->thread_state();
   //
   switch(th->raise_reason()) {
@@ -458,6 +466,9 @@ Object* VMMethod::uncommon_interpreter(STATE,
 		DEBUGLN("Pushing interp return value...");
 		if(result != NULL){
 			call_frame->stk_push(result);
+		}
+		else{
+			DEBUGLN("Handling NULL return in uncommon...");
 		}
   }
 
