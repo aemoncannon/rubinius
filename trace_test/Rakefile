@@ -62,6 +62,9 @@ TESTS = [
            :bench_iters => [1000, 10000]},
 
          {:name => "nest_funcs_and_throw_exception", :comment => "", :iters => 1000, 
+           :bench_iters => [1000, 10000]},
+
+         {:name => "loop_with_changing_target", :comment => "", :iters => 1000,
            :bench_iters => [1000, 10000]}
 
         ]
