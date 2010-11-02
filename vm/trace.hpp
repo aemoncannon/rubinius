@@ -16,6 +16,7 @@ namespace rubinius {
   class CallFrame;
   class CompiledMethod;
   class Object;
+  class Class;
   class StackVariables;
   class Symbol;
   class JITVisit;
@@ -40,6 +41,7 @@ namespace rubinius {
     CallFrame* const call_frame;
     CompiledMethod* const cm;
     CompiledMethod* send_cm;
+		Class* target_klass;
     void** ip_ptr;
     TraceNode* prev;
     TraceNode* next;
@@ -65,7 +67,7 @@ namespace rubinius {
 
     std::string graph_node_name(STATE);
 
-    int arg_count();
+    int send_arg_count();
 
     bool is_on_home_call_frame(){
       return active_send == NULL;
@@ -140,11 +142,11 @@ namespace rubinius {
     Trace();
 
 
-    Status add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+    Status add(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr);
 
     Trace* create_branch_at(TraceNode* exit_node);
 
-    Status add_nested_trace_call(Trace* trace, int nested_exit_pc, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+    Status add_nested_trace_call(Trace* trace, int nested_exit_pc, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr);
 
     void pretty_print(STATE, std::ostream& out);
 

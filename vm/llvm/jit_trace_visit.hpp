@@ -136,6 +136,18 @@ namespace rubinius {
       set_block(current);
     }
 
+
+		void guard_class_change(Value* object, Class* klass){
+			BasicBlock* current = current_block();
+      BasicBlock* exit_stub = new_block("exit_stub");
+
+			check_class(object, klass, exit_stub);
+
+      set_block(exit_stub);
+      exit_trace(cur_trace_node_->pc);
+      set_block(current);
+		}
+
     void ensure_trace_exit_pad(){
       if(!emitted_exit_){
 				BasicBlock* cur = current_block();
@@ -605,6 +617,7 @@ namespace rubinius {
 #include "vm/llvm/jit_trace_send.hpp"
     void visit_send_stack(opcode which, opcode args) {
       if(cur_trace_node_->traced_send){
+				guard_class_change(stack_top(), cur_trace_node_->target_klass);
 				emit_traced_send(which, args, false);
       }
       else{

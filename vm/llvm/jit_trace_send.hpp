@@ -137,7 +137,7 @@ void import_args() {
 
 	// As opposed to method jit, number of args is always known statically.
 	// Currently, splats invalidate traces, so don't worry about those.
-	for(int i = 0; i < cur_trace_node_->arg_count(); i++) {
+	for(int i = 0; i < cur_trace_node_->send_arg_count(); i++) {
 		Value* int_pos = ConstantInt::get(ls_->Int32Ty, i);
 
 		Value* arg_val_offset = b().CreateConstGEP1_32(arg_ary, i, "arg_val_offset");

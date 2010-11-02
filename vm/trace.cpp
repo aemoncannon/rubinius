@@ -33,6 +33,7 @@ namespace rubinius {
     call_frame(call_frame),
     cm(call_frame->cm),
     send_cm(NULL),
+    target_klass(NULL),
     ip_ptr(ip_ptr),
     prev(NULL),
     next(NULL),
@@ -60,7 +61,7 @@ namespace rubinius {
     return InstructionSequence::get_instruction_name(op);
   }
 
-  int TraceNode::arg_count(){
+  int TraceNode::send_arg_count(){
     if(op == InstructionSequence::insn_send_method) return 0;
     else if(op == InstructionSequence::insn_send_stack) return arg2;
     else return arg2;
@@ -161,10 +162,13 @@ namespace rubinius {
 
   Trace::Status Trace::add_nested_trace_call(Trace* nested_trace, 
 																						 int nested_exit_pc, int pc, int sp, 
-																						 void** const ip_ptr, VMMethod* const vmm, 
-																						 CallFrame* const call_frame){
+																						 void** const ip_ptr, 
+																						 STATE, VMMethod* const vmm, 
+																						 CallFrame* const call_frame,
+																						 Object** stack_ptr){
 
-    this->add(InstructionSequence::insn_nested_trace, pc, sp, ip_ptr, vmm, call_frame);
+    this->add(InstructionSequence::insn_nested_trace, pc, sp, ip_ptr, state, 
+							vmm, call_frame, stack_ptr);
     TraceNode* adapter_node = this->head;
 
     adapter_node->nested_executor = nested_trace->executor;
@@ -181,7 +185,7 @@ namespace rubinius {
   }
 
 
-  Trace::Status Trace::add(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame){
+  Trace::Status Trace::add(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr){
 
     if(this->is_branch() && head == NULL){
       // Possible the side-exit jumps straight to the anchor...
@@ -259,8 +263,15 @@ namespace rubinius {
 					if(prev->op == InstructionSequence::insn_yield_stack){
 						prev->traced_yield = true;
 					}
+					else if(prev->op == InstructionSequence::insn_send_stack_with_block){
+						prev->traced_send = true;
+						Object* recv = *(stack_ptr - prev->send_arg_count() + 1);
+						prev->target_klass = recv->lookup_begin(state);
+					}
 					else{
 						prev->traced_send = true;
+						Object* recv = *(stack_ptr - prev->send_arg_count());
+						prev->target_klass = recv->lookup_begin(state);
 					}
 					prev->send_cm = cm;
 

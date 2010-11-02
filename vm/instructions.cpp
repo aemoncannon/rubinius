@@ -214,7 +214,7 @@ Object* VMMethod::resumable_interpreter(STATE,
   {
     TRACK_TIME(TRACE_SETUP_TIMER);
     sp = stack_ptr - call_frame->stk;
-    Trace::Status s = state->recording_trace->add(op, cur_ip, sp, ip_ptr, vmm, call_frame); 
+    Trace::Status s = state->recording_trace->add(op, cur_ip, sp, ip_ptr, state, vmm, call_frame, stack_ptr); 
     if(s == Trace::TRACE_FINISHED){
       DEBUGLN("Trace Recorded.\n--------------------------\n"); 
       IF_DEBUG(state->recording_trace->pretty_print(state, std::cout));
@@ -259,7 +259,8 @@ Object* VMMethod::resumable_interpreter(STATE,
       /* a nested trace. */
       DEBUGLN("Polite exit, saving nested trace..\n");
       state->recording_trace->add_nested_trace_call(nested_trace, call_frame->ip(),
-																										cur_ip, sp, ip_ptr, vmm, call_frame);
+																										cur_ip, sp, ip_ptr, state,
+																										vmm, call_frame, stack_ptr);
     }
 
     ip_ptr = vmm->addresses + call_frame->ip(); 
