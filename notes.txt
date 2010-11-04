@@ -1,22 +1,6 @@
 
-Sat Oct 30, 9:44
-  TODO: Probably ok to ditch the bail and bail fast shit from the trace setup, since all the exception checks now branch to side exit stubs.
-
-Sun Oct 26, 1:51
-  Ok, disabled outerlining that returns from anchor context and things are passing again. Next thing we need to do is restore exception context when side-exiting from 
-traces. That should be a fully static operation...
-
-
-Sun Oct 26, 1:42
-  Ok, outerlining is crashing because I never accounted for side-exits in traces that have already returned from the home frame. So in a nested function situation, when a branch outerlines a loop, returning back into the caller, its possible to have side-exits that would require us to pop the trace home frame. :(  My take: let's just disallow traces that return from the anchor's home frame. We can still do outerlining, just not in nested function situtations.
-
-
-Sun Oct 24, 11:17
-  So the reason nested_funcs.rb is failing in exit-on-exception branch is because of the new benchmarking harness. For whatever reason, if we run the interpreted version prior to running th traced version, in the same Ruby process, the tracer will generate a nested trace and all will work. But, if we just run the traced version, the tracer will 'outerline' the outer loop and we get a crash. Take-aways: 1) need to figure out why running interp version first would make any difference. 2) need to figure out where the outerlining crash is coming from.
-
-
-Trace runtime interfaces
--------------------------
+Sat Nov 3, 12:01 am
+  A method send is a 1 to n branch point. What we need is a small hash-table that uses Classes as hash keys. So, we'll have a sepecial exit pad for method send exits. Needs to lookup class in node's table.
 
 Requirements
  - Should optimize for speed of switching to branch traces. Because # of branch runs is potentially related to N (iterations) of loop.

@@ -138,15 +138,17 @@ namespace rubinius {
 
 
 		void guard_class_change(Value* object, Class* klass){
-			BasicBlock* current = current_block();
       BasicBlock* exit_stub = new_block("exit_stub");
 
 			check_class(object, klass, exit_stub);
+			BasicBlock* current = current_block();
 
       set_block(exit_stub);
       exit_trace(cur_trace_node_->pc);
+
       set_block(current);
 		}
+
 
     void ensure_trace_exit_pad(){
       if(!emitted_exit_){
@@ -169,23 +171,21 @@ namespace rubinius {
       Value* exit_sp = info()->root_info()->exit_sp_phi;
       Value* exit_cf = info()->root_info()->exit_cf_phi;
 
+			Value* branches_array = get_field(exit_trace_node, offset::trace_node_branches);
+			Value* branch_trace_pos = b().CreateConstGEP2_32(branches_array, 0, 0, "branch_trace_pos");
+			Value* branch_trace = b().CreateLoad(branch_trace_pos, "branch_trace");
 
-      // Otherwise look up a branch for this location (this needs to be faster)
-      Value* branch_trace = load_field(exit_trace_node, 
-																			 offset::trace_node_branch_trace, 
-																			 "branch trace");
-
-      Value* executor = load_field(exit_trace_node, 
-																	 offset::trace_node_branch_executor, 
-																	 "executor");
-
-      Value* branch_found_p = b().CreateICmpNE(executor, constant(0, executor->getType()), "bailed_p");
+      Value* branch_found_p = b().CreateICmpNE(branch_trace, constant(0, ls_->ptr_type("Trace")), "bailed_p");
       BasicBlock* no_branch_b = new_block("no_branch_b");
       BasicBlock* run_branch_b = new_block("run_branch_b");
 
       b().CreateCondBr(branch_found_p, run_branch_b, no_branch_b);
 
       set_block(run_branch_b);
+
+      Value* executor = load_field(branch_trace, 
+																	 offset::trace_executor, 
+																	 "executor");
 
       Value* call_args[] = {
 				info()->vm(),
@@ -617,7 +617,7 @@ namespace rubinius {
 #include "vm/llvm/jit_trace_send.hpp"
     void visit_send_stack(opcode which, opcode args) {
       if(cur_trace_node_->traced_send){
-				guard_class_change(stack_top(), cur_trace_node_->target_klass);
+				guard_class_change(stack_back(args), cur_trace_node_->target_klass);
 				emit_traced_send(which, args, false);
       }
       else{

@@ -3,10 +3,11 @@
 
 namespace offset {
 
-  const static int trace_node_branch_trace = 0;
-  const static int trace_node_branch_executor = 1;
-  const static int trace_node_nested_trace = 2;
-  const static int trace_node_nested_executor = 3;
+  const static int trace_node_nested_trace = 0;
+  const static int trace_node_nested_executor = 1;
+	const static int trace_node_branches = 2;
+	const static int trace_node_branch_keys = 3;
+	const static int trace_node_branch_tbl_offset = 4;
 
   const static int trace_executor = 0;
   const static int trace_expected_exit_ip = 1;

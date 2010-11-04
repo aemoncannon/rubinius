@@ -23,10 +23,9 @@ namespace rubinius {
 
   TraceNode::TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
     : 
-    branch_trace(NULL),
-    branch_executor(NULL),
     nested_trace(NULL),
     nested_executor(NULL),
+		branch_tbl_offset(0),
     op(op),
     pc(pc),
     sp(sp),
@@ -50,6 +49,10 @@ namespace rubinius {
 
   {
 #include "vm/gen/instruction_trace_record.hpp"
+		for(int i = 0; i < BRANCH_TBL_SIZE; i++) {
+			branches[i] = NULL;
+			branch_keys[i] = NULL;
+		}
   }
 
   std::string TraceNode::cm_name(STATE){
@@ -187,22 +190,6 @@ namespace rubinius {
 
   Trace::Status Trace::add(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr){
 
-    if(this->is_branch() && head == NULL){
-      // Possible the side-exit jumps straight to the anchor...
-      if(pc == anchor->pc && call_frame->cm == anchor->cm){
-				DEBUGLN("Recording branch directly to anchor.");
-				head = anchor;
-				entry = head;
-				return TRACE_FINISHED;
-      }
-      head = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
-      entry = head;
-      pc_base_counter = 0;
-      expected_exit_ip = -1;
-      entry_sp = sp;
-      return TRACE_OK;
-    }
-
     if(pc == anchor->pc && call_frame->cm == anchor->cm && 
        head->op == InstructionSequence::insn_goto){
       head->next = anchor;
@@ -230,14 +217,42 @@ namespace rubinius {
     }
     else{
       TraceNode* prev = head;
-      TraceNode* active_send = prev->active_send;
-      TraceNode* parent_send = prev->parent_send;
+			TraceNode* active_send = NULL;
+			TraceNode* parent_send = NULL;
+			int pc_base = 0;
+			int call_depth = 0;
+			if(prev){
+				active_send = prev->active_send;
+				parent_send = prev->parent_send;
+				pc_base = prev->pc_base;
+				call_depth = prev->call_depth;
+			}
       CompiledMethod* cm = call_frame->cm;
-      int pc_base = prev->pc_base;
-      int call_depth = prev->call_depth;
       int side_exit_pc = pc;
 
-      if(prev->call_frame != call_frame){
+			// Remember the target class for sends
+
+			Class* target_klass = NULL;
+			if(op == InstructionSequence::insn_send_stack || 
+				 op == InstructionSequence::insn_send_method || 
+				 op == InstructionSequence::insn_send_stack_with_block){
+
+				int send_args = -1;
+				if(op == InstructionSequence::insn_send_stack) 
+					send_args = (intptr_t)(*(ip_ptr + 2));
+				else if(op == InstructionSequence::insn_send_method) 
+					send_args = 0;
+				else if(op == InstructionSequence::insn_send_stack_with_block) 
+					send_args = (intptr_t)(*(ip_ptr + 2));
+				assert(send_args > -1);
+
+				Object* recv = *(stack_ptr - send_args);
+				assert(recv);
+				target_klass = recv->lookup_begin(state);
+				assert(target_klass);
+			}
+
+      if(prev && prev->call_frame && prev->call_frame != call_frame){
 				if(prev->op == InstructionSequence::insn_ret){
 					active_send = prev->parent_send;
 					if(prev->parent_send){
@@ -265,13 +280,9 @@ namespace rubinius {
 					}
 					else if(prev->op == InstructionSequence::insn_send_stack_with_block){
 						prev->traced_send = true;
-						Object* recv = *(stack_ptr - prev->send_arg_count() + 1);
-						prev->target_klass = recv->lookup_begin(state);
 					}
 					else{
 						prev->traced_send = true;
-						Object* recv = *(stack_ptr - prev->send_arg_count());
-						prev->target_klass = recv->lookup_begin(state);
 					}
 					prev->send_cm = cm;
 
@@ -281,8 +292,9 @@ namespace rubinius {
 				}
       }
       else{ // In the same callframe as last node..
-				if(prev->op == InstructionSequence::insn_goto_if_true ||
-					 prev->op == InstructionSequence::insn_goto_if_false){
+				if(prev &&
+					 (prev->op == InstructionSequence::insn_goto_if_true ||
+						prev->op == InstructionSequence::insn_goto_if_false)){
 
 					if(pc == prev->interp_jump_target()){
 						prev->jump_taken = true;
@@ -295,16 +307,29 @@ namespace rubinius {
 				}
       }
 
-      head = new TraceNode(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
-      head->active_send = active_send;
-      head->parent_send = parent_send;
-      head->side_exit_pc = side_exit_pc;
-      head->prev = prev;
-      prev->next = head;
 
       length++;
 
-      return TRACE_OK;
+			if(this->is_branch() && head == NULL){
+				head = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
+				head->side_exit_pc = side_exit_pc;
+				head->target_klass = target_klass;
+				entry = head;
+				pc_base_counter = 0;
+				expected_exit_ip = -1;
+				entry_sp = sp;
+				return TRACE_OK;
+			}
+			else{
+				head = new TraceNode(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
+				head->active_send = active_send;
+				head->parent_send = parent_send;
+				head->side_exit_pc = side_exit_pc;
+				head->target_klass = target_klass;
+				head->prev = prev;
+				prev->next = head;
+				return TRACE_OK;
+			}
     }
   }
 
@@ -314,14 +339,29 @@ namespace rubinius {
     ls->compile_trace(state, this);
   }
 
+
   void Trace::store() {
-    VMMethod* vmm = entry->cm->backend_method();
-    vmm->traces[entry->pc] = this;
     if(is_branch()){
-      parent_node->branch_trace = this;
-      assert(this->executor);
-      parent_node->branch_executor = this->executor;
+			void* key;
+			if(entry->traced_send){
+				key = entry->target_klass;
+				assert(key);
+				DEBUGLN("Storing branch at class: " << key); 
+			}
+			else {
+				key = (void*)entry->pc;
+				DEBUGLN("Storing branch at pc: " << entry->pc); 
+			}
+			int offset = parent_node->branch_tbl_offset;
+			parent_node->branch_keys[offset] = key;
+			parent_node->branches[offset] = this;
+			parent_node->branch_tbl_offset = (parent_node->branch_tbl_offset + 1) % BRANCH_TBL_SIZE;
     }
+		else{
+			DEBUGLN("Storing trace at pc: " << entry->pc); 
+			VMMethod* vmm = entry->cm->backend_method();
+			vmm->traces[entry->pc] = this;
+		}
   }
 
   string Trace::trace_name(){
@@ -349,13 +389,18 @@ namespace rubinius {
       s << " -> ";
       s << node->next->graph_node_name(state);
       s << ";\n";
-      if(node->branch_trace != NULL){
-				s << node->graph_node_name(state);
-				s << " -> ";
-				s << node->branch_trace->entry->graph_node_name(state);
-				s << ";\n";
-				s << node->branch_trace->to_graph_data(state);
-      }
+
+			for(int i = 0; i < BRANCH_TBL_SIZE; i++){
+				Trace* t = node->branches[i];
+				if(t != NULL){
+					s << node->graph_node_name(state);
+					s << " -> ";
+					s << t->entry->graph_node_name(state);
+					s << ";\n";
+					s << t->to_graph_data(state);
+				}
+			}
+
     }
     std::string result = s.str();
     return result;

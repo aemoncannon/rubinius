@@ -26,15 +26,18 @@ namespace rubinius {
   class TraceIterator;
 
 
+	static const int BRANCH_TBL_SIZE = 3;
+
   typedef uintptr_t opcode;
   typedef int (*trace_executor)(VM*, CallFrame*, Trace*, Trace*, TraceNode*, int);
 
   class TraceNode {
   public:
-    Trace* branch_trace;
-    trace_executor branch_executor;
     Trace* nested_trace;
     trace_executor nested_executor;
+    Trace* branches[BRANCH_TBL_SIZE];
+		void* branch_keys[BRANCH_TBL_SIZE];
+    int branch_tbl_offset;
     opcode op;
     int pc;
     int sp;
@@ -131,7 +134,6 @@ namespace rubinius {
     static const int RETURN_SIDE_EXITED = -1;
     static const int RETURN_OK = 0;
     static const int RETURN_NESTED_OK = 1;
-
 
     static const int MAX_TRACE_LENGTH = 200;
 

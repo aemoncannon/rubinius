@@ -291,8 +291,7 @@ Object* VMMethod::resumable_interpreter(STATE,
       op = vmm->opcodes[cur_ip];																				\
       if(state->trace_exec_enabled &&																		\
 				 state->recording_trace == NULL &&															\
-				 vmm->traces[cur_ip] != NULL &&																	\
-				 !vmm->traces[cur_ip]->is_branch()															\
+				 vmm->traces[cur_ip] != NULL																	  \
 				 ){																															\
 				/*Not currently recording. Hit an ip with a stored trace...*/		\
 				goto run_trace;																									\

@@ -1,5 +1,6 @@
 require 'helpers'
 
+
 class Cat
   def legs
     4
@@ -24,15 +25,13 @@ def foo(target)
 end
 
 
-
 def run()
   j = 0
   j += foo(Cat.new)
   j += foo(Chimp.new)
-  puts j
+  puts "result #{j}"
   j
 end
-
 
 
 with_harness do
