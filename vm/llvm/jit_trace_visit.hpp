@@ -132,7 +132,7 @@ namespace rubinius {
 			b().CreateCondBr(null_p, exit_stub, cont);
 
       set_block(exit_stub);
-      exit_trace_at_fork(cur_trace_node_->pc);
+      exit_trace_on_exception(cur_trace_node_->pc);
       set_block(current);
     }
 
@@ -550,6 +550,24 @@ namespace rubinius {
       info()->root_info()->exit_cf_phi->addIncoming(exit_cf, current_block());
       b().CreateBr(info()->trace_exit_pad());
 
+    }
+
+    void exit_trace_on_exception(int next_ip){
+			DEBUGLN("Emitting exit from " << cur_trace_node_->pc << " to " << next_ip);
+      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
+      ensure_trace_exit_pad();
+
+      Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
+			Value* exit_pc = int32(next_ip);
+      Value* exit_sp = int32(cur_trace_node_->sp);
+      Value* exit_cf = info()->call_frame();
+
+      info()->root_info()->exit_ip_phi->addIncoming(exit_pc, current_block());
+      info()->root_info()->exit_sp_phi->addIncoming(exit_sp, current_block());
+      info()->root_info()->trace_node_phi->addIncoming(exit_trace_node,current_block());
+      info()->root_info()->exit_cf_phi->addIncoming(exit_cf, current_block());
+
+      b().CreateBr(info()->trace_exit_pad());
     }
 
 		void call_branch_trace(Value* branch_trace, Value* exit_trace_node, Value* exit_cf){
