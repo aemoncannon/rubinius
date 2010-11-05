@@ -13,6 +13,12 @@ class Chimp
   end
 end
 
+class Mollusk
+  def legs
+    1
+  end
+end
+
 
 def foo(target)
   j = 0
@@ -29,6 +35,7 @@ def run()
   j = 0
   j += foo(Cat.new)
   j += foo(Chimp.new)
+  j += foo(Mollusk.new)
   puts "result #{j}"
   j
 end
