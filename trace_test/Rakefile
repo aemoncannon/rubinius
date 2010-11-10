@@ -55,6 +55,9 @@ TESTS = [
          {:name => "loop_with_puts", :comment => "", :iters => 1000, 
            :bench_iters => [1000, 10000]},
 
+         {:name => "loop_with_string_ops", :comment => "", :iters => 1000, 
+           :bench_iters => [1000, 10000]},
+
          {:name => "loop_with_div_by_zero", :comment => "", :iters => 1000, 
            :bench_iters => [1000, 10000]},
 

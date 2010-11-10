@@ -135,7 +135,7 @@ namespace rubinius {
     static const int RETURN_OK = 0;
     static const int RETURN_NESTED_OK = 1;
 
-    static const int MAX_TRACE_LENGTH = 200;
+    static const int MAX_TRACE_LENGTH = 300;
 
     enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
 

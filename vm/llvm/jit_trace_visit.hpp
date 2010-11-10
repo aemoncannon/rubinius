@@ -144,7 +144,7 @@ namespace rubinius {
 			BasicBlock* current = current_block();
 
       set_block(exit_stub);
-      exit_trace_at_unexpected_class(cur_trace_node_->pc, object, klass);
+      exit_trace_at_fork(cur_trace_node_->pc);
 
       set_block(current);
 		}
@@ -257,45 +257,6 @@ namespace rubinius {
       assert(bb);
       b().CreateBr(bb);
       set_block(new_block("continue"));
-    }
-
-    void exit_trace_at_unexpected_class(int next_ip, Value* object, Class* klass){
-			DEBUGLN("Emitting exit from " << cur_trace_node_->pc << " to " << next_ip);
-      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
-      ensure_trace_exit_pad();
-
-      Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
-			Value* exit_pc = int32(next_ip);
-      Value* exit_sp = int32(cur_trace_node_->sp);
-      Value* exit_cf = info()->call_frame();
-
-			for(int i = 0; i < BRANCH_TBL_SIZE; i++){
-				Value* branch_keys_array = get_field(exit_trace_node, offset::trace_node_branch_keys);
-				Value* branch_key_pos = b().CreateConstGEP2_32(branch_keys_array, 0, 0, "branch_key_pos");
-				Value* branch_key = b().CreateLoad(branch_key_pos, "branch_key");
-				check_class(object, branch_key, 
-				Value* branch_found_p = b().CreateICmpEQ(branch_key, constant(0, ls_->ptr_type("Class")), "bailed_p");				
-			}
-
-			Value* branches_array = get_field(exit_trace_node, offset::trace_node_branches);
-			Value* branch_trace_pos = b().CreateConstGEP2_32(branches_array, 0, 0, "branch_trace_pos");
-			Value* branch_trace = b().CreateLoad(branch_trace_pos, "branch_trace");
-
-      Value* branch_found_p = b().CreateICmpNE(branch_trace, constant(0, ls_->ptr_type("Trace")), "bailed_p");
-      BasicBlock* no_branch_b = new_block("no_branch_b");
-      BasicBlock* run_branch_b = new_block("run_branch_b");
-
-      b().CreateCondBr(branch_found_p, run_branch_b, no_branch_b);
-
-      set_block(run_branch_b);
-			call_branch_trace(branch_trace, exit_trace_node, exit_cf);
-
-      set_block(no_branch_b);
-      info()->root_info()->exit_ip_phi->addIncoming(exit_pc, current_block());
-      info()->root_info()->exit_sp_phi->addIncoming(exit_sp, current_block());
-      info()->root_info()->trace_node_phi->addIncoming(exit_trace_node,current_block());
-      info()->root_info()->exit_cf_phi->addIncoming(exit_cf, current_block());
-      b().CreateBr(info()->trace_exit_pad());
     }
 
     void exit_trace_at_fork(int next_ip){
