@@ -144,7 +144,7 @@ namespace rubinius {
 			BasicBlock* current = current_block();
 
       set_block(exit_stub);
-      exit_trace_at_fork(cur_trace_node_->pc);
+      exit_trace_at_unexpected_class(cur_trace_node_->pc, object, klass);
 
       set_block(current);
 		}
@@ -245,6 +245,155 @@ namespace rubinius {
 				info()->trace_run_mode()
       };
       return_value(b().CreateCall(func, bail_call_args, bail_call_args + 5, "call side_exit"));
+    }
+
+    void return_value(Value* ret) {
+      info()->add_return_value(ret, current_block());
+      b().CreateBr(info()->return_pad());
+    }
+
+    void skip_to_anchor() {
+      BasicBlock* bb = block_map_[trace_->anchor->trace_pc].block;
+      assert(bb);
+      b().CreateBr(bb);
+      set_block(new_block("continue"));
+    }
+
+    void exit_trace_at_unexpected_class(int next_ip, Value* object, Class* klass){
+			DEBUGLN("Emitting exit from " << cur_trace_node_->pc << " to " << next_ip);
+      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
+      ensure_trace_exit_pad();
+
+      Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
+			Value* exit_pc = int32(next_ip);
+      Value* exit_sp = int32(cur_trace_node_->sp);
+      Value* exit_cf = info()->call_frame();
+
+			for(int i = 0; i < BRANCH_TBL_SIZE; i++){
+				Value* branch_keys_array = get_field(exit_trace_node, offset::trace_node_branch_keys);
+				Value* branch_key_pos = b().CreateConstGEP2_32(branch_keys_array, 0, 0, "branch_key_pos");
+				Value* branch_key = b().CreateLoad(branch_key_pos, "branch_key");
+				check_class(object, branch_key, 
+				Value* branch_found_p = b().CreateICmpEQ(branch_key, constant(0, ls_->ptr_type("Class")), "bailed_p");				
+			}
+
+			Value* branches_array = get_field(exit_trace_node, offset::trace_node_branches);
+			Value* branch_trace_pos = b().CreateConstGEP2_32(branches_array, 0, 0, "branch_trace_pos");
+			Value* branch_trace = b().CreateLoad(branch_trace_pos, "branch_trace");
+
+      Value* branch_found_p = b().CreateICmpNE(branch_trace, constant(0, ls_->ptr_type("Trace")), "bailed_p");
+      BasicBlock* no_branch_b = new_block("no_branch_b");
+      BasicBlock* run_branch_b = new_block("run_branch_b");
+
+      b().CreateCondBr(branch_found_p, run_branch_b, no_branch_b);
+
+      set_block(run_branch_b);
+			call_branch_trace(branch_trace, exit_trace_node, exit_cf);
+
+      set_block(no_branch_b);
+      info()->root_info()->exit_ip_phi->addIncoming(exit_pc, current_block());
+      info()->root_info()->exit_sp_phi->addIncoming(exit_sp, current_block());
+      info()->root_info()->trace_node_phi->addIncoming(exit_trace_node,current_block());
+      info()->root_info()->exit_cf_phi->addIncoming(exit_cf, current_block());
+      b().CreateBr(info()->trace_exit_pad());
+    }
+
+    void exit_trace_at_fork(int next_ip){
+			DEBUGLN("Emitting exit from " << cur_trace_node_->pc << " to " << next_ip);
+      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
+      ensure_trace_exit_pad();
+
+      Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
+			Value* exit_pc = int32(next_ip);
+      Value* exit_sp = int32(cur_trace_node_->sp);
+      Value* exit_cf = info()->call_frame();
+
+			Value* branches_array = get_field(exit_trace_node, offset::trace_node_branches);
+			Value* branch_trace_pos = b().CreateConstGEP2_32(branches_array, 0, 0, "branch_trace_pos");
+			Value* branch_trace = b().CreateLoad(branch_trace_pos, "branch_trace");
+
+      Value* branch_found_p = b().CreateICmpNE(branch_trace, constant(0, ls_->ptr_type("Trace")), "bailed_p");
+      BasicBlock* no_branch_b = new_block("no_branch_b");
+      BasicBlock* run_branch_b = new_block("run_branch_b");
+
+      b().CreateCondBr(branch_found_p, run_branch_b, no_branch_b);
+
+      set_block(run_branch_b);
+			call_branch_trace(branch_trace, exit_trace_node, exit_cf);
+
+      set_block(no_branch_b);
+      info()->root_info()->exit_ip_phi->addIncoming(exit_pc, current_block());
+      info()->root_info()->exit_sp_phi->addIncoming(exit_sp, current_block());
+      info()->root_info()->trace_node_phi->addIncoming(exit_trace_node,current_block());
+      info()->root_info()->exit_cf_phi->addIncoming(exit_cf, current_block());
+      b().CreateBr(info()->trace_exit_pad());
+    }
+
+    void exit_trace_on_exception(int next_ip){
+			DEBUGLN("Emitting exit from " << cur_trace_node_->pc << " to " << next_ip);
+      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
+      ensure_trace_exit_pad();
+
+      Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
+			Value* exit_pc = int32(next_ip);
+      Value* exit_sp = int32(cur_trace_node_->sp);
+      Value* exit_cf = info()->call_frame();
+
+      info()->root_info()->exit_ip_phi->addIncoming(exit_pc, current_block());
+      info()->root_info()->exit_sp_phi->addIncoming(exit_sp, current_block());
+      info()->root_info()->trace_node_phi->addIncoming(exit_trace_node,current_block());
+      info()->root_info()->exit_cf_phi->addIncoming(exit_cf, current_block());
+      b().CreateBr(info()->trace_exit_pad());
+    }
+
+		void call_branch_trace(Value* branch_trace, Value* exit_trace_node, Value* exit_cf){
+      Value* executor = load_field(branch_trace, 
+																	 offset::trace_executor, 
+																	 "executor");
+
+      Value* call_args[] = {
+				info()->vm(),
+				exit_cf,
+				branch_trace,
+				info()->trace(),
+				exit_trace_node,
+				int32(Trace::RUN_MODE_NORM)
+      };
+      Value* ret = b().CreateCall(executor, call_args, call_args + 6, "call_branch_trace");
+
+      // Did the branch-trace bail? Parent trace should collapse, too.
+      Value* bailed_p = b().CreateICmpEQ(ret, int32(Trace::RETURN_SIDE_EXITED), 
+																				 "bailed_p");
+
+      BasicBlock* cont = new_block("continue");
+      BasicBlock* collapse_b = new_block("collapse_b");
+      b().CreateCondBr(bailed_p, collapse_b, cont);
+
+      set_block(collapse_b);
+      return_value(ret);
+      set_block(cont);
+
+      if(!(trace_->is_branch())){
+				// If we got to here, that means that a branch of this trace was
+				// run successfully, which by definition must have looped
+				// back to the anchor.
+				TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
+				skip_to_anchor();
+      }
+      else{
+				// If we got to here, that means that a branch trace called
+				// from a branch trace was run successfully. 
+				// We return immediately, which hands control back up to the 
+				// parent trace, which will (per above) jump to the anchor
+				TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
+				return_value(int32(Trace::RETURN_OK));
+      }
+
+		}
+
+    void flush_call_frame(Value* cf, Value* pc, Value* sp){
+			store_field(cf, offset::cf_ip, pc);
+			store_field(cf, offset::cf_sp, sp);
     }
 
 
@@ -506,118 +655,6 @@ namespace rubinius {
       Value* call_frame = info()->call_frame();
       Value* pos = b().CreateConstGEP2_32(call_frame, 0, offset::cf_ip, "ip_pos");
       b().CreateStore(ConstantInt::get(ls_->Int32Ty, ip), pos);
-    }
-
-    void return_value(Value* ret) {
-      info()->add_return_value(ret, current_block());
-      b().CreateBr(info()->return_pad());
-    }
-
-    void skip_to_anchor() {
-      BasicBlock* bb = block_map_[trace_->anchor->trace_pc].block;
-      assert(bb);
-      b().CreateBr(bb);
-      set_block(new_block("continue"));
-    }
-
-    void exit_trace_at_fork(int next_ip){
-			DEBUGLN("Emitting exit from " << cur_trace_node_->pc << " to " << next_ip);
-      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
-      ensure_trace_exit_pad();
-
-      Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
-			Value* exit_pc = int32(next_ip);
-      Value* exit_sp = int32(cur_trace_node_->sp);
-      Value* exit_cf = info()->call_frame();
-
-			Value* branches_array = get_field(exit_trace_node, offset::trace_node_branches);
-			Value* branch_trace_pos = b().CreateConstGEP2_32(branches_array, 0, 0, "branch_trace_pos");
-			Value* branch_trace = b().CreateLoad(branch_trace_pos, "branch_trace");
-
-      Value* branch_found_p = b().CreateICmpNE(branch_trace, constant(0, ls_->ptr_type("Trace")), "bailed_p");
-      BasicBlock* no_branch_b = new_block("no_branch_b");
-      BasicBlock* run_branch_b = new_block("run_branch_b");
-
-      b().CreateCondBr(branch_found_p, run_branch_b, no_branch_b);
-
-      set_block(run_branch_b);
-			call_branch_trace(branch_trace, exit_trace_node, exit_cf);
-
-      set_block(no_branch_b);
-      info()->root_info()->exit_ip_phi->addIncoming(exit_pc, current_block());
-      info()->root_info()->exit_sp_phi->addIncoming(exit_sp, current_block());
-      info()->root_info()->trace_node_phi->addIncoming(exit_trace_node,current_block());
-      info()->root_info()->exit_cf_phi->addIncoming(exit_cf, current_block());
-      b().CreateBr(info()->trace_exit_pad());
-
-    }
-
-    void exit_trace_on_exception(int next_ip){
-			DEBUGLN("Emitting exit from " << cur_trace_node_->pc << " to " << next_ip);
-      TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
-      ensure_trace_exit_pad();
-
-      Value* exit_trace_node = constant(cur_trace_node_, ls_->ptr_type("TraceNode"));
-			Value* exit_pc = int32(next_ip);
-      Value* exit_sp = int32(cur_trace_node_->sp);
-      Value* exit_cf = info()->call_frame();
-
-      info()->root_info()->exit_ip_phi->addIncoming(exit_pc, current_block());
-      info()->root_info()->exit_sp_phi->addIncoming(exit_sp, current_block());
-      info()->root_info()->trace_node_phi->addIncoming(exit_trace_node,current_block());
-      info()->root_info()->exit_cf_phi->addIncoming(exit_cf, current_block());
-
-      b().CreateBr(info()->trace_exit_pad());
-    }
-
-		void call_branch_trace(Value* branch_trace, Value* exit_trace_node, Value* exit_cf){
-      Value* executor = load_field(branch_trace, 
-																	 offset::trace_executor, 
-																	 "executor");
-
-      Value* call_args[] = {
-				info()->vm(),
-				exit_cf,
-				branch_trace,
-				info()->trace(),
-				exit_trace_node,
-				int32(Trace::RUN_MODE_NORM)
-      };
-      Value* ret = b().CreateCall(executor, call_args, call_args + 6, "call_branch_trace");
-
-      // Did the branch-trace bail? Parent trace should collapse, too.
-      Value* bailed_p = b().CreateICmpEQ(ret, int32(Trace::RETURN_SIDE_EXITED), 
-																				 "bailed_p");
-
-      BasicBlock* cont = new_block("continue");
-      BasicBlock* collapse_b = new_block("collapse_b");
-      b().CreateCondBr(bailed_p, collapse_b, cont);
-
-      set_block(collapse_b);
-      return_value(ret);
-      set_block(cont);
-
-      if(!(trace_->is_branch())){
-				// If we got to here, that means that a branch of this trace was
-				// run successfully, which by definition must have looped
-				// back to the anchor.
-				TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
-				skip_to_anchor();
-      }
-      else{
-				// If we got to here, that means that a branch trace called
-				// from a branch trace was run successfully. 
-				// We return immediately, which hands control back up to the 
-				// parent trace, which will (per above) jump to the anchor
-				TRACK_TIME_ON_TRACE(ON_TRACE_TIMER);
-				return_value(int32(Trace::RETURN_OK));
-      }
-
-		}
-
-    void flush_call_frame(Value* cf, Value* pc, Value* sp){
-			store_field(cf, offset::cf_ip, pc);
-			store_field(cf, offset::cf_sp, sp);
     }
 
     void visit_push_has_block() {
