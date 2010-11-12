@@ -191,7 +191,7 @@ namespace rubinius {
   Trace::Status Trace::add(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr){
 
     if(pc == anchor->pc && call_frame->cm == anchor->cm && 
-       head->op == InstructionSequence::insn_goto){
+			 head->op == InstructionSequence::insn_goto){
       head->next = anchor;
       head = anchor;
       return TRACE_FINISHED;
