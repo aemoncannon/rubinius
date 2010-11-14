@@ -5,7 +5,6 @@
 #include "llvm/jit.hpp"
 #include "call_frame.hpp"
 #include "trace.hpp"
-#include "trace_info.hpp"
 #include "builtin/object.hpp"
 #include "builtin/symbol.hpp"
 #include "builtin/system.hpp"
@@ -1012,7 +1011,7 @@ extern "C" {
 		// Maybe start recording a branch trace...
 		if(th->raise_reason() == cNone && exit_node->bump_exit_hotness()){
 			DEBUGLN("Exit node at " << exit_node->pc << " got hot! Recording branch...");
-			state->recording_trace = exit_trace->create_branch_at(exit_node);
+			state->trace_monitor()->recording_trace = exit_trace->create_branch_at(exit_node);
 			exit_node->clear_hotness();
 		}
 

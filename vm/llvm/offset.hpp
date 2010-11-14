@@ -12,10 +12,6 @@ namespace offset {
   const static int trace_executor = 0;
   const static int trace_expected_exit_ip = 1;
 
-  const static int trace_info_previous = 0;
-  const static int trace_info_exit_trace = 1;
-  const static int trace_info_exit_trace_node = 2;
-
   const static int unwind_info_target_ip = 0;
   const static int unwind_info_stack_depth = 1;
   const static int unwind_info_type = 2;

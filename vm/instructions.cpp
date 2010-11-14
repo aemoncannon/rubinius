@@ -22,7 +22,6 @@
 
 #include "utilities.hpp"
 #include "call_frame.hpp"
-#include "trace_info.hpp"
 
 
 #include "objectmemory.hpp"
@@ -72,8 +71,6 @@ extern "C" {
 #define FLUSH_UNWINDS() call_frame->set_current_unwind(current_unwind);	\
 	call_frame->set_unwinds(unwinds);
 
-#define CANCEL_TRACE_RECORDING()  delete state->recording_trace;	\
-	state->recording_trace = NULL;
 
 #define HANDLE_EXCEPTION(val) if(val == NULL) goto exception
 #define RUN_EXCEPTION() goto exception
@@ -124,12 +121,13 @@ Object* VMMethod::resumable_interpreter(STATE,
 
   TRACK_TIME(INTERP_TIMER);
 
+	TraceMonitor* tm = state->trace_monitor();
   InterpreterState is;
   Object** stack_ptr;
 
-	opcode op;
-  int cur_ip;
-  int sp;
+	// opcode op;
+  // int cur_ip;
+  // int sp;
 
 #ifdef X86_ESI_SPEEDUP
   register void** ip_ptr asm ("esi") = vmm->addresses;
@@ -174,157 +172,13 @@ Object* VMMethod::resumable_interpreter(STATE,
   }
 
 
-  goto continue_to_run;
-
- run_trace:
-  {
-    TRACK_TIME(TRACE_SETUP_TIMER);
-    Trace* trace = vmm->traces[cur_ip];
-    assert(trace);
-    DEBUGLN("\nRunning trace at " << cur_ip);
-    TRACK_TIME(ON_TRACE_TIMER);
-    assert(trace->executor);
-		FLUSH_UNWINDS();
-    int result = trace->executor(
-			state, call_frame, trace, NULL, NULL, Trace::RUN_MODE_NORM); 
-
-    TRACK_TIME(TRACE_SETUP_TIMER);
-
-		DEBUGLN("Run finished.");
-		DEBUGLN("Resuming at: " << call_frame->ip());
-		IF_DEBUG(call_frame->dump());
-
-    ip_ptr = vmm->addresses + call_frame->ip(); 
-    stack_ptr = call_frame->stk + call_frame->sp();
-		current_unwind = call_frame->current_unwind();
-
-		if(result == Trace::RETURN_SIDE_EXITED){
-			ThreadState* th = state->thread_state();
-			if(th->raise_reason() != cNone){
-				DEBUGLN("Trace raised something, handling."); 
-				RUN_EXCEPTION();
-			}
-		}
-    TRACK_TIME(INTERP_TIMER);
-
-    goto continue_to_run; 
-  }
-
- record_op:
-  {
-    TRACK_TIME(TRACE_SETUP_TIMER);
-    sp = stack_ptr - call_frame->stk;
-    Trace::Status s = state->recording_trace->add(op, cur_ip, sp, ip_ptr, state, vmm, call_frame, stack_ptr); 
-    if(s == Trace::TRACE_FINISHED){
-      DEBUGLN("Trace Recorded.\n--------------------------\n"); 
-      IF_DEBUG(state->recording_trace->pretty_print(state, std::cout));
-      TRACK_TIME(TRACE_COMPILER_TIMER);
-      state->recording_trace->compile(state);
-      TRACK_TIME(TRACE_SETUP_TIMER);
-      state->recording_trace->store();
-      IF_DEBUG(state->recording_trace->ultimate_parent()->dump_to_graph(state));
-      state->recording_trace = NULL; 
-    } 
-    else if(s == Trace::TRACE_CANCEL){
-			CANCEL_TRACE_RECORDING();
-    }
-    TRACK_TIME(INTERP_TIMER);
-    goto **ip_ptr++;
-  }
-
- record_nested_trace:
-  {
-    /* Add a virtual op that will cause call of nested trace to be emitted */ 
-    TRACK_TIME(TRACE_SETUP_TIMER);
-    sp = stack_ptr - call_frame->stk;
-
-    Trace* nested_trace = vmm->traces[cur_ip];
-    DEBUGLN("Running nested trace while recording.\n"); 
-    TRACK_TIME(ON_TRACE_TIMER);
-		FLUSH_UNWINDS();
-    int result = nested_trace->executor(state, call_frame, 
-																				nested_trace, NULL, NULL, 
-																				Trace::RUN_MODE_RECORD_NESTED); 
-    TRACK_TIME(TRACE_SETUP_TIMER);
-
-    /* If result is -1, the nested trace must have bailed into */ 
-    /* uncommon interpreter, we consider this recording invalidated.  */ 
-    if(result == Trace::RETURN_SIDE_EXITED){
-      DEBUGLN("Failed to record nested trace, throwing away recording\n"); 
-			CANCEL_TRACE_RECORDING();
-    }
-		else {
-      /* Otherwise, we know that the */ 
-      /* trace exited politely and we've successfully recorded a call to  */ 
-      /* a nested trace. */
-      DEBUGLN("Polite exit, saving nested trace..\n");
-      state->recording_trace->add_nested_trace_call(nested_trace, call_frame->ip(),
-																										cur_ip, sp, ip_ptr, state,
-																										vmm, call_frame, stack_ptr);
-    }
-
-    ip_ptr = vmm->addresses + call_frame->ip(); 
-    stack_ptr = call_frame->stk + call_frame->sp();
-		current_unwind = call_frame->current_unwind();
-
-		if(result == Trace::RETURN_SIDE_EXITED){
-			ThreadState* th = state->thread_state();
-			if(th->raise_reason() != cNone){
-				DEBUGLN("Nested trace record raised something, handling."); 
-				RUN_EXCEPTION();
-			}
-		}
-
-    TRACK_TIME(INTERP_TIMER);
-
-    goto continue_to_run; 
-  }
 	
 
  continue_to_run:
   try {
 
 #undef DISPATCH
-    //#define DISPATCH goto **ip_ptr++;
-#define DISPATCH  cur_ip = ip_ptr - vmm->addresses;											\
-    if(state->tracing_enabled) {																				\
-      op = vmm->opcodes[cur_ip];																				\
-      if(state->trace_exec_enabled &&																		\
-				 state->recording_trace == NULL &&															\
-				 vmm->traces[cur_ip] != NULL																	  \
-				 ){																															\
-				/*Not currently recording. Hit an ip with a stored trace...*/		\
-				goto run_trace;																									\
-      }																																	\
-      else if(state->trace_exec_enabled &&															\
-							state->recording_trace != NULL &&													\
-							vmm->traces[cur_ip] != NULL &&														\
-							!(vmm->traces[cur_ip]->parent_of(state->recording_trace))){ \
-				/*Recording. Hit an ip with a stored trace...*/									\
-				goto record_nested_trace;																				\
-      }																																	\
-      else if(state->recording_trace != NULL){													\
-				/* Normal recording...*/																				\
-				goto record_op;																									\
-      }																																	\
-      else if(op == InstructionSequence::insn_goto){										\
-				/* Check for backward gotos, increment corresponding counter.*/	\
-				intptr_t location = (intptr_t)(*(ip_ptr + 1));									\
-				if(location < cur_ip){																					\
-					vmm->trace_counters[location]++;															\
-				}																																\
-      }																																	\
-      else{																															\
-				/* Start recording after threshold is hit..*/										\
-				if(vmm->traces[cur_ip] == NULL &&																\
-					 vmm->trace_counters[cur_ip] > 30){														\
-					DEBUGLN("Start recording trace.\n");													\
-					sp = stack_ptr - call_frame->stk;															\
-					state->recording_trace = new Trace(op, cur_ip, sp, ip_ptr, vmm, call_frame); \
-				}																																\
-      }																																	\
-		}																																		\
-    goto **ip_ptr++;
+#define DISPATCH goto **ip_ptr++;
 
 #undef next_int
 #define next_int ((opcode)(*ip_ptr++))
@@ -357,10 +211,9 @@ Object* VMMethod::resumable_interpreter(STATE,
   // If control finds it's way down here, there is an exception.
  exception:
 
-	if(state->tracing_enabled &&
-		 state->recording_trace != NULL){
+	if(state->tracing_enabled && tm->recording_trace != NULL){
 		DEBUGLN("Canceling record due to exception.");
-		CANCEL_TRACE_RECORDING();
+		tm->cancel_trace_recording();
 	}
 
   ThreadState* th = state->thread_state();

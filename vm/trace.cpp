@@ -6,7 +6,6 @@
 #include "builtin/symbol.hpp"
 #include "vm/builtin/compiledmethod.hpp"
 #include "trace.hpp"
-#include "trace_info.hpp"
 #include "utilities.hpp"
 
 #include <iostream>

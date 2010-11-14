@@ -97,7 +97,6 @@ namespace rubinius {
     llvm::Value* args_;
     llvm::Value* unwinds_;
     llvm::Value* trace_;
-    llvm::Value* trace_info_;
     llvm::Value* block_env_;
     llvm::Value* top_scope_;
     llvm::Value* variables_;
@@ -181,14 +180,6 @@ namespace rubinius {
 
     llvm::Value* args() {
       return args_;
-    }
-
-    void set_trace_info(llvm::Value* trace_info) {
-      trace_info_ = trace_info;
-    }
-
-    llvm::Value* trace_info() {
-      return trace_info_;
     }
 
     void set_trace(llvm::Value* trace) {
