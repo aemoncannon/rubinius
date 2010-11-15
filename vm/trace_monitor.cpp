@@ -21,20 +21,10 @@
 namespace rubinius {
 
 
-  TraceMonitor::TraceMonitor(VM* state)
-    : 
-		state(state),
-    recording_trace(NULL)
-	{}
-
-
-	void TraceMonitor::cancel_trace_recording(){
-		delete recording_trace; 
-		recording_trace = NULL;
-	}
-
-
-	Trace::Status TraceMonitor::record_op(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr){
+	Trace::Status TraceMonitorBase::record_op(opcode op, int pc, int sp, 
+																				void** const ip_ptr, STATE, 
+																				VMMethod* const vmm, CallFrame* const call_frame, 
+																				Object** stack_ptr){
 		assert(recording_trace);
 		Trace::Status s = recording_trace->add(op, pc, sp, ip_ptr, state, vmm, call_frame, stack_ptr);
     if(s == Trace::TRACE_FINISHED){
@@ -53,7 +43,30 @@ namespace rubinius {
 		return s;
 	}
 
-	int TraceMonitor::record_nested_trace(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr){
+	void TraceMonitorBase::cancel_trace_recording(){
+		delete recording_trace;
+		recording_trace = NULL;
+	}
+
+  TraceMonitorBase::TraceMonitorBase(VM* state)
+    : 
+		state(state),
+    recording_trace(NULL)
+	{}
+
+  TraceMonitor::TraceMonitor(VM* state)
+		: TraceMonitorBase(state)
+	{}
+
+
+
+
+	void TraceMonitor::start_recording(){
+		DEBUGLN("Initing new trace!");
+	}
+
+
+	int TraceMonitor::start_recording_nested_trace(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr){
 		assert(recording_trace);
     Trace* nested_trace = vmm->traces[pc];
     DEBUGLN("Running nested trace while recording.\n"); 

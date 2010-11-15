@@ -179,6 +179,7 @@ section "Flow control"
 #   * goto_if_false
 
 instruction goto(location) [ -- ] => branch
+  COUNT_BACK_JUMP();
   call_frame->set_ip(location);
   cache_ip(location);
   DISPATCH;

@@ -84,6 +84,10 @@ namespace rubinius {
 
     Symbol* name_;
 
+    static void** record_instructions;
+    void** record_addresses;
+
+
   public: // Methods
     static void init(STATE);
 
@@ -132,6 +136,15 @@ namespace rubinius {
         // fall through
       case 1:
         addresses[index + 1] = reinterpret_cast<void*>(opcodes[index + 1]);
+      }
+
+      record_addresses[index] = record_instructions[opcodes[index] & cBreakpointMask];
+      switch(operands) {
+      case 2:
+        record_addresses[index + 2] = reinterpret_cast<void*>(opcodes[index + 2]);
+        // fall through
+      case 1:
+        record_addresses[index + 1] = reinterpret_cast<void*>(opcodes[index + 1]);
       }
     }
 

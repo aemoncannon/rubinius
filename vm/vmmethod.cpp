@@ -46,6 +46,7 @@ namespace rubinius {
   static InterpreterRunner dynamic_interpreter = 0;
 
   void** VMMethod::instructions = 0;
+  void** VMMethod::record_instructions = 0;
 
   void VMMethod::init(STATE) {
     // Seed the instructions table
@@ -99,6 +100,7 @@ namespace rubinius {
 
     opcodes = new opcode[total];
     addresses = new void*[total];
+    record_addresses = new void*[total];
     trace_counters = new size_t[total];
     for(size_t index = 0; index < total; index++) {
 		trace_counters[index] = 0;
@@ -138,6 +140,7 @@ namespace rubinius {
   VMMethod::~VMMethod() {
     delete[] opcodes;
     delete[] addresses;
+    delete[] record_addresses;
 
     if(caches) {
       delete[] caches;
@@ -161,6 +164,7 @@ namespace rubinius {
     return sizeof(VMMethod) +
       (total * sizeof(opcode)) + // opcodes
       (total * sizeof(void*)) + // addresses
+      (total * sizeof(void*)) + // record_addresses
       (number_of_caches_ * sizeof(InlineCache)); // caches
   }
 

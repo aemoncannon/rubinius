@@ -113,9 +113,11 @@ Object* VMMethod::resumable_interpreter(STATE,
 {
 
 #include "vm/gen/instruction_locations.hpp"
+#include "vm/gen/instruction_record_locations.hpp"
 
   if(unlikely(state == 0)) {
     VMMethod::instructions = const_cast<void**>(insn_locations);
+    VMMethod::record_instructions = const_cast<void**>(insn_record_locations);
     return NULL;
   }
 
@@ -124,15 +126,17 @@ Object* VMMethod::resumable_interpreter(STATE,
 	TraceMonitor* tm = state->trace_monitor();
   InterpreterState is;
   Object** stack_ptr;
+	void** addresses = tm->is_recording() ? 
+		vmm->record_addresses : vmm->addresses;
 
 	// opcode op;
   // int cur_ip;
   // int sp;
 
 #ifdef X86_ESI_SPEEDUP
-  register void** ip_ptr asm ("esi") = vmm->addresses;
+  register void** ip_ptr asm ("esi") = addresses;
 #else
-  register void** ip_ptr = vmm->addresses;
+  register void** ip_ptr = addresses;
 #endif
 
 	int current_unwind = 0;
@@ -143,7 +147,7 @@ Object* VMMethod::resumable_interpreter(STATE,
   if(synthetic){
     DEBUGLN("\nResuming at " << call_frame->ip());
 		IF_DEBUG(call_frame->dump());
-    ip_ptr = vmm->addresses + call_frame->ip();
+    ip_ptr = addresses + call_frame->ip();
     stack_ptr = call_frame->stk + call_frame->sp();
 		unwinds = call_frame->unwinds();
 		current_unwind = call_frame->current_unwind();
@@ -177,16 +181,26 @@ Object* VMMethod::resumable_interpreter(STATE,
  continue_to_run:
   try {
 
+
+#define COUNT_BACK_JUMP() if(location < (ip_ptr - addresses)){	\
+			int counter = ++(vmm->trace_counters[location]);						\
+			if(counter > Trace::RECORD_THRESHOLD){											\
+				tm->start_recording();																		\
+				vmm->trace_counters[location] = 0;												\
+			}																														\
+		}
+
 #undef DISPATCH
 #define DISPATCH goto **ip_ptr++;
 
 #undef next_int
 #define next_int ((opcode)(*ip_ptr++))
 
-#define cache_ip(which) ip_ptr = vmm->addresses + which
+#define cache_ip(which) ip_ptr = addresses + which
 #define flush_ip() call_frame->calculate_ip(ip_ptr)
 
 #include "vm/gen/instruction_implementations.hpp"
+#include "vm/gen/instruction_record_impl.hpp"
 
   } catch(TypeError& e) {
     flush_ip();
@@ -392,6 +406,9 @@ Object* VMMethod::debugger_interpreter(STATE,
 #undef next_int
 #undef cache_ip
 #undef flush_ip
+
+#undef COUNT_BACK_JUMP
+#define COUNT_BACK_JUMP()
 
 #define next_int ((opcode)(stream[call_frame->inc_ip()]))
 #define cache_ip(which)

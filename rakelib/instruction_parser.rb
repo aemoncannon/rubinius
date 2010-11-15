@@ -368,7 +368,16 @@ EOM
     def opcode_location
     end
 
+    def opcode_record_location
+    end
+
     def opcode_implementation(file)
+    end
+
+    def opcode_record_implementation(file)
+    end
+
+    def opcode_trace_monitor_record_op(file)
     end
 
     def opcode_enum
@@ -417,8 +426,8 @@ EOM
 
   class Instruction < Definition
     attr_reader :name, :bytecode, :arguments, :consumed, :extra,
-                :produced, :produced_extra, :effect, :body, :control_flow,
-                :produced_times
+    :produced, :produced_extra, :effect, :body, :control_flow,
+    :produced_times
 
     def self.bytecodes
       @bytecodes
@@ -555,6 +564,10 @@ EOM
       "op_impl_#{@name}"
     end
 
+    def opcode_record_location
+      "op_record_impl_#{@name}"
+    end
+
     def opcode_implementation(file)
       file.puts "  #{opcode_location}: {"
 
@@ -565,6 +578,50 @@ EOM
       @body.each do |line|
         file.puts "  #{line}".rstrip
       end
+    end
+
+    def opcode_record_implementation(file)
+      file.puts "  #{opcode_record_location}: {"
+
+      @arguments.each do |arg|
+        file.puts "    intptr_t #{arg} = next_int;"
+      end
+
+      record_args = (["InstructionSequence::insn_#{@name}",
+                      "(ip_ptr - vmm->addresses)",
+                      "(stack_ptr - call_frame->stk)",
+                      "ip_ptr",
+                      "state",
+                      "vmm",
+                      "call_frame",
+                      "stack_ptr"
+                     ] + @arguments).join(", ")
+
+      file.puts "    tm->record_#{name}(#{record_args});"
+
+      @body.each do |line|
+        file.puts "  #{line}".rstrip
+      end
+    end
+
+    def opcode_trace_monitor_record_op(file)
+      params = ([
+                 "opcode op", 
+                 "int pc", 
+                 "int sp", 
+                 "void** const ip_ptr", 
+                 "STATE", 
+                 "VMMethod* const vmm", 
+                 "CallFrame* const call_frame", 
+                 "Object** stack_ptr"
+                ] + @arguments.collect{ |ea| "intptr_t"}
+                ).join(", ")
+
+      args = ["op","pc","sp","ip_ptr","state","vmm","call_frame","stack_ptr"].join(",")
+
+      file.puts "virtual void record_#{name}(#{params}){"
+      file.puts "    record_op(#{args});"
+      file.puts "}"
     end
 
     def opcode_visitor
@@ -729,7 +786,7 @@ EOM
           # Transform PCs for trace..
           file.puts "this->trace_pc = pc_base + this->pc;"
           if obj.control_flow == :branch or obj.control_flow == :handler
-             file.puts "this->arg1 += pc_base;"
+            file.puts "this->arg1 += pc_base;"
           end
 
           file.puts "break;"
@@ -785,6 +842,21 @@ EOM
     end
   end
 
+  def generate_record_locations(filename)
+    File.open filename, "w" do |file|
+      file.puts "  static const void* insn_record_locations[] = {"
+
+      objects.each do |obj|
+        if location = obj.opcode_record_location
+          file.puts "    &&#{location},"
+        end
+      end
+
+      file.puts "    NULL"
+      file.puts "  };"
+    end
+  end
+
   def generate_implementations(filename)
     File.open filename, "w" do |file|
       file.puts "  DISPATCH;"
@@ -794,6 +866,27 @@ EOM
           file.puts "    DISPATCH;"
           file.puts "  }"
         end
+      end
+    end
+  end
+
+  def generate_record_implementations(filename)
+    File.open filename, "w" do |file|
+      file.puts "  DISPATCH;"
+
+      objects.each do |obj|
+        if obj.opcode_record_implementation(file)
+          file.puts "    DISPATCH;"
+          file.puts "  }"
+        end
+      end
+    end
+  end
+
+  def generate_trace_monitor_record_ops(filename)
+    File.open filename, "w" do |file|
+      objects.each do |obj|
+        obj.opcode_trace_monitor_record_op(file)
       end
     end
   end

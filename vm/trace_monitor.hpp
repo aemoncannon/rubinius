@@ -27,19 +27,45 @@ namespace rubinius {
 
   typedef uintptr_t opcode;
 
-  class TraceMonitor {
-  public:
-    VM* state;
-    Trace* recording_trace;
+  class TraceMonitorBase  {
+	public:
 
-    TraceMonitor(VM* state);
+		VM* state;
+		Trace* recording_trace;
+
+		TraceMonitorBase(VM* state);
+
+		Trace::Status record_op(opcode op, int pc, int sp, 
+														void** const ip_ptr, STATE, VMMethod* const vmm, 
+														CallFrame* const call_frame, Object** stack_ptr);
+
+#include "vm/gen/trace_monitor_record_ops.hpp"
 
 		void cancel_trace_recording();
-		Trace::Status record_op(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr);
-		int record_nested_trace(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr);
-		int run_trace(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr);
 
-  };
+	};
+
+	class TraceMonitor : public TraceMonitorBase{
+	public:
+
+		TraceMonitor(VM* state);
+
+		void start_recording();
+
+		bool is_recording() { 
+			return this->recording_trace != NULL;
+		}
+
+		int start_recording_nested_trace(opcode op, int pc, int sp, 
+																		 void** const ip_ptr, STATE, 
+																		 VMMethod* const vmm, CallFrame* const call_frame, 
+																		 Object** stack_ptr);
+		int run_trace(opcode op, int pc, int sp, 
+									void** const ip_ptr, STATE, VMMethod* const vmm, 
+									CallFrame* const call_frame, Object** stack_ptr);
+
+
+	};
 
 
 }
