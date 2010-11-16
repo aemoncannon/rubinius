@@ -181,14 +181,19 @@ Object* VMMethod::resumable_interpreter(STATE,
  continue_to_run:
   try {
 
-
-#define COUNT_BACK_JUMP() if(location < (ip_ptr - addresses)){	\
-			int counter = ++(vmm->trace_counters[location]);						\
-			if(counter > Trace::RECORD_THRESHOLD){											\
-				tm->start_recording();																		\
-				vmm->trace_counters[location] = 0;												\
-			}																														\
+#define COUNT_BACK_JUMP() if(location < (ip_ptr - addresses)){			\
+			int counter = ++(vmm->trace_counters[location]);							\
+			if(counter > Trace::RECORD_THRESHOLD){												\
+				tm->start_recording();																			\
+				vmm->trace_counters[location] = 0;													\
+				addresses = vmm->record_addresses;													\
+				ip_ptr = (ip_ptr - vmm->addresses) + vmm->record_addresses; \
+			}																															\
 		}
+
+#define CANCEL_RECORDING() tm->cancel_trace_recording();				\
+		addresses = vmm->addresses;																	\
+		ip_ptr = (ip_ptr - vmm->record_addresses) + vmm->addresses; 
 
 #undef DISPATCH
 #define DISPATCH goto **ip_ptr++;
@@ -225,9 +230,9 @@ Object* VMMethod::resumable_interpreter(STATE,
   // If control finds it's way down here, there is an exception.
  exception:
 
-	if(state->tracing_enabled && tm->recording_trace != NULL){
+	if(state->tracing_enabled && tm->is_recording()){
 		DEBUGLN("Canceling record due to exception.");
-		tm->cancel_trace_recording();
+		CANCEL_RECORDING();
 	}
 
   ThreadState* th = state->thread_state();

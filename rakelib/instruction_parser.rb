@@ -377,9 +377,6 @@ EOM
     def opcode_record_implementation(file)
     end
 
-    def opcode_trace_monitor_record_op(file)
-    end
-
     def opcode_enum
     end
 
@@ -595,33 +592,15 @@ EOM
                       "vmm",
                       "call_frame",
                       "stack_ptr"
-                     ] + @arguments).join(", ")
+                     ]).join(", ")
 
-      file.puts "    tm->record_#{name}(#{record_args});"
+      file.puts "    Trace::Status result = tm->record_op(#{record_args});"
+      file.puts "    if(result == Trace::TRACE_CANCEL || " + 
+        "result == Trace::TRACE_FINISHED) CANCEL_RECORDING();"
 
       @body.each do |line|
         file.puts "  #{line}".rstrip
       end
-    end
-
-    def opcode_trace_monitor_record_op(file)
-      params = ([
-                 "opcode op", 
-                 "int pc", 
-                 "int sp", 
-                 "void** const ip_ptr", 
-                 "STATE", 
-                 "VMMethod* const vmm", 
-                 "CallFrame* const call_frame", 
-                 "Object** stack_ptr"
-                ] + @arguments.collect{ |ea| "intptr_t"}
-                ).join(", ")
-
-      args = ["op","pc","sp","ip_ptr","state","vmm","call_frame","stack_ptr"].join(",")
-
-      file.puts "virtual void record_#{name}(#{params}){"
-      file.puts "    record_op(#{args});"
-      file.puts "}"
     end
 
     def opcode_visitor
@@ -879,14 +858,6 @@ EOM
           file.puts "    DISPATCH;"
           file.puts "  }"
         end
-      end
-    end
-  end
-
-  def generate_trace_monitor_record_ops(filename)
-    File.open filename, "w" do |file|
-      objects.each do |obj|
-        obj.opcode_trace_monitor_record_op(file)
       end
     end
   end

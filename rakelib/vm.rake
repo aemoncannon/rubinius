@@ -70,7 +70,6 @@ INSN_GEN    = %w[ vm/gen/instruction_names.cpp
                   vm/gen/instruction_trace_record.hpp
                   vm/gen/instruction_record_locations.hpp
                   vm/gen/instruction_record_impl.hpp
-                  vm/gen/trace_monitor_record_ops.hpp
                 ]
 TYPE_GEN    = %w[ vm/gen/includes.hpp
                   vm/gen/kind_of.hpp

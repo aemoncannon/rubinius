@@ -27,42 +27,46 @@ namespace rubinius {
 
   typedef uintptr_t opcode;
 
-  class TraceMonitorBase  {
+	class TraceMonitor {
 	public:
-
 		VM* state;
-		Trace* recording_trace;
+		Trace* trace;
 
-		TraceMonitorBase(VM* state);
 
-		Trace::Status record_op(opcode op, int pc, int sp, 
-														void** const ip_ptr, STATE, VMMethod* const vmm, 
-														CallFrame* const call_frame, Object** stack_ptr);
+#define	SIMPLE_CANCEL_CHECKS()   if(this->trace == NULL) {		\
+			return Trace::TRACE_CANCEL;																				\
+		}																																		\
+		else if(this->trace->length >= Trace::MAX_TRACE_LENGTH) { \
+			DEBUGLN("Canceling record due to return from home frame.");				\
+			this->cancel_trace_recording();																		\
+			return Trace::TRACE_CANCEL;																				\
+		} 
 
-#include "vm/gen/trace_monitor_record_ops.hpp"
 
-		void cancel_trace_recording();
+#define RECORD_PARAMS opcode op,int pc,int sp,void** const ip_ptr,STATE, \
+			VMMethod* const vmm,CallFrame* const call_frame,Object** stack_ptr
 
-	};
-
-	class TraceMonitor : public TraceMonitorBase{
-	public:
 
 		TraceMonitor(VM* state);
 
+
+		Trace::Status record_op(RECORD_PARAMS);
+
+
+		void cancel_trace_recording();
+
+		void finish_trace();
+
 		void start_recording();
 
+
 		bool is_recording() { 
-			return this->recording_trace != NULL;
+			return this->trace != NULL;
 		}
 
-		int start_recording_nested_trace(opcode op, int pc, int sp, 
-																		 void** const ip_ptr, STATE, 
-																		 VMMethod* const vmm, CallFrame* const call_frame, 
-																		 Object** stack_ptr);
-		int run_trace(opcode op, int pc, int sp, 
-									void** const ip_ptr, STATE, VMMethod* const vmm, 
-									CallFrame* const call_frame, Object** stack_ptr);
+		int start_recording_nested_trace(RECORD_PARAMS);
+
+		int run_trace(RECORD_PARAMS);
 
 
 	};
