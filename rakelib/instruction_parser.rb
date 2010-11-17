@@ -580,12 +580,11 @@ EOM
     def opcode_record_implementation(file)
       file.puts "  #{opcode_record_location}: {"
 
+      file.puts "    TRACE_UPDATE();"
+
       @arguments.each do |arg|
         file.puts "    intptr_t #{arg} = next_int;"
       end
-      
-      file.puts "    TRACE_UPDATE();"
-
       @body.each do |line|
         file.puts "  #{line}".rstrip
       end

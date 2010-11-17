@@ -359,7 +359,7 @@ namespace rubinius {
 		else{
 			DEBUGLN("Storing trace at pc: " << entry->pc); 
 			VMMethod* vmm = entry->cm->backend_method();
-			vmm->traces[entry->pc] = this;
+			vmm->add_trace_at(this, entry->pc);
 		}
   }
 

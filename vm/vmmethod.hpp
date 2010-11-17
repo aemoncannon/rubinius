@@ -148,6 +148,11 @@ namespace rubinius {
       }
     }
 
+		void add_trace_at(Trace* trace, int pc){
+			traces[pc] = trace;
+			addresses[pc] = trace_addresses[pc];
+		}
+
     size_t inline_cache_count() {
       return number_of_caches_;
     }

@@ -62,6 +62,7 @@ namespace rubinius {
     , tracing_enabled(false)
     , trace_exec_enabled(true)
     , recording_trace(NULL)
+    , start_recording_on_next(false)
     , debug_traces(false)
     , thread_state_(this)
     , thread(this, (Thread*)Qnil)

@@ -105,6 +105,7 @@ namespace rubinius {
     bool tracing_enabled;
     bool trace_exec_enabled;
     Trace* recording_trace;
+    bool start_recording_on_next;
 
     bool debug_traces;
 

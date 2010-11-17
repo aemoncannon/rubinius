@@ -1,6 +1,7 @@
 trace_test/trace_graphs
 diags
 !spec/tags
+*.gv
 *.a
 *.bundle
 *.dSYM
