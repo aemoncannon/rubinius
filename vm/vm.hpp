@@ -18,7 +18,6 @@
 
 #include "shared_state.hpp"
 #include "trace.hpp"
-#include "trace_monitor.hpp"
 #include "utilities.hpp"
 
 #include <vector>
@@ -105,6 +104,7 @@ namespace rubinius {
 
     bool tracing_enabled;
     bool trace_exec_enabled;
+    Trace* recording_trace;
 
     bool debug_traces;
 
@@ -117,8 +117,6 @@ namespace rubinius {
     TypedRoot<Fiber*> current_fiber;
 
     int graph_output_counter_;
-
-    TraceMonitor* trace_monitor_;
 
     static int cStackDepthMax;
 
@@ -166,8 +164,8 @@ namespace rubinius {
       return shared.global_cache;
     }
 
-		TraceMonitor* trace_monitor() {
-			return trace_monitor_;
+		bool is_recording() {
+			return recording_trace != NULL;
 		}
 
     void enable_tracing() {

@@ -61,6 +61,7 @@ namespace rubinius {
     , check_local_interrupts(false)
     , tracing_enabled(false)
     , trace_exec_enabled(true)
+    , recording_trace(NULL)
     , debug_traces(false)
     , thread_state_(this)
     , thread(this, (Thread*)Qnil)
@@ -70,7 +71,6 @@ namespace rubinius {
     probe.set(Qnil, &globals().roots);
     set_stack_size(cStackDepthMax);
 		for(int i = 0; i < NUM_TIMERS; i++) trace_timers[i] = 0;
-		trace_monitor_ = new TraceMonitor(this);
   }
 
   void VM::write_trace_graph_output(std::string& str) {

@@ -100,7 +100,7 @@ namespace rubinius {
 
     opcodes = new opcode[total];
     addresses = new void*[total];
-    record_addresses = new void*[total];
+    trace_addresses = new void*[total];
     trace_counters = new size_t[total];
     for(size_t index = 0; index < total; index++) {
 		trace_counters[index] = 0;
@@ -140,7 +140,7 @@ namespace rubinius {
   VMMethod::~VMMethod() {
     delete[] opcodes;
     delete[] addresses;
-    delete[] record_addresses;
+    delete[] trace_addresses;
 
     if(caches) {
       delete[] caches;
@@ -164,7 +164,7 @@ namespace rubinius {
     return sizeof(VMMethod) +
       (total * sizeof(opcode)) + // opcodes
       (total * sizeof(void*)) + // addresses
-      (total * sizeof(void*)) + // record_addresses
+      (total * sizeof(void*)) + // trace_addresses
       (number_of_caches_ * sizeof(InlineCache)); // caches
   }
 

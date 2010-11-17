@@ -583,8 +583,8 @@ EOM
       @arguments.each do |arg|
         file.puts "    intptr_t #{arg} = next_int;"
       end
-
-      file.puts "    goto RECORD_OP;"
+      
+      file.puts "    TRACE_UPDATE();"
 
       @body.each do |line|
         file.puts "  #{line}".rstrip

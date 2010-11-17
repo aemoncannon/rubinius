@@ -1011,7 +1011,7 @@ extern "C" {
 		// Maybe start recording a branch trace...
 		if(th->raise_reason() == cNone && exit_node->bump_exit_hotness()){
 			DEBUGLN("Exit node at " << exit_node->pc << " got hot! Recording branch...");
-			state->trace_monitor()->trace = exit_trace->create_branch_at(exit_node);
+			state->recording_trace = exit_trace->create_branch_at(exit_node);
 			exit_node->clear_hotness();
 		}
 

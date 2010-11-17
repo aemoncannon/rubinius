@@ -189,16 +189,16 @@ namespace rubinius {
 
   Trace::Status Trace::add(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr){
 
-    if(head != NULL &&
-			 anchor != NULL &&
-			 pc == anchor->pc &&
-			 call_frame->cm == anchor->cm &&
+    if(pc == anchor->pc && call_frame->cm == anchor->cm && 
 			 head->op == InstructionSequence::insn_goto){
       head->next = anchor;
       head = anchor;
       return TRACE_FINISHED;
     }
-
+    else if(length >= MAX_TRACE_LENGTH){
+      DEBUGLN("Canceling record due to exceeded max trace length of " << MAX_TRACE_LENGTH);
+      return TRACE_CANCEL;
+    }
     else if(op == InstructionSequence::insn_raise_exc || 
 						op == InstructionSequence::insn_raise_return ||
 						op == InstructionSequence::insn_raise_break ||
@@ -309,22 +309,26 @@ namespace rubinius {
 
       length++;
 
-			if(head == NULL){
+			if(this->is_branch() && head == NULL){
 				head = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
+				head->side_exit_pc = side_exit_pc;
+				head->target_klass = target_klass;
 				entry = head;
+				pc_base_counter = 0;
+				expected_exit_ip = -1;
 				entry_sp = sp;
+				return TRACE_OK;
 			}
 			else{
 				head = new TraceNode(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
+				head->active_send = active_send;
+				head->parent_send = parent_send;
+				head->side_exit_pc = side_exit_pc;
+				head->target_klass = target_klass;
+				head->prev = prev;
+				prev->next = head;
+				return TRACE_OK;
 			}
-
-			head->active_send = active_send;
-			head->parent_send = parent_send;
-			head->side_exit_pc = side_exit_pc;
-			head->target_klass = target_klass;
-			head->prev = prev;
-			if(prev != NULL) prev->next = head;
-			return TRACE_OK;
     }
   }
 
