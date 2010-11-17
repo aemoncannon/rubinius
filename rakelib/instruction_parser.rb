@@ -584,19 +584,7 @@ EOM
         file.puts "    intptr_t #{arg} = next_int;"
       end
 
-      record_args = (["InstructionSequence::insn_#{@name}",
-                      "(ip_ptr - vmm->addresses)",
-                      "(stack_ptr - call_frame->stk)",
-                      "ip_ptr",
-                      "state",
-                      "vmm",
-                      "call_frame",
-                      "stack_ptr"
-                     ]).join(", ")
-
-      file.puts "    Trace::Status result = tm->record_op(#{record_args});"
-      file.puts "    if(result == Trace::TRACE_CANCEL || " + 
-        "result == Trace::TRACE_FINISHED) CANCEL_RECORDING();"
+      file.puts "    goto RECORD_OP;"
 
       @body.each do |line|
         file.puts "  #{line}".rstrip
