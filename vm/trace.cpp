@@ -39,7 +39,7 @@ namespace rubinius {
     traced_yield(false),
     active_send(NULL),
     parent_send(NULL),
-    trace_pc(0),
+    trace_pc(pc + pc_base),
     pc_base(pc_base),
     call_depth(depth),
     jump_taken(false),
@@ -47,7 +47,6 @@ namespace rubinius {
     side_exit_pc(-1)
 
   {
-#include "vm/gen/instruction_trace_record.hpp"
 		for(int i = 0; i < BRANCH_TBL_SIZE; i++) {
 			branches[i] = NULL;
 			branch_keys[i] = NULL;
@@ -189,158 +188,531 @@ namespace rubinius {
 
   Trace::Status Trace::add(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr){
 
-    if(pc == anchor->pc && call_frame->cm == anchor->cm && 
-			 head->op == InstructionSequence::insn_goto){
-      head->next = anchor;
-      head = anchor;
-      return TRACE_FINISHED;
-    }
-    else if(length >= MAX_TRACE_LENGTH){
+    if(length >= MAX_TRACE_LENGTH){
       DEBUGLN("Canceling record due to exceeded max trace length of " << MAX_TRACE_LENGTH);
       return TRACE_CANCEL;
     }
-    else if(op == InstructionSequence::insn_raise_exc || 
-						op == InstructionSequence::insn_raise_return ||
-						op == InstructionSequence::insn_raise_break ||
-						op == InstructionSequence::insn_reraise){
-      DEBUGLN("Canceling record due to exception condition.");
-      return TRACE_CANCEL;
-    }
-    else if(op == InstructionSequence::insn_send_stack_with_splat){
-      DEBUGLN("Canceling record due to splat.");
-      return TRACE_CANCEL;
-    }
-    else if(op == InstructionSequence::insn_ret && call_frame->cm == anchor->cm){
-      DEBUGLN("Canceling record due to return from home frame.");
-      return TRACE_CANCEL;
-    }
-    else{
-      TraceNode* prev = head;
-			TraceNode* active_send = NULL;
-			TraceNode* parent_send = NULL;
-			int pc_base = 0;
-			int call_depth = 0;
-			if(prev){
-				active_send = prev->active_send;
-				parent_send = prev->parent_send;
-				pc_base = prev->pc_base;
-				call_depth = prev->call_depth;
+
+		TraceNode* prev = head;
+		TraceNode* active_send = NULL;
+		TraceNode* parent_send = NULL;
+		int pc_base = 0;
+		int call_depth = 0;
+
+		int side_exit_pc = pc;
+		Class* target_klass = NULL;
+
+		int arg1 = 0;
+		int arg2 = 0;
+		int numargs = 0;
+		bool is_branch = false;
+		bool is_handler = false;
+		bool is_term = false;
+
+		switch(op){
+		case InstructionSequence::insn_push_int: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_push_self: {
+			numargs = 0;
+			break;
+		}
+		case InstructionSequence::insn_set_literal: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_push_literal: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_goto: {
+			is_branch = true;
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			if(arg1 == anchor->pc && call_frame->cm == anchor->cm){
+				is_term = true;
 			}
-      CompiledMethod* cm = call_frame->cm;
-      int side_exit_pc = pc;
-
-			// Remember the target class for sends
-
-			Class* target_klass = NULL;
-			if(op == InstructionSequence::insn_send_stack || 
-				 op == InstructionSequence::insn_send_method || 
-				 op == InstructionSequence::insn_send_stack_with_block){
-
-				int send_args = -1;
-				if(op == InstructionSequence::insn_send_stack) 
-					send_args = (intptr_t)(*(ip_ptr + 2));
-				else if(op == InstructionSequence::insn_send_method) 
-					send_args = 0;
-				else if(op == InstructionSequence::insn_send_stack_with_block) 
-					send_args = (intptr_t)(*(ip_ptr + 2));
-				assert(send_args > -1);
-
-				Object* recv = *(stack_ptr - send_args);
-				assert(recv);
-				target_klass = recv->lookup_begin(state);
-				assert(target_klass);
+			break;
+		}
+		case InstructionSequence::insn_goto_if_false: {
+			is_branch = true;
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_goto_if_true: {
+			is_branch = true;
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_ret: {
+			if(call_frame->cm == anchor->cm){
+				DEBUGLN("Canceling record due to return from home frame.");
+				return TRACE_CANCEL;
 			}
+			numargs = 0;
+			break;
+		}
+		case InstructionSequence::insn_swap_stack: {
+			numargs = 0;
+			break;
+		}
+		case InstructionSequence::insn_dup_top: {
+			numargs = 0;
+			break;
+		}
+		case InstructionSequence::insn_dup_many: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_pop: {
+			numargs = 0;
+			break;
+		}
+		case InstructionSequence::insn_pop_many: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_rotate: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_move_down: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_set_local: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_push_local: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_push_local_depth: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+			break;
+		}
+		case InstructionSequence::insn_set_local_depth: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+			break;
+		}
+		case InstructionSequence::insn_passed_arg: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_setup_unwind: {
+			is_handler = true;
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+			break;
+		}
 
-      if(prev && prev->call_frame && prev->call_frame != call_frame){
-				if(prev->op == InstructionSequence::insn_ret){
-					active_send = prev->parent_send;
-					if(prev->parent_send){
-						parent_send = prev->parent_send->active_send;
-					}
-					if(prev->active_send){
-						pc_base = prev->active_send->pc_base;
-					}
-					else{
-						pc_base_counter += prev->cm->backend_method()->total;
-						pc_base = pc_base_counter;
-					}
-					call_depth -= 1;
+		case InstructionSequence::insn_make_array: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+
+		case InstructionSequence::insn_set_ivar: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_push_ivar: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_push_const: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_set_const: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_set_const_at: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_find_const: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_push_cpath_top: {
+			numargs = 0;
+			break;
+		}
+		case InstructionSequence::insn_push_const_fast: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+			break;
+		}
+		case InstructionSequence::insn_set_call_flags: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_send_method: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+
+			int send_args = 0;
+			Object* recv = *(stack_ptr - send_args);
+			assert(recv);
+			target_klass = recv->lookup_begin(state);
+			assert(target_klass);
+			break;
+		}
+		case InstructionSequence::insn_send_stack: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+
+			int send_args = (intptr_t)(*(ip_ptr + 2));
+			Object* recv = *(stack_ptr - send_args);
+			assert(recv);
+			target_klass = recv->lookup_begin(state);
+			assert(target_klass);
+			break;
+		}
+		case InstructionSequence::insn_send_stack_with_block: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+			
+			int send_args = (intptr_t)(*(ip_ptr + 2));
+			Object* recv = *(stack_ptr - send_args);
+			assert(recv);
+			target_klass = recv->lookup_begin(state);
+			assert(target_klass);
+			break;
+		}
+		case InstructionSequence::insn_send_stack_with_splat: {
+			DEBUGLN("Canceling record due to splat.");
+			return TRACE_CANCEL;
+			// arg1 = (intptr_t)(*(ip_ptr + 1));
+			// arg2 = (intptr_t)(*(ip_ptr + 2));
+			// numargs = 2;
+			break;
+		}
+		case InstructionSequence::insn_send_super_stack_with_block: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+			break;
+		}
+		case InstructionSequence::insn_send_super_stack_with_splat: {
+			DEBUGLN("Canceling record due to splat.");
+			return TRACE_CANCEL;
+			// arg1 = (intptr_t)(*(ip_ptr + 1));
+			// arg2 = (intptr_t)(*(ip_ptr + 2));
+			// numargs = 2;
+			break;
+		}
+		case InstructionSequence::insn_push_block: {
+			numargs = 0;
+			break;
+		}
+		case InstructionSequence::insn_passed_blockarg: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_create_block: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_yield_stack: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_yield_splat: {
+			DEBUGLN("Canceling record due to splat.");
+			return TRACE_CANCEL;
+			// arg1 = (intptr_t)(*(ip_ptr + 1));
+			// numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_string_append: {
+			numargs = 0;
+			break;
+		}
+		case InstructionSequence::insn_string_build: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_check_serial: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+			break;
+		}
+		case InstructionSequence::insn_check_serial_private: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+			break;
+		}
+		case InstructionSequence::insn_push_my_field: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_store_my_field: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+
+		case InstructionSequence::insn_meta_send_op_plus: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_meta_send_op_minus: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_meta_send_op_equal: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_meta_send_op_lt: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_meta_send_op_gt: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_meta_send_op_tequal: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_meta_send_call: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+			break;
+		}
+		case InstructionSequence::insn_push_my_offset: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_zsuper: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_push_stack_local: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_set_stack_local: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			break;
+		}
+		case InstructionSequence::insn_invoke_primitive: {
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+			break;
+		}
+
+		case InstructionSequence::insn_raise_return: 
+		case InstructionSequence::insn_ensure_return: 
+		case InstructionSequence::insn_raise_break: 
+		case InstructionSequence::insn_raise_exc: 
+		case InstructionSequence::insn_reraise: {
+			DEBUGLN("Canceling record due to exception condition.");
+			return TRACE_CANCEL;
+		}
+		case InstructionSequence::insn_noop:{
+			return TRACE_OK;
+		}
+		case InstructionSequence::insn_allow_private:
+		case InstructionSequence::insn_cast_for_single_block_arg:
+		case InstructionSequence::insn_cast_for_multi_block_arg: 
+		case InstructionSequence::insn_cast_for_splat_block_arg:
+		case InstructionSequence::insn_push_current_exception: 
+		case InstructionSequence::insn_clear_exception: 
+		case InstructionSequence::insn_push_exception_state: 
+		case InstructionSequence::insn_restore_exception_state: 
+		case InstructionSequence::insn_push_nil:
+		case InstructionSequence::insn_push_true: 
+		case InstructionSequence::insn_push_false:
+		case InstructionSequence::insn_cast_array:
+		case InstructionSequence::insn_shift_array: 
+		case InstructionSequence::insn_pop_unwind: 
+		case InstructionSequence::insn_string_dup: 
+		case InstructionSequence::insn_push_scope: 
+		case InstructionSequence::insn_add_scope: 
+		case InstructionSequence::insn_push_variables: 
+		case InstructionSequence::insn_check_interrupts: 
+		case InstructionSequence::insn_yield_debugger: 
+		case InstructionSequence::insn_is_nil: 
+		case InstructionSequence::insn_kind_of: 
+		case InstructionSequence::insn_instance_of: 
+		case InstructionSequence::insn_meta_push_neg_1: 
+		case InstructionSequence::insn_meta_push_0: 
+		case InstructionSequence::insn_meta_push_1: 
+		case InstructionSequence::insn_meta_push_2: 
+		case InstructionSequence::insn_push_block_arg:
+		case InstructionSequence::insn_push_undef:
+		case InstructionSequence::insn_push_has_block:
+		case InstructionSequence::insn_push_proc:
+		case InstructionSequence::insn_nested_trace:
+		case InstructionSequence::insn_check_frozen:
+		case InstructionSequence::insn_cast_multi_value: {
+			numargs = 0;
+			break;
+		}
+		}
+
+		// Inherit properties from previous
+		// node.
+		if(prev){
+			active_send = prev->active_send;
+			parent_send = prev->parent_send;
+			pc_base = prev->pc_base;
+			call_depth = prev->call_depth;
+		}
+
+		// If we've entered a new call_frame..
+		if(prev && prev->call_frame && prev->call_frame != call_frame){
+			if(prev->op == InstructionSequence::insn_ret){
+				active_send = prev->parent_send;
+				if(prev->parent_send){
+					parent_send = prev->parent_send->active_send;
 				}
-				else if(prev->op == InstructionSequence::insn_send_stack ||
-								prev->op == InstructionSequence::insn_send_method ||
-								prev->op == InstructionSequence::insn_send_stack_with_block ||
-								prev->op == InstructionSequence::insn_yield_stack){
-
+				if(prev->active_send){
+					pc_base = prev->active_send->pc_base;
+				}
+				else{
 					pc_base_counter += prev->cm->backend_method()->total;
 					pc_base = pc_base_counter;
-
-					if(prev->op == InstructionSequence::insn_yield_stack){
-						prev->traced_yield = true;
-					}
-					else if(prev->op == InstructionSequence::insn_send_stack_with_block){
-						prev->traced_send = true;
-					}
-					else{
-						prev->traced_send = true;
-					}
-					prev->send_cm = cm;
-
-					parent_send = prev->active_send;
-					active_send = prev;
-					call_depth += 1;
 				}
-      }
-      else{ // In the same callframe as last node..
-				if(prev &&
-					 (prev->op == InstructionSequence::insn_goto_if_true ||
-						prev->op == InstructionSequence::insn_goto_if_false)){
+				call_depth -= 1;
+			}
 
-					if(pc == prev->interp_jump_target()){
-						prev->jump_taken = true;
-						prev->side_exit_pc = prev->pc + 2;
-					}
-					else{
-						prev->side_exit_pc = prev->interp_jump_target();
-					}
+			else if(prev->op == InstructionSequence::insn_send_stack ||
+							prev->op == InstructionSequence::insn_send_method ||
+							prev->op == InstructionSequence::insn_send_stack_with_block ||
+							prev->op == InstructionSequence::insn_yield_stack){
 
+				pc_base_counter += prev->cm->backend_method()->total;
+				pc_base = pc_base_counter;
+
+				if(prev->op == InstructionSequence::insn_yield_stack){
+					prev->traced_yield = true;
 				}
-      }
+				else{
+					prev->traced_send = true;
+				}
+				prev->send_cm = call_frame->cm;
 
-
-      length++;
-
-			if(this->is_branch() && head == NULL){
-				head = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
-				head->side_exit_pc = side_exit_pc;
-				head->target_klass = target_klass;
-				entry = head;
-				pc_base_counter = 0;
-				expected_exit_ip = -1;
-				entry_sp = sp;
-				return TRACE_OK;
+				parent_send = prev->active_send;
+				active_send = prev;
+				call_depth += 1;
 			}
-			else{
-				head = new TraceNode(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
-				head->active_send = active_send;
-				head->parent_send = parent_send;
-				head->side_exit_pc = side_exit_pc;
-				head->target_klass = target_klass;
-				head->prev = prev;
-				prev->next = head;
-				return TRACE_OK;
+		}
+
+		else{ // In the same callframe as last node..
+			if(prev && (prev->op == InstructionSequence::insn_goto_if_true ||
+									prev->op == InstructionSequence::insn_goto_if_false)){
+				if(pc == prev->interp_jump_target()){
+					prev->jump_taken = true;
+					prev->side_exit_pc = prev->pc + 2;
+				}
+				else{
+					prev->side_exit_pc = prev->interp_jump_target();
+				}
 			}
-    }
-  }
+		}
+
+		// Make sure jump locations are translated
+		// to trace positions.
+		if(is_branch || is_handler){
+			arg1 += pc_base;
+		}
+
+		head = new TraceNode(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
+		head->active_send = active_send;
+		head->parent_send = parent_send;
+		head->target_klass = target_klass;
+		head->prev = prev;
+		head->arg1 = arg1;
+		head->arg2 = arg2;
+		head->numargs = numargs;
+		head->side_exit_pc = side_exit_pc;
+
+		// Support lazy creation of 
+		// initial node - for branch 
+		// traces.
+		if(prev == NULL){
+			entry = head;
+			entry_sp = sp;
+		}
+		else{
+			prev->next = head;
+		}
+
+		length++;
+
+		if(is_term){
+			head->next = anchor;
+			head = anchor;
+			return TRACE_FINISHED;
+		}
+		else{
+			return TRACE_OK;
+		}
+	}
 
 
-  void Trace::compile(STATE) {
-    LLVMState* ls = LLVMState::get(state);
-    ls->compile_trace(state, this);
-  }
+	void Trace::compile(STATE) {
+		LLVMState* ls = LLVMState::get(state);
+		ls->compile_trace(state, this);
+	}
 
 
-  void Trace::store() {
-    if(is_branch()){
+	void Trace::store() {
+		if(is_branch()){
 			void* key;
 			if(entry->traced_send){
 				key = entry->target_klass;
@@ -355,39 +727,39 @@ namespace rubinius {
 			parent_node->branch_keys[offset] = key;
 			parent_node->branches[offset] = this;
 			parent_node->branch_tbl_offset = (parent_node->branch_tbl_offset + 1) % BRANCH_TBL_SIZE;
-    }
+		}
 		else{
 			DEBUGLN("Storing trace at pc: " << entry->pc); 
 			VMMethod* vmm = entry->cm->backend_method();
 			vmm->add_trace_at(this, entry->pc);
 		}
-  }
+	}
 
-  string Trace::trace_name(){
-    return string("_TRACE_");
-  }
+	string Trace::trace_name(){
+		return string("_TRACE_");
+	}
 
-  void Trace::pretty_print(STATE, std::ostream& out) {
-    out << "[" << "\n";
-    TraceIterator it = iter();
-    while(it.has_next()){
-      TraceNode* node = it.next();
-      for(int i=0; i < node->call_depth + 5;i++) out << "  ";
-      node->pretty_print(state, out);
-      out << "\n";
-    }
-    out << "]" << "\n";
-  }
+	void Trace::pretty_print(STATE, std::ostream& out) {
+		out << "[" << "\n";
+		TraceIterator it = iter();
+		while(it.has_next()){
+			TraceNode* node = it.next();
+			for(int i=0; i < node->call_depth + 5;i++) out << "  ";
+			node->pretty_print(state, out);
+			out << "\n";
+		}
+		out << "]" << "\n";
+	}
 
-  std::string Trace::to_graph_data(STATE) {
-    std::stringstream s;
-    TraceIterator it = iter();
-    while(it.has_next()){
-      TraceNode* node = it.next();
-      s << node->graph_node_name(state);
-      s << " -> ";
-      s << node->next->graph_node_name(state);
-      s << ";\n";
+	std::string Trace::to_graph_data(STATE) {
+		std::stringstream s;
+		TraceIterator it = iter();
+		while(it.has_next()){
+			TraceNode* node = it.next();
+			s << node->graph_node_name(state);
+			s << " -> ";
+			s << node->next->graph_node_name(state);
+			s << ";\n";
 
 			for(int i = 0; i < BRANCH_TBL_SIZE; i++){
 				Trace* t = node->branches[i];
@@ -400,32 +772,32 @@ namespace rubinius {
 				}
 			}
 
-    }
-    std::string result = s.str();
-    return result;
-  }
+		}
+		std::string result = s.str();
+		return result;
+	}
 
-  void Trace::dump_to_graph(STATE) {
-    std::string s = to_graph_data(state);
-    state->write_trace_graph_output(s);
-  }
+	void Trace::dump_to_graph(STATE) {
+		std::string s = to_graph_data(state);
+		state->write_trace_graph_output(s);
+	}
 
 
-  TraceIterator::TraceIterator(Trace* const trace)
-    : trace(trace),
+	TraceIterator::TraceIterator(Trace* const trace)
+		: trace(trace),
       cur(NULL){}
 
-  TraceNode* TraceIterator::next(){
-    if(cur == NULL){
-      cur = trace->entry;
-      return cur;
-    }
-    cur = cur->next;
-    return cur;
-  }
+	TraceNode* TraceIterator::next(){
+		if(cur == NULL){
+			cur = trace->entry;
+			return cur;
+		}
+		cur = cur->next;
+		return cur;
+	}
 
-  bool TraceIterator::has_next(){
-    return cur == NULL || (cur->next != NULL && cur->next != trace->anchor);
-  }
+	bool TraceIterator::has_next(){
+		return cur == NULL || (cur->next != NULL && cur->next != trace->anchor);
+	}
 
 }

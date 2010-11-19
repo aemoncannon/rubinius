@@ -743,7 +743,7 @@ EOM
 
       objects.each do |obj|
         if enum = obj.opcode_enum
-          file.puts "case #{obj.bytecode}:"
+          file.puts "case InstructionSequence::insn_#{obj.name}: {"
           obj.arguments.each_with_index do |arg, i|
             file.puts "this->arg#{i+1} = (intptr_t)(*(ip_ptr + #{i + 1}));"
           end
@@ -756,6 +756,7 @@ EOM
           end
 
           file.puts "break;"
+          file.puts "}"
         end
       end
 
