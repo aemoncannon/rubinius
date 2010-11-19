@@ -50,7 +50,7 @@ TESTS = [
            :bench_iters => [10000, 100000]},
 
          {:name => "loop_with_hash", :comment => "", :iters => 10000, 
-           :bench_iters => [10000, 100000]},
+           :bench_iters => [10000]},
 
          {:name => "loop_with_puts", :comment => "", :iters => 1000, 
            :bench_iters => [1000, 10000]},
