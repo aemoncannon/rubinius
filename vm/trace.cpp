@@ -39,14 +39,18 @@ namespace rubinius {
     traced_yield(false),
     active_send(NULL),
     parent_send(NULL),
-    trace_pc(pc + pc_base),
+    trace_pc(0),
     pc_base(pc_base),
     call_depth(depth),
     jump_taken(false),
     exit_counter(0),
-    side_exit_pc(-1)
+    side_exit_pc(-1),
+		numargs(0),
+		arg1(0),
+		arg2(0)
 
   {
+		trace_pc = pc + pc_base;
 		for(int i = 0; i < BRANCH_TBL_SIZE; i++) {
 			branches[i] = NULL;
 			branch_keys[i] = NULL;
@@ -100,28 +104,15 @@ namespace rubinius {
   }
 
 
-
   // Standard constructor for initializing a new trace
-  Trace::Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame) : 
-    executor(NULL)
-    ,expected_exit_ip(-1)
-    ,anchor(NULL)
-    ,head(NULL) 
-    ,entry(NULL) 
-    ,jitted_bytes(-1) 
-    ,pc_base_counter(0) 
-    ,entry_sp(sp)
-    ,parent(NULL)
-    ,parent_node(NULL)
-    ,is_nested_trace(false)
-    ,is_branch_trace(false)
-    ,length(0)
+  Trace* Trace::newTrace(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr)
   {
-    anchor = new TraceNode(0, 0, op, pc, sp, ip_ptr, vmm, call_frame);
-    head = anchor;
-    entry = anchor;
-    entry_sp = sp;
+		Trace* trace = new Trace();
+		trace->add(op, pc, sp, ip_ptr, state, vmm, call_frame, stack_ptr);
+		trace->anchor = trace->head;
+		return trace;
   }
+
 
   // Simple null constructor used for creating branch
   // and nested traces
@@ -555,9 +546,9 @@ namespace rubinius {
 		}
 
 		case InstructionSequence::insn_raise_return: 
-		case InstructionSequence::insn_ensure_return: 
 		case InstructionSequence::insn_raise_break: 
 		case InstructionSequence::insn_raise_exc: 
+		case InstructionSequence::insn_ensure_return: 
 		case InstructionSequence::insn_reraise: {
 			DEBUGLN("Canceling record due to exception condition.");
 			return TRACE_CANCEL;
@@ -671,7 +662,8 @@ namespace rubinius {
 			arg1 += pc_base;
 		}
 
-		head = new TraceNode(call_depth, pc_base, op, pc, sp, ip_ptr, vmm, call_frame);
+		head = new TraceNode(call_depth, pc_base, op, pc, 
+												 sp, ip_ptr, vmm, call_frame);
 		head->active_send = active_send;
 		head->parent_send = parent_send;
 		head->target_klass = target_klass;

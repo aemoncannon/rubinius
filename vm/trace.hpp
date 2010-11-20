@@ -58,8 +58,6 @@ namespace rubinius {
     bool jump_taken;
     int exit_counter;
     int side_exit_pc;
-
-    int total_size;
     int numargs;
     intptr_t arg1;
     intptr_t arg2;
@@ -144,6 +142,10 @@ namespace rubinius {
 
     Trace();
 
+		// Standard constructor for initializing a new trace
+		static Trace* newTrace(opcode op, int pc, int sp, void** const ip_ptr, 
+													 STATE, VMMethod* const vmm, CallFrame* const call_frame, 
+													 Object** stack_ptr);
 
     Status add(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr);
 

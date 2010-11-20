@@ -329,7 +329,9 @@ Object* VMMethod::resumable_interpreter(STATE,
 		else if(state->start_recording_on_next){														\
 			DEBUGLN("Start recording trace at " << cur_ip);										\
 			sp = stack_ptr - call_frame->stk;																	\
-			state->recording_trace = new Trace(op, cur_ip, sp, ip_ptr - 1, vmm, call_frame); \
+			state->recording_trace = Trace::newTrace(op, cur_ip, sp,					\
+																							 ip_ptr - 1, state, vmm,  \
+																							 call_frame, stack_ptr);	\
 			state->start_recording_on_next = false;														\
 		}																																		\
 	}	
