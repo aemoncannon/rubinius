@@ -88,9 +88,7 @@ namespace rubinius {
       return side_exit_pc;
     }
 
-    void clear_hotness(){
-      exit_counter = 0;
-    }
+    void clear_hotness();
 
     std::string cm_name(STATE);
     std::string op_name();

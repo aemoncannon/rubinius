@@ -81,6 +81,10 @@ namespace rubinius {
     return result;
   }
 
+	void TraceNode::clear_hotness(){
+		exit_counter = -100;
+	}
+
   void TraceNode::pretty_print(STATE, std::ostream& out) {
     if(state != NULL){
       out << cm->name()->c_str(state) << " - " << trace_pc  <<  "(" << pc << ") " << "sp=" << sp << ": ";
@@ -182,7 +186,6 @@ namespace rubinius {
 
     if(length >= MAX_TRACE_LENGTH){
       DEBUGLN("Canceling record due to exceeded max trace length of " << MAX_TRACE_LENGTH);
-			call_frame->print_backtrace(state);
       return TRACE_CANCEL;
     }
 

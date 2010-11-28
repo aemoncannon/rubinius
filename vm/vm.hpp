@@ -87,7 +87,7 @@ namespace rubinius {
 
   public:
 
-		double trace_timers[7];
+		clock_t trace_timers[NUM_TIMERS];
 		clock_t last_trace_clock;
 		int current_trace_timer;
 
@@ -180,8 +180,7 @@ namespace rubinius {
     void start_trace_timer(int timer) {
 			if(tracing_enabled){
 				clock_t end = clock();
-				double ms = ((double) (end - last_trace_clock)) / (CLOCKS_PER_SEC / 1000.0);
-				trace_timers[current_trace_timer] += ms;
+				trace_timers[current_trace_timer] += (end - last_trace_clock);
 				current_trace_timer = timer;
 				last_trace_clock = clock();
 			}

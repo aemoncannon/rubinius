@@ -309,7 +309,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 		}																																		\
 		else if(state->is_recording()){																			\
 			/* Normal recording...*/																					\
-			TRACK_TIME(TRACE_SETUP_TIMER);																		\
+			TRACK_TIME(TRACE_RECORD_TIMER);																		\
 			sp = stack_ptr - call_frame->stk;																	\
 			Trace::Status s = state->recording_trace->add(op, cur_ip, sp, ip_ptr - 1, state, vmm, call_frame, stack_ptr); \
 			if(s == Trace::TRACE_FINISHED){																		\
@@ -317,7 +317,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 				IF_DEBUG(state->recording_trace->pretty_print(state, std::cout)); \
 				TRACK_TIME(TRACE_COMPILER_TIMER);																\
 				state->recording_trace->compile(state);													\
-				TRACK_TIME(TRACE_SETUP_TIMER);																	\
+				TRACK_TIME(TRACE_RECORD_TIMER);																	\
 				state->recording_trace->store();																\
 				if(GRAPH_TRACES){state->recording_trace->ultimate_parent()->dump_to_graph(state);} \
 				STOP_TRACE_RECORDING();																					\

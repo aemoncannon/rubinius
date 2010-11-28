@@ -313,10 +313,6 @@ namespace rubinius {
 
   void VM::collect_maybe(CallFrame* call_frame) {
 
-		// ACK!
-
-		return;
-
     this->set_call_frame(call_frame);
 
     // Don't go any further unless we're allowed to GC.
@@ -427,11 +423,11 @@ namespace rubinius {
 		for(int i = 1; i < NUM_TIMERS; i++) {
 			std::cout << TRACE_TIMER_LABELS[i] << ": " << endl;
 			std::cout << trace_timers[i] / sum * 100.0 << "%";
-			std::cout << " (" << trace_timers[i] << " ms)";
+			std::cout << " (" << trace_timers[i] << " clocks)";
 			std::cout << endl << endl;
 		}
 
-		std::cout << "Total ms with tracing enabled: " << sum << endl;
+		std::cout << "Total clocks with tracing enabled: " << sum << endl;
 	}
 
   void VM::install_waiter(Waiter& waiter) {
