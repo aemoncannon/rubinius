@@ -701,7 +701,7 @@ namespace rubinius {
 
 	void Trace::compile(STATE) {
 		LLVMState* ls = LLVMState::get(state);
-		ls->compile_trace(state, this);
+		ls->compile_soon(state, this);
 	}
 
 

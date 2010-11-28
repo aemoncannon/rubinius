@@ -315,7 +315,11 @@ namespace rubinius {
 
           if(req->is_block()) {
             jit.compile_block(ls_, req->method(), req->vmmethod());
-          } else {
+          } 
+          if(req->is_trace()) {
+						jit.compile_trace(ls_, req->trace());
+					}
+					else {
             jit.compile_method(ls_, req->method(), req->vmmethod());
           }
 
@@ -339,24 +343,31 @@ namespace rubinius {
           jit.show_machine_code();
         }
 
-        req->vmmethod()->set_jitted(jit.llvm_function(),
-                                    jit.code_bytes(),
-                                    func);
+				if(req->is_trace()){
+					DEBUGLN("Finished compiling trace..");
+					req->trace()->set_jitted(jit.code_bytes(), func);
+					req->trace()->store();
+					DEBUGLN("Stored trace.");
+				}
+				else{
+					req->vmmethod()->set_jitted(jit.llvm_function(),
+																			jit.code_bytes(),
+																			func);
+					if(!req->is_block()) {
+						req->method()->execute = reinterpret_cast<executor>(func);
+					}
+					assert(req->method()->jit_data());
 
-        if(!req->is_block()) {
-          req->method()->execute = reinterpret_cast<executor>(func);
-        }
-        assert(req->method()->jit_data());
+					req->method()->jit_data()->run_write_barrier(ls_->write_barrier(), req->method());
 
-        req->method()->jit_data()->run_write_barrier(ls_->write_barrier(), req->method());
-
-        int which = ls_->add_jitted_method();
-        if(ls_->config().jit_show_compiling) {
-          llvm::outs() << "[[[ JIT finished background compiling "
-											 << which
-											 << (req->is_block() ? " (block)" : " (method)")
-											 << " ]]]\n";
-        }
+					int which = ls_->add_jitted_method();
+					if(ls_->config().jit_show_compiling) {
+						llvm::outs() << "[[[ JIT finished background compiling "
+												 << which
+												 << (req->is_block() ? " (block)" : " (method)")
+												 << " ]]]\n";
+					}
+				}
 
         delete req;
 
@@ -590,7 +601,7 @@ namespace rubinius {
     }
 
     BackgroundCompileRequest* req =
-      new BackgroundCompileRequest(state, cm, placement, is_block);
+      new BackgroundCompileRequest(state, cm, placement, NULL, is_block);
 
     queued_methods_++;
 
@@ -604,29 +615,15 @@ namespace rubinius {
     }
   }
 
-  void LLVMState::compile_trace(STATE, Trace* trace) {
+  void LLVMState::compile_soon(STATE, Trace* trace) {
 
-	  jit::Compiler jit;
+		DEBUGLN("Queuing trace for compilation..");
+		
+    BackgroundCompileRequest* req =
+      new BackgroundCompileRequest(state, NULL, NULL, trace, false);
 
-		void* func = 0; 
-		{
-		  jit.compile_trace(this, trace);
-			func = jit.generate_function(this);
-		}
-
-		// We were unable to compile this function, likely
-		// because it's got something we don't support.
-		if(!func) {
-			std::cout << "ACK! failed to compile trace!" << "\n";
-		}
-
-		bool show_machine_code_ = this->jit_dump_code() & cMachineCode;
-		if(show_machine_code_) {
-			jit.show_machine_code();
-		}
-
-		trace->set_jitted(jit.code_bytes(),
-											func);
+    queued_methods_++;
+    background_thread_->add(req);
   }
 
   void LLVMState::remove(llvm::Function* func) {

@@ -636,13 +636,14 @@ namespace rubinius {
     const llvm::Type* type(std::string name);
 
     void compile_soon(STATE, CompiledMethod* cm, BlockEnvironment* block=0);
+    void compile_soon(STATE, Trace* cm);
+
     void remove(llvm::Function* func);
 
     CompiledMethod* find_candidate(CompiledMethod* start, CallFrame* call_frame);
     void compile_callframe(STATE, CompiledMethod* start, CallFrame* call_frame,
                            int primitive = -1);
 
-    void compile_trace(STATE, Trace* trace);
 
     Symbol* symbol(const char* sym);
     const char* symbol_cstr(const Symbol* sym);
@@ -723,12 +724,14 @@ namespace rubinius {
   class BackgroundCompileRequest {
     TypedRoot<CompiledMethod*> method_;
     TypedRoot<Object*> mm_;
+    Trace* trace_;
     bool is_block_;
 
   public:
-    BackgroundCompileRequest(STATE, CompiledMethod* cm, Object* mm, bool is_block=false)
+    BackgroundCompileRequest(STATE, CompiledMethod* cm, Object* mm, Trace* trace, bool is_block=false)
       : method_(state)
       , mm_(state)
+      , trace_(trace)
       , is_block_(is_block)
     {
       method_.set(cm);
@@ -743,12 +746,20 @@ namespace rubinius {
       return method_.get();
     }
 
+    Trace* trace() {
+      return trace_;
+    }
+
     BlockEnvironment* block_env() {
       return try_as<BlockEnvironment>(mm_.get());
     }
 
     bool is_block() {
       return is_block_;
+    }
+
+    bool is_trace() {
+      return trace_ != NULL;
     }
   };
 

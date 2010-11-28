@@ -318,8 +318,6 @@ Object* VMMethod::resumable_interpreter(STATE,
 				TRACK_TIME(TRACE_COMPILER_TIMER);																\
 				state->recording_trace->compile(state);													\
 				TRACK_TIME(TRACE_RECORD_TIMER);																	\
-				state->recording_trace->store();																\
-				if(GRAPH_TRACES){state->recording_trace->ultimate_parent()->dump_to_graph(state);} \
 				STOP_TRACE_RECORDING();																					\
 			}																																	\
 			else if(s == Trace::TRACE_CANCEL){																\
