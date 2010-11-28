@@ -4,6 +4,7 @@
 
 
 #define DUMP_BITCODE false
+#define GRAPH_TRACES false
 #define GDB_BREAK __asm__("int3")
 
 

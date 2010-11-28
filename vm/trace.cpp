@@ -32,6 +32,7 @@ namespace rubinius {
     cm(call_frame->cm),
     send_cm(NULL),
     target_klass(NULL),
+    block_cm(NULL),
     ip_ptr(ip_ptr),
     prev(NULL),
     next(NULL),
@@ -181,6 +182,7 @@ namespace rubinius {
 
     if(length >= MAX_TRACE_LENGTH){
       DEBUGLN("Canceling record due to exceeded max trace length of " << MAX_TRACE_LENGTH);
+			call_frame->print_backtrace(state);
       return TRACE_CANCEL;
     }
 
@@ -192,6 +194,7 @@ namespace rubinius {
 
 		int side_exit_pc = pc;
 		Class* target_klass = NULL;
+		CompiledMethod* block_cm = NULL;
 
 		int arg1 = 0;
 		int arg2 = 0;
@@ -441,7 +444,20 @@ namespace rubinius {
 		case InstructionSequence::insn_yield_stack: {
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			numargs = 1;
-			break;
+
+			Object* t1 = call_frame->scope->block();
+			if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
+				CompiledMethod* cm = env->method();
+				block_cm = cm;
+			}
+			else if(t1->nil_p()) {
+				DEBUGLN("Canceling record due to yield to nil block.");
+				return TRACE_CANCEL;
+			} 
+			else{
+				DEBUGLN("Canceling record due to yield to non-static block.");
+				return TRACE_CANCEL;
+			}
 		}
 		case InstructionSequence::insn_yield_splat: {
 			DEBUGLN("Canceling record due to splat.");
@@ -482,36 +498,18 @@ namespace rubinius {
 			break;
 		}
 
-		case InstructionSequence::insn_meta_send_op_plus: {
-			arg1 = (intptr_t)(*(ip_ptr + 1));
-			numargs = 1;
-			break;
-		}
-		case InstructionSequence::insn_meta_send_op_minus: {
-			arg1 = (intptr_t)(*(ip_ptr + 1));
-			numargs = 1;
-			break;
-		}
-		case InstructionSequence::insn_meta_send_op_equal: {
-			arg1 = (intptr_t)(*(ip_ptr + 1));
-			numargs = 1;
-			break;
-		}
-		case InstructionSequence::insn_meta_send_op_lt: {
-			arg1 = (intptr_t)(*(ip_ptr + 1));
-			numargs = 1;
-			break;
-		}
-		case InstructionSequence::insn_meta_send_op_gt: {
-			arg1 = (intptr_t)(*(ip_ptr + 1));
-			numargs = 1;
-			break;
-		}
+		case InstructionSequence::insn_meta_send_op_plus:
+		case InstructionSequence::insn_meta_send_op_minus:
+		case InstructionSequence::insn_meta_send_op_equal:
+		case InstructionSequence::insn_meta_send_op_lt:
+		case InstructionSequence::insn_meta_send_op_gt:
 		case InstructionSequence::insn_meta_send_op_tequal: {
-			arg1 = (intptr_t)(*(ip_ptr + 1));
-			numargs = 1;
+			// These optimization instructions should not be encountered!
+			// (disabled in compiler)
+			assert(1 == 2);
 			break;
 		}
+
 		case InstructionSequence::insn_meta_send_call: {
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			arg2 = (intptr_t)(*(ip_ptr + 2));
@@ -667,6 +665,7 @@ namespace rubinius {
 		head->active_send = active_send;
 		head->parent_send = parent_send;
 		head->target_klass = target_klass;
+		head->block_cm = block_cm;
 		head->prev = prev;
 		head->arg1 = arg1;
 		head->arg2 = arg2;
@@ -777,7 +776,7 @@ namespace rubinius {
 
 	TraceIterator::TraceIterator(Trace* const trace)
 		: trace(trace),
-      cur(NULL){}
+			cur(NULL){}
 
 	TraceNode* TraceIterator::next(){
 		if(cur == NULL){

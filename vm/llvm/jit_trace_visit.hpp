@@ -149,6 +149,20 @@ namespace rubinius {
       set_block(current);
 		}
 
+		void guard_block_change(Value* object, CompiledMethod* block_cm){
+      BasicBlock* exit_stub = new_block("exit_stub");
+			Value* cm = load_field(object, offset::blockenv_method, "env.method");
+			Value* existing_cm = constant(block_cm, ls_->ptr_type("CompiledMethod"));
+      Value* cmp = b().CreateICmpEQ(cm, existing_cm, "same block");
+			verify_guard(cmp, exit_stub);
+			BasicBlock* current = current_block();
+
+      set_block(exit_stub);
+      exit_trace_at_fork(cur_trace_node_->pc);
+
+      set_block(current);
+		}
+
 
     void ensure_trace_exit_pad(){
       if(!emitted_exit_){
@@ -722,25 +736,28 @@ namespace rubinius {
 
 #include "vm/llvm/jit_trace_yield.hpp"
     void visit_yield_stack(opcode count) {
+
+			set_has_side_effects();
+			Value* vars = vars_;
+			if(JITMethodInfo* home = info()->home_info()) {
+				vars = home->variables();
+			}
+
+			Value* block_obj = b().CreateLoad(
+				b().CreateConstGEP2_32(vars, 0, offset::vars_block),
+				"block");
+
       if(cur_trace_node_->traced_yield){
+				guard_block_change(block_obj, cur_trace_node_->block_cm);
 				emit_traced_yield_stack(count);
       }
       else{
-				set_has_side_effects();
-				Value* vars = vars_;
-				if(JITMethodInfo* home = info()->home_info()) {
-					vars = home->variables();
-				}
 				Signature sig(ls_, ObjType);
 				sig << VMTy;
 				sig << CallFrameTy;
 				sig << "Object";
 				sig << ls_->Int32Ty;
 				sig << ObjArrayTy;
-				Value* block_obj = b().CreateLoad(
-					b().CreateConstGEP2_32(vars, 0, offset::vars_block),
-					"block");
-
 				Value* call_args[] = {
 					vm_,
 					call_frame_,
@@ -769,73 +786,6 @@ namespace rubinius {
       };
       Value* pos = b().CreateGEP(vars_, idx2, idx2+3, "local_pos");
       stack_push(b().CreateLoad(pos, "local"));
-    }
-
-    void visit_meta_send_op_plus(opcode name) {
-      InlineCache* cache = reinterpret_cast<InlineCache*>(name);
-      if(cache->classes_seen() == 0) {
-				set_has_side_effects();
-				Value* recv = stack_back(1);
-				Value* arg =  stack_top();
-
-				BasicBlock* fast = new_block("fast");
-				BasicBlock* dispatch = new_block("dispatch");
-				BasicBlock* tagnow = new_block("tagnow");
-				BasicBlock* cont = new_block("cont");
-
-				check_fixnums(recv, arg, fast, dispatch);
-
-				set_block(dispatch);
-
-				Value* called_value = simple_send(ls_->symbol("+"), 1);
-
-				check_for_exception_then(called_value, cont);
-
-				set_block(fast);
-
-				std::vector<const Type*> types;
-				types.push_back(FixnumTy);
-				types.push_back(FixnumTy);
-
-				std::vector<const Type*> struct_types;
-				struct_types.push_back(FixnumTy);
-				struct_types.push_back(ls_->Int1Ty);
-
-				StructType* st = StructType::get(ls_->ctx(), struct_types);
-
-				FunctionType* ft = FunctionType::get(st, types, false);
-				Function* func = cast<Function>(
-					module_->getOrInsertFunction(ADD_WITH_OVERFLOW, ft));
-
-				Value* recv_int = tag_strip(recv);
-				Value* arg_int = tag_strip(arg);
-				Value* call_args[] = { recv_int, arg_int };
-				Value* res = b().CreateCall(func, call_args, call_args+2, "add.overflow");
-
-				Value* sum = b().CreateExtractValue(res, 0, "sum");
-				Value* dof = b().CreateExtractValue(res, 1, "did_overflow");
-
-				b().CreateCondBr(dof, dispatch, tagnow);
-
-				set_block(tagnow);
-
-
-				Value* imm_value = fixnum_tag(sum);
-
-				b().CreateBr(cont);
-
-				set_block(cont);
-
-				PHINode* phi = b().CreatePHI(ObjType, "addition");
-				phi->addIncoming(called_value, dispatch);
-				phi->addIncoming(imm_value, tagnow);
-
-
-				stack_remove(2);
-				stack_push(phi);
-      } else {
-				visit_send_stack(name, 1);
-      }
     }
 
     void print_debug(){

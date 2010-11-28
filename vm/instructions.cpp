@@ -185,7 +185,9 @@ Object* VMMethod::resumable_interpreter(STATE,
 #define COUNT_BACK_JUMP() if(location < (ip_ptr - addresses)){	\
 		int counter = ++(vmm->trace_counters[location]);						\
 		if(counter > Trace::RECORD_THRESHOLD){											\
-			if(state->tracing_enabled && !(state->recording_trace)){	\
+			if(state->tracing_enabled &&															\
+				 !(state->recording_trace) &&														\
+				 !(vmm->traces[location])){															\
 				vmm->trace_counters[location] = -100;										\
 				state->start_recording_on_next = true;									\
 				START_RECORDING();																			\
@@ -254,7 +256,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 																				Trace::RUN_MODE_RECORD_NESTED); 
 		TRACK_TIME(TRACE_SETUP_TIMER);
 
-		/* If result is -1, the nested trace must have bailed into */ 
+		/* If result is RETURN_SIDE_EXITED, the nested trace must have bailed into */ 
 		/* uncommon interpreter, we consider this recording invalidated.  */ 
 		if(result == Trace::RETURN_SIDE_EXITED){
 			DEBUGLN("Failed to record nested trace, throwing away recording\n"); 
@@ -317,7 +319,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 				state->recording_trace->compile(state);													\
 				TRACK_TIME(TRACE_SETUP_TIMER);																	\
 				state->recording_trace->store();																\
-				IF_DEBUG(state->recording_trace->ultimate_parent()->dump_to_graph(state)); \
+				if(GRAPH_TRACES){state->recording_trace->ultimate_parent()->dump_to_graph(state);} \
 				STOP_TRACE_RECORDING();																					\
 			}																																	\
 			else if(s == Trace::TRACE_CANCEL){																\
@@ -375,7 +377,7 @@ Object* VMMethod::resumable_interpreter(STATE,
 // If control finds it's way down here, there is an exception.
  exception:
 
-	if(state->tracing_enabled){
+	if(state->is_recording()){
 		DEBUGLN("Canceling record due to exception.");
 		STOP_TRACE_RECORDING();
 	}

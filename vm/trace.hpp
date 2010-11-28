@@ -45,6 +45,7 @@ namespace rubinius {
     CompiledMethod* const cm;
     CompiledMethod* send_cm;
 		Class* target_klass;
+		CompiledMethod* block_cm;
     void** ip_ptr;
     TraceNode* prev;
     TraceNode* next;
