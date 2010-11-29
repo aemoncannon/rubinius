@@ -20,7 +20,7 @@
 namespace rubinius {
 
 
-  TraceNode::TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
+  TraceNode::TraceNode(STATE, int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
     : 
     nested_trace(NULL),
     nested_executor(NULL),
@@ -29,10 +29,9 @@ namespace rubinius {
     pc(pc),
     sp(sp),
     call_frame(call_frame),
-    cm(call_frame->cm),
-    send_cm(NULL),
+		cm(state),
+		target_cm(state),
     target_klass(NULL),
-    block_cm(NULL),
     ip_ptr(ip_ptr),
     prev(NULL),
     next(NULL),
@@ -51,6 +50,7 @@ namespace rubinius {
 		arg2(0)
 
   {
+		cm.set(call_frame->cm);
 		trace_pc = pc + pc_base;
 		for(int i = 0; i < BRANCH_TBL_SIZE; i++) {
 			branches[i] = NULL;
@@ -197,7 +197,7 @@ namespace rubinius {
 
 		int side_exit_pc = pc;
 		Class* target_klass = NULL;
-		CompiledMethod* block_cm = NULL;
+		CompiledMethod* target_cm = NULL;
 
 		int arg1 = 0;
 		int arg2 = 0;
@@ -230,7 +230,7 @@ namespace rubinius {
 			is_branch = true;
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			numargs = 1;
-			if(arg1 == anchor->pc && call_frame->cm == anchor->cm){
+			if(arg1 == anchor->pc && call_frame->cm == anchor->cm.get()){
 				is_term = true;
 			}
 			break;
@@ -248,7 +248,7 @@ namespace rubinius {
 			break;
 		}
 		case InstructionSequence::insn_ret: {
-			if(call_frame->cm == anchor->cm){
+			if(call_frame->cm == anchor->cm.get()){
 				DEBUGLN("Canceling record due to return from home frame.");
 				return TRACE_CANCEL;
 			}
@@ -451,7 +451,7 @@ namespace rubinius {
 			Object* t1 = call_frame->scope->block();
 			if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
 				CompiledMethod* cm = env->method();
-				block_cm = cm;
+				target_cm = cm;
 			}
 			else if(t1->nil_p()) {
 				DEBUGLN("Canceling record due to yield to nil block.");
@@ -616,7 +616,7 @@ namespace rubinius {
 					pc_base = prev->active_send->pc_base;
 				}
 				else{
-					pc_base_counter += prev->cm->backend_method()->total;
+					pc_base_counter += prev->cm.get()->backend_method()->total;
 					pc_base = pc_base_counter;
 				}
 				call_depth -= 1;
@@ -627,7 +627,7 @@ namespace rubinius {
 							prev->op == InstructionSequence::insn_send_stack_with_block ||
 							prev->op == InstructionSequence::insn_yield_stack){
 
-				pc_base_counter += prev->cm->backend_method()->total;
+				pc_base_counter += prev->cm.get()->backend_method()->total;
 				pc_base = pc_base_counter;
 
 				if(prev->op == InstructionSequence::insn_yield_stack){
@@ -636,7 +636,7 @@ namespace rubinius {
 				else{
 					prev->traced_send = true;
 				}
-				prev->send_cm = call_frame->cm;
+				prev->target_cm.set(call_frame->cm);
 
 				parent_send = prev->active_send;
 				active_send = prev;
@@ -663,12 +663,12 @@ namespace rubinius {
 			arg1 += pc_base;
 		}
 
-		head = new TraceNode(call_depth, pc_base, op, pc, 
+		head = new TraceNode(state, call_depth, pc_base, op, pc, 
 												 sp, ip_ptr, vmm, call_frame);
 		head->active_send = active_send;
 		head->parent_send = parent_send;
 		head->target_klass = target_klass;
-		head->block_cm = block_cm;
+		if(target_cm) head->target_cm.set(target_cm);
 		head->prev = prev;
 		head->arg1 = arg1;
 		head->arg2 = arg2;
@@ -724,7 +724,7 @@ namespace rubinius {
 		}
 		else{
 			DEBUGLN("Storing trace at pc: " << entry->pc); 
-			VMMethod* vmm = entry->cm->backend_method();
+			VMMethod* vmm = entry->cm.get()->backend_method();
 			vmm->add_trace_at(this, entry->pc);
 		}
 	}

@@ -41,11 +41,10 @@ namespace rubinius {
     opcode op;
     int pc;
     int sp;
-    CallFrame* const call_frame;
-    CompiledMethod* const cm;
-    CompiledMethod* send_cm;
+    CallFrame* call_frame;
+    TypedRoot<CompiledMethod*> cm;
+    TypedRoot<CompiledMethod*> target_cm;
 		Class* target_klass;
-		CompiledMethod* block_cm;
     void** ip_ptr;
     TraceNode* prev;
     TraceNode* next;
@@ -63,7 +62,7 @@ namespace rubinius {
     intptr_t arg1;
     intptr_t arg2;
 
-    TraceNode(int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+    TraceNode(STATE, int depth, int pc_base, opcode op, int pc, int sp, void** ip_ptr, VMMethod* vmm, CallFrame* call_frame);
 
     void pretty_print(STATE, std::ostream& out);
 
@@ -137,20 +136,20 @@ namespace rubinius {
 
     enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
 
-    Trace(opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame);
+    Trace(opcode op, int pc, int sp, void** ip_ptr, VMMethod* vmm, CallFrame* call_frame);
 
     Trace();
 
 		// Standard constructor for initializing a new trace
-		static Trace* newTrace(opcode op, int pc, int sp, void** const ip_ptr, 
-													 STATE, VMMethod* const vmm, CallFrame* const call_frame, 
+		static Trace* newTrace(opcode op, int pc, int sp, void** ip_ptr, 
+													 STATE, VMMethod* vmm, CallFrame* call_frame, 
 													 Object** stack_ptr);
 
-    Status add(opcode op, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr);
+    Status add(opcode op, int pc, int sp, void** ip_ptr, STATE, VMMethod* vmm, CallFrame* call_frame, Object** stack_ptr);
 
     Trace* create_branch_at(TraceNode* exit_node);
 
-    Status add_nested_trace_call(Trace* trace, int nested_exit_pc, int pc, int sp, void** const ip_ptr, STATE, VMMethod* const vmm, CallFrame* const call_frame, Object** stack_ptr);
+    Status add_nested_trace_call(Trace* trace, int nested_exit_pc, int pc, int sp, void** ip_ptr, STATE, VMMethod* vmm, CallFrame* call_frame, Object** stack_ptr);
 
     void pretty_print(STATE, std::ostream& out);
 
@@ -164,7 +163,7 @@ namespace rubinius {
     void store();
 
     CompiledMethod* entry_cm(){
-      return entry->cm;
+      return entry->cm.get();
     }
 
     TraceIterator iter(){

@@ -313,6 +313,7 @@ namespace rubinius {
 
   void VM::collect_maybe(CallFrame* call_frame) {
 
+
     this->set_call_frame(call_frame);
 
     // Don't go any further unless we're allowed to GC.

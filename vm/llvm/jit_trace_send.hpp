@@ -16,7 +16,8 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 		stack_remove(args + 1);
 	}
 
-	CompiledMethod* cm = cur_trace_node_->send_cm;
+	CompiledMethod* cm = cur_trace_node_->target_cm.get();
+	assert(cm);
 	VMMethod* vmm = cm->backend_method();
 	jit::Context& ctx = info()->context();
 	JITMethodInfo* parent_info = info();

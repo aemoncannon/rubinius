@@ -594,7 +594,7 @@ namespace rubinius {
 				// Trace should never end on a return..
 				assert(cur_trace_node_->next); 
 
-				CompiledMethod* cm = cur_trace_node_->next->cm;
+				CompiledMethod* cm = cur_trace_node_->next->cm.get();
 				VMMethod* vmm = cm->backend_method();
 				method_info_ = new JITMethodInfo(info()->context(), cm, vmm);
 				info()->is_block = false; // <---- this will be wrong if returning to a block...
@@ -748,7 +748,9 @@ namespace rubinius {
 				"block");
 
       if(cur_trace_node_->traced_yield){
-				guard_block_change(block_obj, cur_trace_node_->block_cm);
+				CompiledMethod* cm = cur_trace_node_->target_cm.get();
+				assert(cm);
+				guard_block_change(block_obj, cm);
 				emit_traced_yield_stack(count);
       }
       else{

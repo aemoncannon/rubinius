@@ -139,18 +139,21 @@ namespace rubinius {
 					info_->pre_allocated_args[node->trace_pc] = 
 						b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
 
+					CompiledMethod* cm = node->target_cm.get();
+					assert(cm);
+
 					info_->pre_allocated_call_frames[node->trace_pc] = 
 						b().CreateAlloca(obj_type,
 														 ConstantInt::get(ls_->Int32Ty,
 																							(sizeof(CallFrame) / sizeof(Object*)) + 
-																							node->send_cm->stack_size()->to_native()),
+																							cm->stack_size()->to_native()),
 														 "cfstk");
 
 					info_->pre_allocated_vars[node->trace_pc] = 
 						b().CreateAlloca(obj_type,
 														 ConstantInt::get(ls_->Int32Ty,
 																							(sizeof(StackVariables) / sizeof(Object*)) + 
-																							node->send_cm->number_of_locals()),
+																							cm->number_of_locals()),
 														 "var_mem");
 
 					info_->pre_allocated_unwinds[node->trace_pc] = 

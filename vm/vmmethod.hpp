@@ -149,6 +149,8 @@ namespace rubinius {
     }
 
 		void add_trace_at(Trace* trace, int pc){
+			assert(traces);
+			assert(pc > 0 && pc < (int)total);
 			traces[pc] = trace;
 			addresses[pc] = trace_addresses[pc];
 		}

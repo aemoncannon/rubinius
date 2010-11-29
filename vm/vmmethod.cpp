@@ -60,16 +60,16 @@ namespace rubinius {
     }
 
     /*
-    if(dynamic_interpreter == NULL) {
+			if(dynamic_interpreter == NULL) {
       uint8_t* buffer = new uint8_t[1024 * 1024 * 1024];
       JITCompiler jit(buffer);
       jit.create_interpreter(state);
       if(getenv("DUMP_DYN")) {
-        jit.assembler().show();
+			jit.assembler().show();
       }
 
       dynamic_interpreter = reinterpret_cast<Runner>(buffer);
-    }
+			}
     */
 
     standard_interpreter = dynamic_interpreter;
@@ -103,13 +103,13 @@ namespace rubinius {
     trace_addresses = new void*[total];
     trace_counters = new size_t[total];
     for(size_t index = 0; index < total; index++) {
-		trace_counters[index] = 0;
-	}
+			trace_counters[index] = 0;
+		}
 
     traces = new Trace*[total];
     for(size_t index = 0; index < total; index++) {
-		traces[index] = NULL;
-	}
+			traces[index] = NULL;
+		}
 
     fill_opcodes(state, meth);
     stack_size =    meth->stack_size()->to_native();
@@ -127,8 +127,8 @@ namespace rubinius {
 
     // Disable JIT for large methods
     if(meth->primitive()->nil_p() &&
-        !state->shared.config.jit_disabled &&
-        total < (size_t)state->shared.config.jit_max_method_size) {
+			 !state->shared.config.jit_disabled &&
+			 total < (size_t)state->shared.config.jit_max_method_size) {
       call_count = 0;
     } else {
       call_count = -1;
@@ -496,13 +496,13 @@ namespace rubinius {
         if(splat_position == -1) {
           meth->set_executor(&VMMethod::execute_specialized<NoArguments>);
 
-        // otherwise use the splat only case.
+					// otherwise use the splat only case.
         } else {
           meth->set_executor(&VMMethod::execute_specialized<SplatOnlyArgument>);
         }
         return;
 
-      // Otherwise use the few specialized cases iff there is no splat
+				// Otherwise use the few specialized cases iff there is no splat
       } else if(splat_position == -1) {
         switch(total_args) {
         case 1:
@@ -536,72 +536,72 @@ namespace rubinius {
    * called from outside of this file. Thus all the template expansions are done.
    */
   template <typename ArgumentHandler>
-    Object* VMMethod::execute_specialized(STATE, CallFrame* previous,
-        Dispatch& msg, Arguments& args) {
+	Object* VMMethod::execute_specialized(STATE, CallFrame* previous,
+																				Dispatch& msg, Arguments& args) {
 
-      CompiledMethod* cm = as<CompiledMethod>(msg.method);
-      VMMethod* vmm = cm->backend_method();
+		CompiledMethod* cm = as<CompiledMethod>(msg.method);
+		VMMethod* vmm = cm->backend_method();
 
 	  bool trace = true;
 
 #ifdef ENABLE_LLVM
-      // A negative call_count means we've disabled usage based JIT
-      // for this method.
-      if(!trace && vmm->call_count >= 0) {
-        if(vmm->call_count >= state->shared.config.jit_call_til_compile) {
-          LLVMState* ls = LLVMState::get(state);
-          ls->compile_callframe(state, cm, previous);
-        } else {
-          vmm->call_count++;
-        }
-      }
+		// A negative call_count means we've disabled usage based JIT
+		// for this method.
+		if(!trace && vmm->call_count >= 0) {
+			if(vmm->call_count >= state->shared.config.jit_call_til_compile) {
+				LLVMState* ls = LLVMState::get(state);
+				ls->compile_callframe(state, cm, previous);
+			} else {
+				vmm->call_count++;
+			}
+		}
 #endif
 
-      size_t scope_size = sizeof(StackVariables) +
-        (vmm->number_of_locals * sizeof(Object*));
-      StackVariables* scope =
-        reinterpret_cast<StackVariables*>(alloca(scope_size));
-      // Originally, I tried using msg.module directly, but what happens is if
-      // super is used, that field is read. If you combine that with the method
-      // being called recursively, msg.module can change, causing super() to
-      // look in the wrong place.
-      //
-      // Thus, we have to cache the value in the StackVariables.
-      scope->initialize(args.recv(), args.block(), msg.module, vmm->number_of_locals);
+		size_t scope_size = sizeof(StackVariables) +
+			(vmm->number_of_locals * sizeof(Object*));
+		StackVariables* scope =
+			reinterpret_cast<StackVariables*>(alloca(scope_size));
+		// Originally, I tried using msg.module directly, but what happens is if
+		// super is used, that field is read. If you combine that with the method
+		// being called recursively, msg.module can change, causing super() to
+		// look in the wrong place.
+		//
+		// Thus, we have to cache the value in the StackVariables.
+		scope->initialize(args.recv(), args.block(), msg.module, vmm->number_of_locals);
 
-      InterpreterCallFrame* frame = ALLOCA_CALLFRAME(vmm->stack_size);
+		InterpreterCallFrame* frame = ALLOCA_CALLFRAME(vmm->stack_size);
 
-      // If argument handling fails..
-      if(ArgumentHandler::call(state, vmm, scope, args) == false) {
-        Exception* exc =
-          Exception::make_argument_error(state, vmm->required_args, args.total(), msg.name);
-        exc->locations(state, System::vm_backtrace(state, Fixnum::from(0), previous));
-        state->thread_state()->raise_exception(exc);
+		// If argument handling fails..
+		if(ArgumentHandler::call(state, vmm, scope, args) == false) {
+			Exception* exc =
+				Exception::make_argument_error(state, vmm->required_args, args.total(), msg.name);
+			exc->locations(state, System::vm_backtrace(state, Fixnum::from(0), previous));
+			state->thread_state()->raise_exception(exc);
 
-        return NULL;
-      }
+			return NULL;
+		}
 
-      frame->prepare(vmm->stack_size);
+		frame->prepare(vmm->stack_size);
 
-      frame->previous = previous;
-      frame->flags =    0;
-      frame->arguments = &args;
-      frame->dispatch_data = &msg;
-      frame->cm =       cm;
-      frame->scope =    scope;
+		frame->previous = previous;
+		frame->flags =    0;
+		frame->arguments = &args;
+		frame->dispatch_data = &msg;
+		frame->cm =       cm;
+		frame->scope =    scope;
 
 
 #ifdef RBX_PROFILER
-      if(unlikely(state->shared.profiling())) {
-        profiler::MethodEntry method(state, msg, args, cm);
-        return (*vmm->run)(state, vmm, frame);
-      } else {
-        return (*vmm->run)(state, vmm, frame);
-      }
+		if(unlikely(state->shared.profiling())) {
+			profiler::MethodEntry method(state, msg, args, cm);
+			return (*vmm->run)(state, vmm, frame);
+		} else {
+			return (*vmm->run)(state, vmm, frame);
+		}
 #else
-      return (*vmm->run)(state, vmm, frame);
+		return (*vmm->run)(state, vmm, frame);
 #endif
-    }
+	}
 
   /** This is used as a fallback way of entering the interpreter */
   Object* VMMethod::execute(STATE, CallFrame* previous, Dispatch& msg, Arguments& args) {

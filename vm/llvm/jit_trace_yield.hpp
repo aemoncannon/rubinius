@@ -5,7 +5,8 @@ void emit_traced_yield_stack(opcode args) {
 	// pop things off caller stack
 	stack_remove(args);
 	
-	CompiledMethod* cm = cur_trace_node_->send_cm;
+	CompiledMethod* cm = cur_trace_node_->target_cm.get();
+	assert(cm);
 	VMMethod* vmm = cm->backend_method();
 	jit::Context& ctx = info()->context();
 	JITMethodInfo* parent_info = info();
