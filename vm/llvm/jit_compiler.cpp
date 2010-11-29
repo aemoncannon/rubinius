@@ -183,6 +183,13 @@ namespace rubinius {
 			// Run optimization passes!
 			ls->passes()->run(*func);
 
+
+			// Inject the RuntimeData objects used into the original CompiledMethod
+			// Do this way after we've validated the IR so things are consistent.
+			ctx.runtime_data_holder()->set_function(func);
+			// info->method()->set_jit_data(ctx.runtime_data_holder());
+			// ls->shared().om->add_code_resource(ctx.runtime_data_holder());
+
 			function_ = func;
 		}
 

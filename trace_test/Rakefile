@@ -154,7 +154,7 @@ task :bench => [] do
       }
     }
   rescue Exception => e
-    puts "Error in benchmark, removing incomplte results."
+    puts "Error in benchmark, removing incomplete results."
     rm_rf bench_run_dir(bench_run_id)
     raise e
   end

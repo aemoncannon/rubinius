@@ -721,40 +721,15 @@ namespace rubinius {
   };
 
   class BackgroundCompileRequest {
-    TypedRoot<CompiledMethod*> method_;
-    TypedRoot<Object*> mm_;
     Trace* trace_;
-    bool is_block_;
 
   public:
-    BackgroundCompileRequest(STATE, CompiledMethod* cm, Object* mm, Trace* trace, bool is_block=false)
-      : method_(state)
-      , mm_(state)
-      , trace_(trace)
-      , is_block_(is_block)
-    {
-      method_.set(cm);
-      mm_.set(mm);
-    }
-
-    VMMethod* vmmethod() {
-      return method_->backend_method();
-    }
-
-    CompiledMethod* method() {
-      return method_.get();
-    }
+    BackgroundCompileRequest(STATE, Trace* trace)
+      : trace_(trace)
+    {}
 
     Trace* trace() {
       return trace_;
-    }
-
-    BlockEnvironment* block_env() {
-      return try_as<BlockEnvironment>(mm_.get());
-    }
-
-    bool is_block() {
-      return is_block_;
     }
 
     bool is_trace() {

@@ -312,17 +312,7 @@ namespace rubinius {
         void* func = 0;
         {
           timer::Running timer(ls_->time_spent);
-
-          if(req->is_block()) {
-            jit.compile_block(ls_, req->method(), req->vmmethod());
-          } 
-          if(req->is_trace()) {
-						jit.compile_trace(ls_, req->trace());
-					}
-					else {
-            jit.compile_method(ls_, req->method(), req->vmmethod());
-          }
-
+					jit.compile_trace(ls_, req->trace());
           func = jit.generate_function(ls_);
         }
 
@@ -348,25 +338,6 @@ namespace rubinius {
 					req->trace()->set_jitted(jit.code_bytes(), func);
 					req->trace()->store();
 					DEBUGLN("Stored trace.");
-				}
-				else{
-					req->vmmethod()->set_jitted(jit.llvm_function(),
-																			jit.code_bytes(),
-																			func);
-					if(!req->is_block()) {
-						req->method()->execute = reinterpret_cast<executor>(func);
-					}
-					assert(req->method()->jit_data());
-
-					req->method()->jit_data()->run_write_barrier(ls_->write_barrier(), req->method());
-
-					int which = ls_->add_jitted_method();
-					if(ls_->config().jit_show_compiling) {
-						llvm::outs() << "[[[ JIT finished background compiling "
-												 << which
-												 << (req->is_block() ? " (block)" : " (method)")
-												 << " ]]]\n";
-					}
 				}
 
         delete req;
@@ -574,45 +545,7 @@ namespace rubinius {
   }
 
   void LLVMState::compile_soon(STATE, CompiledMethod* cm, BlockEnvironment* block) {
-    Object* placement;
-    bool is_block = false;
-
-    // Ignore it!
-    if(cm->backend_method()->call_count < 0) {
-      if(config().jit_inline_debug) {
-        log() << "JIT: ignoring candidate! "
-							<< symbol_cstr(cm->name()) << "\n";
-      }
-      return;
-    }
-
-    if(config().jit_inline_debug) {
-      log() << "JIT: queueing method: "
-						<< symbol_cstr(cm->name()) << "\n";
-    }
-
-    cm->backend_method()->call_count = -1;
-
-    if(block) {
-      is_block = true;
-      placement = block;
-    } else {
-      placement = Qnil;
-    }
-
-    BackgroundCompileRequest* req =
-      new BackgroundCompileRequest(state, cm, placement, NULL, is_block);
-
-    queued_methods_++;
-
-    background_thread_->add(req);
-
-    if(state->shared.config.jit_show_compiling) {
-      llvm::outs() << "[[[ JIT Queued"
-									 << (block ? " block " : " method ")
-									 << queued_methods() << "/"
-									 << jitted_methods() << " ]]]\n";
-    }
+		// TODO - Not needed for tracing
   }
 
   void LLVMState::compile_soon(STATE, Trace* trace) {
@@ -620,7 +553,7 @@ namespace rubinius {
 		DEBUGLN("Queuing trace for compilation..");
 		
     BackgroundCompileRequest* req =
-      new BackgroundCompileRequest(state, NULL, NULL, trace, false);
+      new BackgroundCompileRequest(state, trace);
 
     queued_methods_++;
     background_thread_->add(req);

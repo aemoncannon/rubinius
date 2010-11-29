@@ -51,6 +51,7 @@ namespace rubinius {
 
   {
 		cm.set(call_frame->cm);
+
 		trace_pc = pc + pc_base;
 		for(int i = 0; i < BRANCH_TBL_SIZE; i++) {
 			branches[i] = NULL;
