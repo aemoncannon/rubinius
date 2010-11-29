@@ -20,56 +20,56 @@ namespace jit {
   }
 
   void RuntimeDataHolder::mark_all(Object* obj, ObjectMark& mark) {
-    Object* tmp;
+//    Object* tmp;
 
-    for(std::list<jit::RuntimeData*>::iterator i = runtime_data_.begin();
-        i != runtime_data_.end();
-        i++) {
-      jit::RuntimeData* rd = *i;
+    // for(std::list<jit::RuntimeData*>::iterator i = runtime_data_.begin();
+    //     i != runtime_data_.end();
+    //     i++) {
+    //   jit::RuntimeData* rd = *i;
 
-      tmp = mark.call(rd->method());
-      if(tmp) {
-        rd->method_ = (CompiledMethod*)tmp;
-        if(obj) mark.just_set(obj, tmp);
-      }
+    //   tmp = mark.call(rd->method());
+    //   if(tmp) {
+    //     rd->method_ = (CompiledMethod*)tmp;
+    //     if(obj) mark.just_set(obj, tmp);
+    //   }
 
-      tmp = mark.call(rd->name());
-      if(tmp) {
-        rd->name_ = (Symbol*)tmp;
-        if(obj) mark.just_set(obj, tmp);
-      }
+    //   tmp = mark.call(rd->name());
+    //   if(tmp) {
+    //     rd->name_ = (Symbol*)tmp;
+    //     if(obj) mark.just_set(obj, tmp);
+    //   }
 
-      tmp = mark.call(rd->module());
-      if(tmp) {
-        rd->module_ = (Module*)tmp;
-        if(obj) mark.just_set(obj, tmp);
-      }
-    }
+    //   tmp = mark.call(rd->module());
+    //   if(tmp) {
+    //     rd->module_ = (Module*)tmp;
+    //     if(obj) mark.just_set(obj, tmp);
+    //   }
+    // }
   }
 
   void RuntimeDataHolder::visit_all(ObjectVisitor& visit) {
-    for(std::list<jit::RuntimeData*>::iterator i = runtime_data_.begin();
-        i != runtime_data_.end();
-        i++) {
-      jit::RuntimeData* rd = *i;
+    // for(std::list<jit::RuntimeData*>::iterator i = runtime_data_.begin();
+    //     i != runtime_data_.end();
+    //     i++) {
+    //   jit::RuntimeData* rd = *i;
 
-      visit.call(rd->method());
-      visit.call(rd->name());
-      visit.call(rd->module());
-    }
+    //   visit.call(rd->method());
+    //   visit.call(rd->name());
+    //   visit.call(rd->module());
+    // }
 
   }
 
   void RuntimeDataHolder::run_write_barrier(gc::WriteBarrier* wb, Object* obj) {
-    for(std::list<jit::RuntimeData*>::iterator i = runtime_data_.begin();
-        i != runtime_data_.end();
-        i++) {
-      jit::RuntimeData* rd = *i;
+    // for(std::list<jit::RuntimeData*>::iterator i = runtime_data_.begin();
+    //     i != runtime_data_.end();
+    //     i++) {
+    //   jit::RuntimeData* rd = *i;
 
-      obj->write_barrier(wb, rd->method());
-      obj->write_barrier(wb, rd->name());
-      obj->write_barrier(wb, rd->module());
-    }
+    //   obj->write_barrier(wb, rd->method());
+    //   obj->write_barrier(wb, rd->name());
+    //   obj->write_barrier(wb, rd->module());
+    // }
 
   }
 }}

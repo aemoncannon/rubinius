@@ -3,6 +3,8 @@
 
 #include "gc/code_resource.hpp"
 #include <list>
+#include <iostream>
+#include <fstream>
 
 namespace llvm {
   class Function;

@@ -1,0 +1,1 @@
+{"file":"if_exit_in_deep_nesting1.rb","commit":"e0e4a820f573b4ad51398e0635df59e93735f612","bench_run_id":1291012380,"config":"interp","time":1291012898,"name":"if_exit_in_deep_nesting1 - 100000 iterations","elapsed":293.3514}

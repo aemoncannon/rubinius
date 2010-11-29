@@ -1,0 +1,1 @@
+{"file":"nested_funcs_with_div_by_zero.rb","commit":"e0e4a820f573b4ad51398e0635df59e93735f612","bench_run_id":1291012380,"config":"interp","time":1291013194,"name":"nested_funcs_with_div_by_zero - 10000 iterations","elapsed":949.0714}
