@@ -82,8 +82,16 @@ namespace rubinius {
     return result;
   }
 
-	void TraceNode::clear_hotness(){
-		exit_counter = -100;
+	bool TraceNode::bump_exit_hotness(){
+		if(exit_counter != Trace::COUNTER_DISABLED){
+			exit_counter++;
+			return exit_counter > Trace::BRANCH_RECORD_THRESHOLD;
+		}
+		return false;
+	}
+
+	void TraceNode::disable_counter(){
+		exit_counter = Trace::COUNTER_DISABLED;
 	}
 
   void TraceNode::pretty_print(STATE, std::ostream& out) {

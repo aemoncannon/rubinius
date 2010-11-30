@@ -78,16 +78,13 @@ namespace rubinius {
       return arg1 - pc_base;
     }
 
-    bool bump_exit_hotness(){
-      exit_counter++;
-      return exit_counter > 3;
-    }
-
     int exit_to_pc(){
       return side_exit_pc;
     }
 
-    void clear_hotness();
+    bool bump_exit_hotness();
+
+    void disable_counter();
 
     std::string cm_name(STATE);
     std::string op_name();
@@ -133,6 +130,9 @@ namespace rubinius {
 
     static const int MAX_TRACE_LENGTH = 300;
     static const int RECORD_THRESHOLD = 30;
+    static const int BRANCH_RECORD_THRESHOLD = 3;
+		static const int COUNTER_DISABLED = -1;
+		
 
     enum Status { TRACE_CANCEL, TRACE_OK, TRACE_FINISHED };
 

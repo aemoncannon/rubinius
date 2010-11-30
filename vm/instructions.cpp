@@ -182,18 +182,20 @@ Object* VMMethod::resumable_interpreter(STATE,
 	ip_ptr = (ip_ptr - vmm->addresses) + vmm->trace_addresses;
 	
 
-#define COUNT_BACK_JUMP() if(location < (ip_ptr - addresses)){	\
-		int counter = ++(vmm->trace_counters[location]);						\
-		if(counter > Trace::RECORD_THRESHOLD){											\
-			if(state->tracing_enabled &&															\
-				 !(state->recording_trace) &&														\
-				 !(vmm->traces[location])){															\
-				vmm->trace_counters[location] = -100;										\
-				state->start_recording_on_next = true;									\
-				START_RECORDING();																			\
-			}																													\
-		}																														\
-	}
+#define COUNT_BACK_JUMP() if(location < (ip_ptr - addresses) &&		\
+														 state->tracing_enabled &&						\
+														 !(state->recording_trace)){					\
+		int counter = vmm->trace_counters[location];									\
+		if(counter != Trace::COUNTER_DISABLED){												\
+			counter = ++(vmm->trace_counters[location]);								\
+			if(counter > Trace::RECORD_THRESHOLD){											\
+				vmm->trace_counters[location] = Trace::COUNTER_DISABLED;	\
+				state->start_recording_on_next = true;										\
+				START_RECORDING();																				\
+			}																														\
+		}																															\
+	}																															
+
 
 
 #define STOP_TRACE_RECORDING() state->recording_trace = NULL;	\
