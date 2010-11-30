@@ -215,6 +215,15 @@ namespace rubinius {
 		bool is_handler = false;
 		bool is_term = false;
 
+		// Inherit properties from previous
+		// node.
+		if(prev){
+			active_send = prev->active_send;
+			parent_send = prev->parent_send;
+			pc_base = prev->pc_base;
+			call_depth = prev->call_depth;
+		}
+
 		switch(op){
 		case InstructionSequence::insn_push_int: {
 			arg1 = (intptr_t)(*(ip_ptr + 1));
@@ -239,7 +248,9 @@ namespace rubinius {
 			is_branch = true;
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			numargs = 1;
-			if(arg1 == anchor->pc && call_frame->cm == anchor->cm.get()){
+			if(arg1 == anchor->pc && 
+				 call_depth == anchor->call_depth &&
+				 call_frame->cm == anchor->cm.get()){
 				is_term = true;
 			}
 			break;
@@ -257,7 +268,8 @@ namespace rubinius {
 			break;
 		}
 		case InstructionSequence::insn_ret: {
-			if(call_frame->cm == anchor->cm.get()){
+			if(call_depth == anchor->call_depth && 
+				 call_frame->cm == anchor->cm.get()){
 				DEBUGLN("Canceling record due to return from home frame.");
 				return TRACE_CANCEL;
 			}
@@ -388,9 +400,7 @@ namespace rubinius {
 
 			int send_args = 0;
 			Object* recv = *(stack_ptr - send_args);
-			assert(recv);
 			target_klass = recv->lookup_begin(state);
-			assert(target_klass);
 			break;
 		}
 		case InstructionSequence::insn_send_stack: {
@@ -400,9 +410,7 @@ namespace rubinius {
 
 			int send_args = (intptr_t)(*(ip_ptr + 2));
 			Object* recv = *(stack_ptr - send_args);
-			assert(recv);
 			target_klass = recv->lookup_begin(state);
-			assert(target_klass);
 			break;
 		}
 		case InstructionSequence::insn_send_stack_with_block: {
@@ -412,27 +420,29 @@ namespace rubinius {
 			
 			int send_args = (intptr_t)(*(ip_ptr + 2));
 			Object* recv = *(stack_ptr - send_args);
-			assert(recv);
 			target_klass = recv->lookup_begin(state);
-			assert(target_klass);
 			break;
 		}
 		case InstructionSequence::insn_send_stack_with_splat: {
-			DEBUGLN("Canceling record due to splat.");
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			arg2 = (intptr_t)(*(ip_ptr + 2));
+			numargs = 2;
+
+			int send_args = (intptr_t)(*(ip_ptr + 2));
+			Object* recv = *(stack_ptr - send_args);
+			target_klass = recv->lookup_begin(state);
+			break;
+		}
+		case InstructionSequence::insn_send_super_stack_with_block: {
+			DEBUGLN("Canceling record due send super stack with block.");
 			return TRACE_CANCEL;
 			// arg1 = (intptr_t)(*(ip_ptr + 1));
 			// arg2 = (intptr_t)(*(ip_ptr + 2));
 			// numargs = 2;
 			break;
 		}
-		case InstructionSequence::insn_send_super_stack_with_block: {
-			arg1 = (intptr_t)(*(ip_ptr + 1));
-			arg2 = (intptr_t)(*(ip_ptr + 2));
-			numargs = 2;
-			break;
-		}
 		case InstructionSequence::insn_send_super_stack_with_splat: {
-			DEBUGLN("Canceling record due to splat.");
+			DEBUGLN("Canceling record due to send super stack with splat.");
 			return TRACE_CANCEL;
 			// arg1 = (intptr_t)(*(ip_ptr + 1));
 			// arg2 = (intptr_t)(*(ip_ptr + 2));
@@ -472,10 +482,22 @@ namespace rubinius {
 			}
 		}
 		case InstructionSequence::insn_yield_splat: {
-			DEBUGLN("Canceling record due to splat.");
-			return TRACE_CANCEL;
-			// arg1 = (intptr_t)(*(ip_ptr + 1));
-			// numargs = 1;
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+
+			Object* t1 = call_frame->scope->block();
+			if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
+				CompiledMethod* cm = env->method();
+				target_cm = cm;
+			}
+			else if(t1->nil_p()) {
+				DEBUGLN("Canceling record due to yield to nil block.");
+				return TRACE_CANCEL;
+			} 
+			else{
+				DEBUGLN("Canceling record due to yield to non-static block.");
+				return TRACE_CANCEL;
+			}
 			break;
 		}
 		case InstructionSequence::insn_string_append: {
@@ -603,15 +625,6 @@ namespace rubinius {
 			numargs = 0;
 			break;
 		}
-		}
-
-		// Inherit properties from previous
-		// node.
-		if(prev){
-			active_send = prev->active_send;
-			parent_send = prev->parent_send;
-			pc_base = prev->pc_base;
-			call_depth = prev->call_depth;
 		}
 
 		// If we've entered a new call_frame..

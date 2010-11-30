@@ -151,7 +151,8 @@ namespace rubinius {
 
 		void guard_block_change(Value* object, CompiledMethod* block_cm){
       BasicBlock* exit_stub = new_block("exit_stub");
-			Value* cm = load_field(object, offset::blockenv_method, "env.method");
+			Value* block_env = b().CreateBitCast(object, ls_->ptr_type("BlockEnvironment"),"block_env");
+			Value* cm = load_field(block_env, offset::blockenv_method, "env.method");
 			Value* existing_cm = constant(block_cm, ls_->ptr_type("CompiledMethod"));
       Value* cmp = b().CreateICmpEQ(cm, existing_cm, "same block");
 			verify_guard(cmp, exit_stub);

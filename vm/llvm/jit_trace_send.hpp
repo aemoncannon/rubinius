@@ -128,7 +128,11 @@ void emit_traced_send(opcode which, opcode args, bool with_block){
 
 
 void import_args() {
+	Value* vm_obj = info()->vm();
 	Value* arg_obj = info()->args();
+	Value* vars = info()->variables();
+	Value* arg_total = ConstantInt::get(ls_->Int32Ty, cur_trace_node_->send_arg_count());
+	VMMethod* vmm = info()->vmm;
 
 	setup_scope();
 
@@ -136,27 +140,121 @@ void import_args() {
 	Value* offset = b().CreateConstGEP2_32(arg_obj, 0, offset::args_ary, "arg_ary_pos");
 	Value* arg_ary = b().CreateLoad(offset, "arg_ary");
 
-	// As opposed to method jit, number of args is always known statically.
-	// Currently, splats invalidate traces, so don't worry about those.
-	for(int i = 0; i < cur_trace_node_->send_arg_count(); i++) {
-		Value* int_pos = ConstantInt::get(ls_->Int32Ty, i);
+	// If there are a precise number of args, easy.
+	if(vmm->required_args == vmm->total_args) {
+		for(int i = 0; i < vmm->required_args; i++) {
+			Value* int_pos = ConstantInt::get(ls_->Int32Ty, i);
 
-		Value* arg_val_offset = b().CreateConstGEP1_32(arg_ary, i, "arg_val_offset");
+			Value* arg_val_offset = b().CreateConstGEP1_32(arg_ary, i, "arg_val_offset");
+
+			Value* arg_val = b().CreateLoad(arg_val_offset, "arg_val");
+
+			Value* idx2[] = {
+				ConstantInt::get(ls_->Int32Ty, 0),
+				ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+				int_pos
+			};
+
+			Value* pos = b().CreateGEP(vars, idx2, idx2+3, "var_pos");
+
+			b().CreateStore(arg_val, pos);
+		}
+
+		// Otherwise, we must loop in the generate code because we don't know
+		// how many they've actually passed in.
+	} else {
+		Value* loop_i = info()->counter();
+
+		BasicBlock* top = BasicBlock::Create(ls_->ctx(), "arg_loop_top", info()->function());
+		BasicBlock* body = BasicBlock::Create(ls_->ctx(), "arg_loop_body", info()->function());
+		BasicBlock* after = BasicBlock::Create(ls_->ctx(), "arg_loop_cont", info()->function());
+
+		Value* limit;
+
+		// Because of a splat, there can be more args given than
+		// vmm->total_args, so we need to use vmm->total_args as a max.
+		if(vmm->splat_position >= 0) {
+			Value* static_total = ConstantInt::get(ls_->Int32Ty, vmm->total_args);
+
+			limit = b().CreateSelect(
+				b().CreateICmpSLT(static_total, arg_total),
+				static_total,
+				arg_total);
+		} else {
+			// Because of arity checks, arg_total is less than or equal
+			// to vmm->total_args.
+			limit = arg_total;
+		}
+
+		b().CreateStore(ConstantInt::get(ls_->Int32Ty, 0), loop_i);
+		b().CreateBr(top);
+
+		b().SetInsertPoint(top);
+
+		// now at the top of block, check if we should continue...
+		Value* loop_val = b().CreateLoad(loop_i, "loop_val");
+		Value* cmp = b().CreateICmpSLT(loop_val, limit, "loop_test");
+
+		b().CreateCondBr(cmp, body, after);
+
+		// Now, the body
+		b().SetInsertPoint(body);
+
+		Value* arg_val_offset =
+			b().CreateGEP(arg_ary, loop_val, "arg_val_offset");
 
 		Value* arg_val = b().CreateLoad(arg_val_offset, "arg_val");
 
 		Value* idx2[] = {
 			ConstantInt::get(ls_->Int32Ty, 0),
 			ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
-			int_pos
+			loop_val
 		};
 
-		Value* pos = b().CreateGEP(info()->variables(), idx2, idx2+3, "var_pos");
+		Value* pos = b().CreateGEP(vars, idx2, idx2+3, "var_pos");
 
 		b().CreateStore(arg_val, pos);
 
+		Value* plus_one = b().CreateAdd(loop_val,
+																		ConstantInt::get(ls_->Int32Ty, 1), "add");
+		b().CreateStore(plus_one, loop_i);
+
+		b().CreateBr(top);
+
+		b().SetInsertPoint(after);
 	}
 
+	// Setup the splat.
+	if(vmm->splat_position >= 0) {
+		Signature sig(ls_, "Object");
+		sig << "VM";
+		sig << "Arguments";
+		sig << ls_->Int32Ty;
+
+		Value* call_args[] = {
+			vm_obj,
+			arg_obj,
+			ConstantInt::get(ls_->Int32Ty, vmm->total_args)
+		};
+
+		Function* func = sig.function("rbx_construct_splat");
+		func->setOnlyReadsMemory(true);
+		func->setDoesNotThrow(true);
+
+		CallInst* splat_val = sig.call("rbx_construct_splat", call_args, 3, "splat_val", b());
+
+		splat_val->setOnlyReadsMemory(true);
+		splat_val->setDoesNotThrow(true);
+
+		Value* idx3[] = {
+			ConstantInt::get(ls_->Int32Ty, 0),
+			ConstantInt::get(ls_->Int32Ty, offset::vars_tuple),
+			ConstantInt::get(ls_->Int32Ty, vmm->splat_position)
+		};
+
+		Value* pos = b().CreateGEP(vars, idx3, idx3+3, "splat_pos");
+		b().CreateStore(splat_val, pos);
+	}
 }
 
 

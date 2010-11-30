@@ -171,18 +171,18 @@ namespace rubinius {
       }
 
 #ifdef ENABLE_LLVM
-      if(jit::RuntimeDataHolder* jd = call_frame->jit_data()) {
-        jd->set_mark();
+      // if(jit::RuntimeDataHolder* jd = call_frame->jit_data()) {
+      //   jd->set_mark();
 
-        ObjectMark mark(this);
-        jd->mark_all(0, mark);
-      }
+      //   ObjectMark mark(this);
+      //   jd->mark_all(0, mark);
+      // }
 
-      if(jit::RuntimeData* rd = call_frame->runtime_data()) {
-        rd->method_ = (CompiledMethod*)mark_object(rd->method());
-        rd->name_ = (Symbol*)mark_object(rd->name());
-        rd->module_ = (Module*)mark_object(rd->module());
-      }
+      // if(jit::RuntimeData* rd = call_frame->runtime_data()) {
+      //   rd->method_ = (CompiledMethod*)mark_object(rd->method());
+      //   rd->name_ = (Symbol*)mark_object(rd->name());
+      //   rd->module_ = (Module*)mark_object(rd->module());
+      // }
 #endif
 
       saw_variable_scope(call_frame, call_frame->scope);
