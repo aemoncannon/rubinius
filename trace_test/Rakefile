@@ -153,8 +153,8 @@ task :bench => [] do
         run_bench(bench_run_id, file, name, commit_id, "master_interp", 
                   "#{MASTER_INTERP_RBX} #{t[:name]}.rb #{iters} interp >> #{LOG}")
 
-        run_bench(bench_run_id, file, name, commit_id, "master_jit", 
-                  "#{MASTER_JIT_RBX} #{t[:name]}.rb #{iters} interp >> #{LOG}")
+#        run_bench(bench_run_id, file, name, commit_id, "master_jit", 
+#                  "#{MASTER_JIT_RBX} #{t[:name]}.rb #{iters} interp >> #{LOG}")
 
       }
     }
