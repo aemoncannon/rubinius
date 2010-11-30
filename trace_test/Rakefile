@@ -2,6 +2,8 @@ require 'rubygems'
 require 'json'
 
 RBX = "../bin/rbx"
+MASTER_INTERP_RBX = "~/src/misc/rubinius_fresh/bin/rbx"
+MASTER_JIT_RBX = "~/src/misc/rubinius_fresh_jit/bin/rbx"
 LOG = "test.log"
 RESULT_FILE = ".run_result"
 
@@ -121,7 +123,7 @@ def average_of_times(cmd, n)
 end
 
 
-BENCH_RUNS = 10
+BENCH_RUNS = 5
 
 task :bench => [] do
 
@@ -142,15 +144,18 @@ task :bench => [] do
 
         name = "#{t[:name]} - #{iters} iterations"
 
-        elapsed = average_of_times("#{RBX} #{t[:name]}.rb #{iters} interp >> #{LOG}", BENCH_RUNS)
-        puts "   Interp time: #{elapsed} seconds."
-        write_data_point({:bench_run_id => bench_run_id, :file => file, :name => name, :config => "interp",
-                           :time => Time.now.to_i, :commit => commit_id, :elapsed => (elapsed.to_f * 1000.0)})
+        run_bench(bench_run_id, file, name, commit_id, "interp", 
+                  "#{RBX} #{t[:name]}.rb #{iters} interp >> #{LOG}")
 
-        elapsed = average_of_times("#{RBX} #{t[:name]}.rb #{iters} trace >> #{LOG}", BENCH_RUNS)
-        puts "   Trace time: #{elapsed} seconds."
-        write_data_point({:bench_run_id => bench_run_id, :file => file, :name => name, :config => "trace",
-                           :time => Time.now.to_i, :commit => commit_id, :elapsed => (elapsed.to_f * 1000.0)})
+        run_bench(bench_run_id, file, name, commit_id, "trace", 
+                  "#{RBX} #{t[:name]}.rb #{iters} trace >> #{LOG}")
+
+        run_bench(bench_run_id, file, name, commit_id, "master_interp", 
+                  "#{MASTER_INTERP_RBX} #{t[:name]}.rb #{iters} interp >> #{LOG}")
+
+        run_bench(bench_run_id, file, name, commit_id, "master_jit", 
+                  "#{MASTER_JIT_RBX} #{t[:name]}.rb #{iters} interp >> #{LOG}")
+
       }
     }
   rescue Exception => e
@@ -183,6 +188,16 @@ end
 
 
 task :default => [:units]
+
+
+def run_bench(bench_run_id, file, name, commit_id, config_name, cmd)
+  elapsed = average_of_times(cmd, BENCH_RUNS)
+  puts "   #{config_name} time: #{elapsed} seconds."
+  write_data_point({:bench_run_id => bench_run_id, 
+                     :file => file, :name => name, :config => config_name,
+                     :time => Time.now.to_i, :commit => commit_id, 
+                     :elapsed => (elapsed.to_f * 1000.0)})
+end
 
 
 def git_commit_id
