@@ -47,19 +47,6 @@ namespace rubinius {
       if(i != block_map_.end()) {
         JITBasicBlock& jbb = i->second;
         current_jbb_ = &jbb;
-
-				// Might need this stuff if we ever have branches in our
-				// traces..
-				
-        // if(BasicBlock* next = jbb.block) {
-        //   if(!b().GetInsertBlock()->getTerminator()) {
-				// 		std::cout << "ACK! creating BR!!" << "\n";
-        //     b().CreateBr(next);
-        //   }
-        //   next->moveAfter(b().GetInsertBlock());
-        //   set_block(next);
-        // }
-        // if(jbb.sp != -10) set_sp(jbb.sp);
       }
 
       remember_sp();

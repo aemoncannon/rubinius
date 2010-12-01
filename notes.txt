@@ -2,33 +2,11 @@
 Sat Nov 3, 12:01 am
   A method send is a 1 to n branch point. What we need is a small hash-table that uses Classes as hash keys. So, we'll have a sepecial exit pad for method send exits. Needs to lookup class in node's table.
 
-Requirements
- - Should optimize for speed of switching to branch traces. Because # of branch runs is potentially related to N (iterations) of loop.
-   As opposed to exits that leave the trace, which will be run once per trace run.
- - Would be nice if nested exits were also fast. Bailing to interpreter on nested exit would make this slow - so don't do that.
-
-NESTED flag 
- - Purpose is to notify the trace to return directly to calling trace (on expected exit), 
-   instead of bailing to the uncommon interpreter. Return 1 if nested trace exited politely so the parent 
-   trace can just continue. Otherwise return -1 and we collapse. For branches and nests of the nested trace,
-   we don't need them to do anything special. Branches are either successful or collapse. Nests are either
-   successful or collapse.
-
-RECORDING flag
- - Like above, but we don't care what pc the trace exits at. We do need to remember this pc, because future runs
-   of this nested trace must exit here. 
+Sat Nov 30, 5:46 pm
+  Throw away traces with splats. Need to look at how they are compiled more carefully.
 
 
-Problem with always directly calling branch traces:
- - The traceinfo that we pass to the call is either the info for the parent trace, or the info for the new branch trace.
- - What info do we actually need to pass? not NESTED/RECORDING flag (since it's a branch). Entry call_frame? No, we can
-   grab this at runtime. Exit call_frame? No, we'll know this at exit time. Expected exit ip? No, don't need this on 
-   branch trace. Exit ip, exit trace node can be setup on exit.
 
- - So, what if we have two things. A NESTED/RECORDING flag passed as an argument. And a trace_info which is always interpreted
-   as information describing the previous trace's run - exit_node, exit_ip. 
-
- - If the 
 
    
     

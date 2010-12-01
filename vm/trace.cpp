@@ -28,6 +28,8 @@ namespace rubinius {
     op(op),
     pc(pc),
     sp(sp),
+		stck_effect(0),
+		pc_effect(0),
     call_frame(call_frame),
 		cm(state),
 		target_cm(state),
@@ -211,7 +213,9 @@ namespace rubinius {
 		int arg1 = 0;
 		int arg2 = 0;
 		int numargs = 0;
-		bool is_branch = false;
+		int stck_effect = 0;
+		int pc_effect = 0;
+		bool is_jump = false;
 		bool is_handler = false;
 		bool is_term = false;
 
@@ -245,7 +249,7 @@ namespace rubinius {
 			break;
 		}
 		case InstructionSequence::insn_goto: {
-			is_branch = true;
+			is_jump = true;
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			numargs = 1;
 			if(arg1 == anchor->pc && 
@@ -256,13 +260,13 @@ namespace rubinius {
 			break;
 		}
 		case InstructionSequence::insn_goto_if_false: {
-			is_branch = true;
+			is_jump = true;
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			numargs = 1;
 			break;
 		}
 		case InstructionSequence::insn_goto_if_true: {
-			is_branch = true;
+			is_jump = true;
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			numargs = 1;
 			break;
@@ -397,6 +401,8 @@ namespace rubinius {
 		case InstructionSequence::insn_send_method: {
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			numargs = 1;
+			stck_effect = -1;
+			pc_effect = 2;
 
 			int send_args = 0;
 			Object* recv = *(stack_ptr - send_args);
@@ -407,6 +413,8 @@ namespace rubinius {
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			arg2 = (intptr_t)(*(ip_ptr + 2));
 			numargs = 2;
+			stck_effect = -arg2 - 1;
+			pc_effect = 3;
 
 			int send_args = (intptr_t)(*(ip_ptr + 2));
 			Object* recv = *(stack_ptr - send_args);
@@ -417,6 +425,8 @@ namespace rubinius {
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			arg2 = (intptr_t)(*(ip_ptr + 2));
 			numargs = 2;
+			stck_effect = -arg2 - 2;
+			pc_effect = 3;
 			
 			int send_args = (intptr_t)(*(ip_ptr + 2));
 			Object* recv = *(stack_ptr - send_args);
@@ -424,14 +434,18 @@ namespace rubinius {
 			break;
 		}
 		case InstructionSequence::insn_send_stack_with_splat: {
-			arg1 = (intptr_t)(*(ip_ptr + 1));
-			arg2 = (intptr_t)(*(ip_ptr + 2));
-			numargs = 2;
+			DEBUGLN("Canceling record due to send_stack_with_splat.");
+			return TRACE_CANCEL;
+			// arg1 = (intptr_t)(*(ip_ptr + 1));
+			// arg2 = (intptr_t)(*(ip_ptr + 2));
+			// numargs = 2;
+			// stck_effect = -arg2 - 3;
+			// pc_effect = 3;
 
-			int send_args = (intptr_t)(*(ip_ptr + 2));
-			Object* recv = *(stack_ptr - send_args);
-			target_klass = recv->lookup_begin(state);
-			break;
+			// int send_args = (intptr_t)(*(ip_ptr + 2));
+			// Object* recv = *(stack_ptr - send_args);
+			// target_klass = recv->lookup_begin(state);
+			// break;
 		}
 		case InstructionSequence::insn_send_super_stack_with_block: {
 			DEBUGLN("Canceling record due send super stack with block.");
@@ -466,6 +480,8 @@ namespace rubinius {
 		case InstructionSequence::insn_yield_stack: {
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			numargs = 1;
+			stck_effect = -arg1;
+			pc_effect = 2;
 
 			Object* t1 = call_frame->scope->block();
 			if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
@@ -482,23 +498,27 @@ namespace rubinius {
 			}
 		}
 		case InstructionSequence::insn_yield_splat: {
-			arg1 = (intptr_t)(*(ip_ptr + 1));
-			numargs = 1;
+			DEBUGLN("Canceling record due to yield_splat.");
+			return TRACE_CANCEL;
+			// arg1 = (intptr_t)(*(ip_ptr + 1));
+			// numargs = 1;
+			// stck_effect = -arg1 - 1;
+			// pc_effect = 2;
 
-			Object* t1 = call_frame->scope->block();
-			if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
-				CompiledMethod* cm = env->method();
-				target_cm = cm;
-			}
-			else if(t1->nil_p()) {
-				DEBUGLN("Canceling record due to yield to nil block.");
-				return TRACE_CANCEL;
-			} 
-			else{
-				DEBUGLN("Canceling record due to yield to non-static block.");
-				return TRACE_CANCEL;
-			}
-			break;
+			// Object* t1 = call_frame->scope->block();
+			// if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
+			// 	CompiledMethod* cm = env->method();
+			// 	target_cm = cm;
+			// }
+			// else if(t1->nil_p()) {
+			// 	DEBUGLN("Canceling record due to yield to nil block.");
+			// 	return TRACE_CANCEL;
+			// } 
+			// else{
+			// 	DEBUGLN("Canceling record due to yield to non-static block.");
+			// 	return TRACE_CANCEL;
+			// }
+			// break;
 		}
 		case InstructionSequence::insn_string_append: {
 			numargs = 0;
@@ -645,14 +665,18 @@ namespace rubinius {
 			}
 
 			else if(prev->op == InstructionSequence::insn_send_stack ||
-							prev->op == InstructionSequence::insn_send_method ||
+							prev->op == InstructionSequence::insn_send_stack_with_splat ||
 							prev->op == InstructionSequence::insn_send_stack_with_block ||
-							prev->op == InstructionSequence::insn_yield_stack){
+							prev->op == InstructionSequence::insn_send_method ||
+							prev->op == InstructionSequence::insn_yield_stack ||
+							prev->op == InstructionSequence::insn_yield_splat
+							){
 
 				pc_base_counter += prev->cm.get()->backend_method()->total;
 				pc_base = pc_base_counter;
 
-				if(prev->op == InstructionSequence::insn_yield_stack){
+				if(prev->op == InstructionSequence::insn_yield_stack ||
+					 prev->op == InstructionSequence::insn_yield_splat){
 					prev->traced_yield = true;
 				}
 				else{
@@ -681,7 +705,7 @@ namespace rubinius {
 
 		// Make sure jump locations are translated
 		// to trace positions.
-		if(is_branch || is_handler){
+		if(is_jump || is_handler){
 			arg1 += pc_base;
 		}
 
@@ -696,6 +720,8 @@ namespace rubinius {
 		head->arg2 = arg2;
 		head->numargs = numargs;
 		head->side_exit_pc = side_exit_pc;
+		head->stck_effect = stck_effect;
+		head->pc_effect = pc_effect;
 
 		// Support lazy creation of 
 		// initial node - for branch 
@@ -703,6 +729,9 @@ namespace rubinius {
 		if(prev == NULL){
 			entry = head;
 			entry_sp = sp;
+			if(parent_node != NULL){
+				entry->call_depth = parent_node->call_depth;
+			}
 		}
 		else{
 			prev->next = head;

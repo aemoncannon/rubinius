@@ -483,12 +483,14 @@ Object* VMMethod::uncommon_interpreter(STATE,
     call_frame = call_frame->previous;
     vmm = call_frame->cm->backend_method();
 		DEBUGLN("Pushing interp return value...");
+
 		if(result != NULL){
 			call_frame->stk_push(result);
 		}
 		else{
 			DEBUGLN("Handling NULL return in uncommon...");
 		}
+
   }
 
   state->trace_exec_enabled = true;

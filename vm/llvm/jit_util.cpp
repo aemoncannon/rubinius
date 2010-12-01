@@ -961,7 +961,6 @@ extern "C" {
 		Trace* cur_trace = exit_trace;
 
  		while(true){
- 
  			if(activator == NULL) {
 				// Bridge gaps between traces (nested/branches)
 				if(cur_trace->parent_node != NULL){
@@ -973,35 +972,11 @@ extern "C" {
 					break;
 				}
 			}
- 
 			assert(cf);
 			assert(activator->traced_send || activator->traced_yield);
  
-			int stckp;
-			int next_pc;
- 
-			if(activator->op == InstructionSequence::insn_send_stack){
-				stckp = activator->sp - activator->arg2 - 1;
-				next_pc = activator->pc + 3;
-			}
-			else if(activator->op == InstructionSequence::insn_send_stack_with_block){
-				stckp = activator->sp - activator->arg2 - 2;
-				next_pc = activator->pc + 3;
-			}
-			else if(activator->op == InstructionSequence::insn_yield_stack){
-				stckp = activator->sp - activator->arg1;
-				next_pc = activator->pc + 2;
-			}
-			else if(activator->op == InstructionSequence::insn_send_method){
-				stckp = activator->sp - 1;
-				next_pc = activator->pc + 2;
-			}
-			else{
-				stckp = activator->sp - activator->arg2 - 1;
-				next_pc = activator->pc + 3;
-			}
-			cf->set_ip(next_pc);
-			cf->set_sp(stckp);
+			cf->set_ip(activator->pc + activator->pc_effect);
+			cf->set_sp(activator->sp + activator->stck_effect);
  
 			activator = activator->active_send;
 			cf = cf->previous;

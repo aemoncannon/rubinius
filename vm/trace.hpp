@@ -41,6 +41,8 @@ namespace rubinius {
     opcode op;
     int pc;
     int sp;
+    int stck_effect;
+    int pc_effect;
     CallFrame* call_frame;
     TypedRoot<CompiledMethod*> cm;
     TypedRoot<CompiledMethod*> target_cm;
