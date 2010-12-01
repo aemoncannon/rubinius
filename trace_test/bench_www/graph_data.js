@@ -48,6 +48,10 @@ var graphs = [
           [
             10,
             234.147
+          ],
+          [
+            11,
+            247.4524
           ]
         ]
       },
@@ -67,6 +71,10 @@ var graphs = [
           [
             10,
             213.0894
+          ],
+          [
+            11,
+            221.2314
           ]
         ]
       },
@@ -116,6 +124,10 @@ var graphs = [
           [
             10,
             256.0718
+          ],
+          [
+            11,
+            272.3628
           ]
         ]
       }
@@ -131,7 +143,8 @@ var graphs = [
       "11/16/2010 11:43PM",
       "11/28/2010 10:40PM",
       "11/29/2010 10:24PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -144,7 +157,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit.rb",
     "source": "require 'helpers'\n\ndef foo()\n  23\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    if(i < (ITERATIONS/2))\n      a = 24\n      b = foo()\n      c = (b - a) * 1\n      d = c / 1\n      j += d\n    else\n      a = 24\n      b = foo()\n      c = (b - a) * 1\n      d = c / 1\n      j -= d\n    end\n  end\n  puts \"Result: #{j}\"\nend\n\n\nwith_harness do\n  run()\nend\n\n"
@@ -198,6 +212,10 @@ var graphs = [
           [
             10,
             278.269
+          ],
+          [
+            11,
+            292.5006
           ]
         ]
       },
@@ -217,6 +235,10 @@ var graphs = [
           [
             10,
             241.608
+          ],
+          [
+            11,
+            253.7206
           ]
         ]
       },
@@ -266,6 +288,10 @@ var graphs = [
           [
             10,
             273.401
+          ],
+          [
+            11,
+            294.0356
           ]
         ]
       }
@@ -281,7 +307,8 @@ var graphs = [
       "11/16/2010 11:44PM",
       "11/28/2010 10:40PM",
       "11/29/2010 10:24PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -294,7 +321,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit.rb",
     "source": "require 'helpers'\n\ndef foo()\n  23\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    if(i < (ITERATIONS/2))\n      a = 24\n      b = foo()\n      c = (b - a) * 1\n      d = c / 1\n      j += d\n    else\n      a = 24\n      b = foo()\n      c = (b - a) * 1\n      d = c / 1\n      j -= d\n    end\n  end\n  puts \"Result: #{j}\"\nend\n\n\nwith_harness do\n  run()\nend\n\n"
@@ -348,6 +376,10 @@ var graphs = [
           [
             10,
             720.917
+          ],
+          [
+            11,
+            738.4024
           ]
         ]
       },
@@ -367,6 +399,10 @@ var graphs = [
           [
             10,
             577.2488
+          ],
+          [
+            11,
+            594.4022
           ]
         ]
       },
@@ -416,6 +452,10 @@ var graphs = [
           [
             10,
             461.0462
+          ],
+          [
+            11,
+            476.7812
           ]
         ]
       }
@@ -431,7 +471,8 @@ var graphs = [
       "11/16/2010 11:44PM",
       "11/28/2010 10:40PM",
       "11/29/2010 10:24PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -444,7 +485,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit.rb",
     "source": "require 'helpers'\n\ndef foo()\n  23\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    if(i < (ITERATIONS/2))\n      a = 24\n      b = foo()\n      c = (b - a) * 1\n      d = c / 1\n      j += d\n    else\n      a = 24\n      b = foo()\n      c = (b - a) * 1\n      d = c / 1\n      j -= d\n    end\n  end\n  puts \"Result: #{j}\"\nend\n\n\nwith_harness do\n  run()\nend\n\n"
@@ -498,6 +540,10 @@ var graphs = [
           [
             10,
             236.5206
+          ],
+          [
+            11,
+            255.0472
           ]
         ]
       },
@@ -517,6 +563,10 @@ var graphs = [
           [
             10,
             208.51
+          ],
+          [
+            11,
+            221.228
           ]
         ]
       },
@@ -566,6 +616,10 @@ var graphs = [
           [
             10,
             269.1806
+          ],
+          [
+            11,
+            283.9816
           ]
         ]
       }
@@ -581,7 +635,8 @@ var graphs = [
       "11/16/2010 11:44PM",
       "11/28/2010 10:41PM",
       "11/29/2010 10:24PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -594,7 +649,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_in_deep_nesting1.rb",
     "source": "require 'helpers'\n\n\ndef foo(i)\n  if i < ITERATIONS/2\n    true\n  else\n    false\n  end\nend\n\ndef times(i)\n  q = 0\n  while q < 1\n    q += 1\n    foo(i)\n  end\n  2\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    j += times(i)\n    i += 1\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -648,6 +704,10 @@ var graphs = [
           [
             10,
             289.462
+          ],
+          [
+            11,
+            311.9132
           ]
         ]
       },
@@ -667,6 +727,10 @@ var graphs = [
           [
             10,
             248.4486
+          ],
+          [
+            11,
+            260.6346
           ]
         ]
       },
@@ -716,6 +780,10 @@ var graphs = [
           [
             10,
             282.7158
+          ],
+          [
+            11,
+            301.8098
           ]
         ]
       }
@@ -731,7 +799,8 @@ var graphs = [
       "11/16/2010 11:44PM",
       "11/28/2010 10:41PM",
       "11/29/2010 10:25PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -744,7 +813,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_in_deep_nesting1.rb",
     "source": "require 'helpers'\n\n\ndef foo(i)\n  if i < ITERATIONS/2\n    true\n  else\n    false\n  end\nend\n\ndef times(i)\n  q = 0\n  while q < 1\n    q += 1\n    foo(i)\n  end\n  2\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    j += times(i)\n    i += 1\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -798,6 +868,10 @@ var graphs = [
           [
             10,
             235.5996
+          ],
+          [
+            11,
+            249.4196
           ]
         ]
       },
@@ -817,6 +891,10 @@ var graphs = [
           [
             10,
             207.4334
+          ],
+          [
+            11,
+            218.4278
           ]
         ]
       },
@@ -866,6 +944,10 @@ var graphs = [
           [
             10,
             254.2448
+          ],
+          [
+            11,
+            270.5462
           ]
         ]
       }
@@ -881,7 +963,8 @@ var graphs = [
       "11/16/2010 11:44PM",
       "11/28/2010 10:41PM",
       "11/29/2010 10:24PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -894,7 +977,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_in_func.rb",
     "source": "require 'helpers'\n\ndef calc(i)\n  k = 0\n  if i < ITERATIONS/2\n    k = 2\n  else\n    k = -3\n  end\n  k\nend\n\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += calc(i)\n  end\n  j\nend\n\n\nwith_harness do\n  run()\nend\n\n"
@@ -948,6 +1032,10 @@ var graphs = [
           [
             10,
             267.994
+          ],
+          [
+            11,
+            282.224
           ]
         ]
       },
@@ -967,6 +1055,10 @@ var graphs = [
           [
             10,
             231.1686
+          ],
+          [
+            11,
+            243.966
           ]
         ]
       },
@@ -1016,6 +1108,10 @@ var graphs = [
           [
             10,
             262.179
+          ],
+          [
+            11,
+            282.5684
           ]
         ]
       }
@@ -1031,7 +1127,8 @@ var graphs = [
       "11/16/2010 11:44PM",
       "11/28/2010 10:41PM",
       "11/29/2010 10:24PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -1044,7 +1141,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_in_func.rb",
     "source": "require 'helpers'\n\ndef calc(i)\n  k = 0\n  if i < ITERATIONS/2\n    k = 2\n  else\n    k = -3\n  end\n  k\nend\n\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += calc(i)\n  end\n  j\nend\n\n\nwith_harness do\n  run()\nend\n\n"
@@ -1098,6 +1196,10 @@ var graphs = [
           [
             10,
             585.0762
+          ],
+          [
+            11,
+            605.4406
           ]
         ]
       },
@@ -1117,6 +1219,10 @@ var graphs = [
           [
             10,
             459.5018
+          ],
+          [
+            11,
+            468.8066
           ]
         ]
       },
@@ -1166,6 +1272,10 @@ var graphs = [
           [
             10,
             388.1586
+          ],
+          [
+            11,
+            408.25
           ]
         ]
       }
@@ -1181,7 +1291,8 @@ var graphs = [
       "11/16/2010 11:44PM",
       "11/28/2010 10:41PM",
       "11/29/2010 10:24PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -1194,7 +1305,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_in_func.rb",
     "source": "require 'helpers'\n\ndef calc(i)\n  k = 0\n  if i < ITERATIONS/2\n    k = 2\n  else\n    k = -3\n  end\n  k\nend\n\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += calc(i)\n  end\n  j\nend\n\n\nwith_harness do\n  run()\nend\n\n"
@@ -1248,6 +1360,10 @@ var graphs = [
           [
             10,
             234.7372
+          ],
+          [
+            11,
+            249.3266
           ]
         ]
       },
@@ -1267,6 +1383,10 @@ var graphs = [
           [
             10,
             208.3848
+          ],
+          [
+            11,
+            221.7498
           ]
         ]
       },
@@ -1316,6 +1436,10 @@ var graphs = [
           [
             10,
             257.557
+          ],
+          [
+            11,
+            274.766
           ]
         ]
       }
@@ -1331,7 +1455,8 @@ var graphs = [
       "11/16/2010 11:44PM",
       "11/28/2010 10:41PM",
       "11/29/2010 10:24PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -1344,7 +1469,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_in_two_funcs.rb",
     "source": "require 'helpers'\n\ndef foo(i)\n  k = 0\n  if i < ITERATIONS/2\n    k = 2\n  else\n    k = -3\n  end\n  k\nend\n\ndef calc(i)\n  foo(i)\nend\n\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += calc(i)\n  end\n  puts \"Result: #{j}\"\nend\n\n\nwith_harness do\n  run()\nend\n\n"
@@ -1398,6 +1524,10 @@ var graphs = [
           [
             10,
             271.5852
+          ],
+          [
+            11,
+            285.4766
           ]
         ]
       },
@@ -1417,6 +1547,10 @@ var graphs = [
           [
             10,
             236.2782
+          ],
+          [
+            11,
+            248.773
           ]
         ]
       },
@@ -1466,6 +1600,10 @@ var graphs = [
           [
             10,
             267.7324
+          ],
+          [
+            11,
+            289.398
           ]
         ]
       }
@@ -1481,7 +1619,8 @@ var graphs = [
       "11/16/2010 11:44PM",
       "11/28/2010 10:41PM",
       "11/29/2010 10:24PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -1494,7 +1633,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_in_two_funcs.rb",
     "source": "require 'helpers'\n\ndef foo(i)\n  k = 0\n  if i < ITERATIONS/2\n    k = 2\n  else\n    k = -3\n  end\n  k\nend\n\ndef calc(i)\n  foo(i)\nend\n\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += calc(i)\n  end\n  puts \"Result: #{j}\"\nend\n\n\nwith_harness do\n  run()\nend\n\n"
@@ -1548,6 +1688,10 @@ var graphs = [
           [
             10,
             244.1006
+          ],
+          [
+            11,
+            255.3002
           ]
         ]
       },
@@ -1567,6 +1711,10 @@ var graphs = [
           [
             10,
             213.1018
+          ],
+          [
+            11,
+            232.066
           ]
         ]
       },
@@ -1616,6 +1764,10 @@ var graphs = [
           [
             10,
             242.765
+          ],
+          [
+            11,
+            258.4954
           ]
         ]
       }
@@ -1631,7 +1783,8 @@ var graphs = [
       "11/16/2010 11:45PM",
       "11/28/2010 10:41PM",
       "11/29/2010 10:25PM",
-      "11/29/2010 11:33PM"
+      "11/29/2010 11:33PM",
+      "11/30/2010 06:02PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -1644,7 +1797,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_with_yield.rb",
     "source": "require 'helpers'\n\n\ndef foo(i)\n  k = 0\n  if i < ITERATIONS/2\n    k = 2\n  else\n    k = -2\n  end\n  k\nend\n\ndef calc(i)\n  k = 666\n  1.times do\n    k += foo(i)\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    j += calc(i)\n    i += 1\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -1698,6 +1852,10 @@ var graphs = [
           [
             10,
             370.8526
+          ],
+          [
+            11,
+            406.259
           ]
         ]
       },
@@ -1717,6 +1875,10 @@ var graphs = [
           [
             10,
             325.2856
+          ],
+          [
+            11,
+            352.7272
           ]
         ]
       },
@@ -1766,6 +1928,10 @@ var graphs = [
           [
             10,
             387.484
+          ],
+          [
+            11,
+            399.3406
           ]
         ]
       }
@@ -1781,7 +1947,8 @@ var graphs = [
       "11/16/2010 11:45PM",
       "11/28/2010 10:42PM",
       "11/29/2010 10:25PM",
-      "11/29/2010 11:33PM"
+      "11/29/2010 11:33PM",
+      "11/30/2010 06:02PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -1794,7 +1961,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_with_yield.rb",
     "source": "require 'helpers'\n\n\ndef foo(i)\n  k = 0\n  if i < ITERATIONS/2\n    k = 2\n  else\n    k = -2\n  end\n  k\nend\n\ndef calc(i)\n  k = 666\n  1.times do\n    k += foo(i)\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    j += calc(i)\n    i += 1\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -1848,6 +2016,10 @@ var graphs = [
           [
             10,
             1450.311
+          ],
+          [
+            11,
+            1559.7524
           ]
         ]
       },
@@ -1867,6 +2039,10 @@ var graphs = [
           [
             10,
             1154.6424
+          ],
+          [
+            11,
+            1181.1156
           ]
         ]
       },
@@ -1916,6 +2092,10 @@ var graphs = [
           [
             10,
             1588.4476
+          ],
+          [
+            11,
+            1611.177
           ]
         ]
       }
@@ -1931,7 +2111,8 @@ var graphs = [
       "11/16/2010 11:45PM",
       "11/28/2010 10:42PM",
       "11/29/2010 10:25PM",
-      "11/29/2010 11:33PM"
+      "11/29/2010 11:33PM",
+      "11/30/2010 06:02PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -1944,7 +2125,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_with_yield.rb",
     "source": "require 'helpers'\n\n\ndef foo(i)\n  k = 0\n  if i < ITERATIONS/2\n    k = 2\n  else\n    k = -2\n  end\n  k\nend\n\ndef calc(i)\n  k = 666\n  1.times do\n    k += foo(i)\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    j += calc(i)\n    i += 1\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -1998,6 +2180,10 @@ var graphs = [
           [
             10,
             237.6802
+          ],
+          [
+            11,
+            254.1046
           ]
         ]
       },
@@ -2017,6 +2203,10 @@ var graphs = [
           [
             10,
             211.2282
+          ],
+          [
+            11,
+            226.8064
           ]
         ]
       },
@@ -2066,6 +2256,10 @@ var graphs = [
           [
             10,
             237.9996
+          ],
+          [
+            11,
+            253.628
           ]
         ]
       }
@@ -2081,7 +2275,8 @@ var graphs = [
       "11/16/2010 11:44PM",
       "11/28/2010 10:41PM",
       "11/29/2010 10:25PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:02PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -2094,7 +2289,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_with_yield_simple.rb",
     "source": "require 'helpers'\n\ndef calc(i)\n  1.times do\n    3\n  end\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    j += calc(i)\n    i += 1\n  end\n  j\nend\n\n\n\nwith_harness do\n  run()\nend\n\n\n\n"
@@ -2148,6 +2344,10 @@ var graphs = [
           [
             10,
             325.3916
+          ],
+          [
+            11,
+            343.8484
           ]
         ]
       },
@@ -2167,6 +2367,10 @@ var graphs = [
           [
             10,
             292.6064
+          ],
+          [
+            11,
+            308.7004
           ]
         ]
       },
@@ -2216,6 +2420,10 @@ var graphs = [
           [
             10,
             343.8632
+          ],
+          [
+            11,
+            351.8046
           ]
         ]
       }
@@ -2231,7 +2439,8 @@ var graphs = [
       "11/16/2010 11:45PM",
       "11/28/2010 10:41PM",
       "11/29/2010 10:25PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:02PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -2244,7 +2453,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "if_exit_with_yield_simple.rb",
     "source": "require 'helpers'\n\ndef calc(i)\n  1.times do\n    3\n  end\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    j += calc(i)\n    i += 1\n  end\n  j\nend\n\n\n\nwith_harness do\n  run()\nend\n\n\n\n"
@@ -2298,6 +2508,10 @@ var graphs = [
           [
             10,
             230.676
+          ],
+          [
+            11,
+            244.1912
           ]
         ]
       },
@@ -2317,6 +2531,10 @@ var graphs = [
           [
             10,
             208.1616
+          ],
+          [
+            11,
+            490.188
           ]
         ]
       },
@@ -2366,6 +2584,10 @@ var graphs = [
           [
             10,
             245.9706
+          ],
+          [
+            11,
+            261.6652
           ]
         ]
       }
@@ -2381,7 +2603,8 @@ var graphs = [
       "11/16/2010 11:39PM",
       "11/28/2010 10:33PM",
       "11/29/2010 10:16PM",
-      "11/29/2010 11:26PM"
+      "11/29/2010 11:26PM",
+      "11/30/2010 05:55PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -2394,7 +2617,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop.rb",
     "source": "require 'helpers'\n\ndef run()\n  i = 0\n  while i < ITERATIONS\n    i += 1\n  end\n  i\nend\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -2448,6 +2672,10 @@ var graphs = [
           [
             10,
             239.5604
+          ],
+          [
+            11,
+            253.6892
           ]
         ]
       },
@@ -2467,6 +2695,10 @@ var graphs = [
           [
             10,
             210.477
+          ],
+          [
+            11,
+            224.4324
           ]
         ]
       },
@@ -2516,6 +2748,10 @@ var graphs = [
           [
             10,
             243.1988
+          ],
+          [
+            11,
+            258.6818
           ]
         ]
       }
@@ -2531,7 +2767,8 @@ var graphs = [
       "11/16/2010 11:40PM",
       "11/28/2010 10:33PM",
       "11/29/2010 10:16PM",
-      "11/29/2010 11:27PM"
+      "11/29/2010 11:27PM",
+      "11/30/2010 05:55PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -2544,7 +2781,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop.rb",
     "source": "require 'helpers'\n\ndef run()\n  i = 0\n  while i < ITERATIONS\n    i += 1\n  end\n  i\nend\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -2598,6 +2836,10 @@ var graphs = [
           [
             10,
             323.3774
+          ],
+          [
+            11,
+            351.2002
           ]
         ]
       },
@@ -2617,6 +2859,10 @@ var graphs = [
           [
             10,
             253.786
+          ],
+          [
+            11,
+            269.2864
           ]
         ]
       },
@@ -2666,6 +2912,10 @@ var graphs = [
           [
             10,
             287.08
+          ],
+          [
+            11,
+            300.7874
           ]
         ]
       }
@@ -2681,7 +2931,8 @@ var graphs = [
       "11/16/2010 11:40PM",
       "11/28/2010 10:33PM",
       "11/29/2010 10:16PM",
-      "11/29/2010 11:27PM"
+      "11/29/2010 11:27PM",
+      "11/30/2010 05:55PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -2694,7 +2945,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop.rb",
     "source": "require 'helpers'\n\ndef run()\n  i = 0\n  while i < ITERATIONS\n    i += 1\n  end\n  i\nend\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -2724,6 +2976,10 @@ var graphs = [
           [
             4,
             234.9586
+          ],
+          [
+            5,
+            246.7942
           ]
         ]
       },
@@ -2737,6 +2993,10 @@ var graphs = [
           [
             4,
             205.4218
+          ],
+          [
+            5,
+            218.4888
           ]
         ]
       },
@@ -2762,6 +3022,10 @@ var graphs = [
           [
             4,
             248.0714
+          ],
+          [
+            5,
+            264.4264
           ]
         ]
       }
@@ -2771,14 +3035,16 @@ var graphs = [
       "11/16/2010 11:49PM",
       "11/28/2010 10:46PM",
       "11/29/2010 10:30PM",
-      "11/29/2010 11:36PM"
+      "11/29/2010 11:36PM",
+      "11/30/2010 06:05PM"
     ],
     "commits": [
       "63c789303dd10237fca56a15a1d3c6fe2fb3e3fb",
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop_with_changing_target.rb",
     "source": "require 'helpers'\n\n\nclass Cat\n  def legs\n    4\n  end\nend\n\nclass Chimp\n  def legs\n    2\n  end\nend\n\nclass Mollusk\n  def legs\n    1\n  end\nend\n\n\ndef foo(target)\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += target.legs\n  end\n  j\nend\n\n\ndef run()\n  j = 0\n  j += foo(Cat.new)\n  j += foo(Chimp.new)\n  j += foo(Mollusk.new)\n  puts \"result #{j}\"\n  j\nend\n\n\nwith_harness do\n  run()\nend\n"
@@ -2808,6 +3074,10 @@ var graphs = [
           [
             4,
             237.2358
+          ],
+          [
+            5,
+            253.04
           ]
         ]
       },
@@ -2821,6 +3091,10 @@ var graphs = [
           [
             4,
             210.9238
+          ],
+          [
+            5,
+            220.1686
           ]
         ]
       },
@@ -2846,6 +3120,10 @@ var graphs = [
           [
             4,
             250.952
+          ],
+          [
+            5,
+            262.7276
           ]
         ]
       }
@@ -2855,14 +3133,16 @@ var graphs = [
       "11/16/2010 11:49PM",
       "11/28/2010 10:47PM",
       "11/29/2010 10:30PM",
-      "11/29/2010 11:36PM"
+      "11/29/2010 11:36PM",
+      "11/30/2010 06:05PM"
     ],
     "commits": [
       "63c789303dd10237fca56a15a1d3c6fe2fb3e3fb",
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop_with_changing_target.rb",
     "source": "require 'helpers'\n\n\nclass Cat\n  def legs\n    4\n  end\nend\n\nclass Chimp\n  def legs\n    2\n  end\nend\n\nclass Mollusk\n  def legs\n    1\n  end\nend\n\n\ndef foo(target)\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += target.legs\n  end\n  j\nend\n\n\ndef run()\n  j = 0\n  j += foo(Cat.new)\n  j += foo(Chimp.new)\n  j += foo(Mollusk.new)\n  puts \"result #{j}\"\n  j\nend\n\n\nwith_harness do\n  run()\nend\n"
@@ -2896,6 +3176,10 @@ var graphs = [
           [
             5,
             246.64
+          ],
+          [
+            6,
+            254.267
           ]
         ]
       },
@@ -2910,6 +3194,10 @@ var graphs = [
           [
             5,
             215.327
+          ],
+          [
+            6,
+            228.7954
           ]
         ]
       },
@@ -2939,6 +3227,10 @@ var graphs = [
           [
             5,
             240.8682
+          ],
+          [
+            6,
+            251.4992
           ]
         ]
       }
@@ -2949,7 +3241,8 @@ var graphs = [
       "11/16/2010 11:48PM",
       "11/28/2010 10:46PM",
       "11/29/2010 10:29PM",
-      "11/29/2010 11:36PM"
+      "11/29/2010 11:36PM",
+      "11/30/2010 06:05PM"
     ],
     "commits": [
       "df11426152f31a94b89337495b772f1ddfe58a09",
@@ -2957,7 +3250,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop_with_div_by_zero.rb",
     "source": "require 'helpers'\n\ndef run()\n  hash = {}\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    begin\n      j += 1 / 0\n    rescue Exception => e\n      j += 1\n    end\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n"
@@ -2991,6 +3285,10 @@ var graphs = [
           [
             5,
             371.689
+          ],
+          [
+            6,
+            380.431
           ]
         ]
       },
@@ -3005,6 +3303,10 @@ var graphs = [
           [
             5,
             332.4956
+          ],
+          [
+            6,
+            344.312
           ]
         ]
       },
@@ -3034,6 +3336,10 @@ var graphs = [
           [
             5,
             370.1952
+          ],
+          [
+            6,
+            379.5826
           ]
         ]
       }
@@ -3044,7 +3350,8 @@ var graphs = [
       "11/16/2010 11:48PM",
       "11/28/2010 10:46PM",
       "11/29/2010 10:29PM",
-      "11/29/2010 11:36PM"
+      "11/29/2010 11:36PM",
+      "11/30/2010 06:05PM"
     ],
     "commits": [
       "df11426152f31a94b89337495b772f1ddfe58a09",
@@ -3052,7 +3359,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop_with_div_by_zero.rb",
     "source": "require 'helpers'\n\ndef run()\n  hash = {}\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    begin\n      j += 1 / 0\n    rescue Exception => e\n      j += 1\n    end\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n"
@@ -3106,6 +3414,10 @@ var graphs = [
           [
             10,
             278.8018
+          ],
+          [
+            11,
+            288.943
           ]
         ]
       },
@@ -3125,6 +3437,10 @@ var graphs = [
           [
             10,
             241.9516
+          ],
+          [
+            11,
+            255.0268
           ]
         ]
       },
@@ -3174,6 +3490,10 @@ var graphs = [
           [
             10,
             319.3912
+          ],
+          [
+            11,
+            335.6316
           ]
         ]
       }
@@ -3189,7 +3509,8 @@ var graphs = [
       "11/16/2010 11:47PM",
       "11/28/2010 10:45PM",
       "11/29/2010 10:28PM",
-      "11/29/2010 11:35PM"
+      "11/29/2010 11:35PM",
+      "11/30/2010 06:04PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -3202,7 +3523,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop_with_hash.rb",
     "source": "require 'helpers'\n\ndef run()\n  hash = {}\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    hash[i] = i\n    i += 1\n    j += hash[i - 1]\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n"
@@ -3418,6 +3740,10 @@ var graphs = [
           [
             10,
             248.0156
+          ],
+          [
+            11,
+            256.0946
           ]
         ]
       },
@@ -3437,6 +3763,10 @@ var graphs = [
           [
             10,
             222.2392
+          ],
+          [
+            11,
+            233.6526
           ]
         ]
       },
@@ -3486,6 +3816,10 @@ var graphs = [
           [
             10,
             244.1912
+          ],
+          [
+            11,
+            255.9632
           ]
         ]
       }
@@ -3501,7 +3835,8 @@ var graphs = [
       "11/16/2010 11:48PM",
       "11/28/2010 10:45PM",
       "11/29/2010 10:29PM",
-      "11/29/2010 11:35PM"
+      "11/29/2010 11:35PM",
+      "11/30/2010 06:04PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -3514,7 +3849,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop_with_puts.rb",
     "source": "require 'helpers'\n\ndef run()\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    puts \".\"\n  end\n  i\nend\n\nwith_harness do\n  run()\nend\n"
@@ -3548,6 +3884,10 @@ var graphs = [
           [
             5,
             377.4722
+          ],
+          [
+            6,
+            400.2586
           ]
         ]
       },
@@ -3562,6 +3902,10 @@ var graphs = [
           [
             5,
             355.608
+          ],
+          [
+            6,
+            368.9662
           ]
         ]
       },
@@ -3591,6 +3935,10 @@ var graphs = [
           [
             5,
             389.3438
+          ],
+          [
+            6,
+            397.737
           ]
         ]
       }
@@ -3601,7 +3949,8 @@ var graphs = [
       "11/16/2010 11:48PM",
       "11/28/2010 10:45PM",
       "11/29/2010 10:29PM",
-      "11/29/2010 11:35PM"
+      "11/29/2010 11:35PM",
+      "11/30/2010 06:04PM"
     ],
     "commits": [
       "df11426152f31a94b89337495b772f1ddfe58a09",
@@ -3609,7 +3958,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop_with_puts.rb",
     "source": "require 'helpers'\n\ndef run()\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    puts \".\"\n  end\n  i\nend\n\nwith_harness do\n  run()\nend\n"
@@ -3635,6 +3985,10 @@ var graphs = [
           [
             3,
             262.7042
+          ],
+          [
+            4,
+            273.0264
           ]
         ]
       },
@@ -3647,6 +4001,10 @@ var graphs = [
           [
             3,
             229.6152
+          ],
+          [
+            4,
+            237.337
           ]
         ]
       },
@@ -3668,6 +4026,10 @@ var graphs = [
           [
             3,
             259.802
+          ],
+          [
+            4,
+            269.7806
           ]
         ]
       }
@@ -3676,13 +4038,15 @@ var graphs = [
       "11/16/2010 11:48PM",
       "11/28/2010 10:45PM",
       "11/29/2010 10:29PM",
-      "11/29/2010 11:35PM"
+      "11/29/2010 11:35PM",
+      "11/30/2010 06:04PM"
     ],
     "commits": [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop_with_string_ops.rb",
     "source": "require 'helpers'\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    a = \"apples and oranges\".gsub(\"e\", \"q\")\n    b = a.include?(\"es\")\n    i += 1\n    if b\n      j += 1\n    end\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n"
@@ -3708,6 +4072,10 @@ var graphs = [
           [
             3,
             532.6182
+          ],
+          [
+            4,
+            548.7696
           ]
         ]
       },
@@ -3720,6 +4088,10 @@ var graphs = [
           [
             3,
             431.6778
+          ],
+          [
+            4,
+            445.512
           ]
         ]
       },
@@ -3741,6 +4113,10 @@ var graphs = [
           [
             3,
             549.8216
+          ],
+          [
+            4,
+            547.2312
           ]
         ]
       }
@@ -3749,13 +4125,15 @@ var graphs = [
       "11/16/2010 11:48PM",
       "11/28/2010 10:46PM",
       "11/29/2010 10:29PM",
-      "11/29/2010 11:35PM"
+      "11/29/2010 11:35PM",
+      "11/30/2010 06:05PM"
     ],
     "commits": [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "loop_with_string_ops.rb",
     "source": "require 'helpers'\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    a = \"apples and oranges\".gsub(\"e\", \"q\")\n    b = a.include?(\"es\")\n    i += 1\n    if b\n      j += 1\n    end\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n"
@@ -3809,6 +4187,10 @@ var graphs = [
           [
             10,
             1118.9082
+          ],
+          [
+            11,
+            1172.7658
           ]
         ]
       },
@@ -3828,6 +4210,10 @@ var graphs = [
           [
             10,
             603.6528
+          ],
+          [
+            11,
+            614.067
           ]
         ]
       },
@@ -3877,6 +4263,10 @@ var graphs = [
           [
             10,
             723.0132
+          ],
+          [
+            11,
+            738.8038
           ]
         ]
       }
@@ -3892,7 +4282,8 @@ var graphs = [
       "11/16/2010 11:42PM",
       "11/28/2010 10:38PM",
       "11/29/2010 10:21PM",
-      "11/29/2010 11:30PM"
+      "11/29/2010 11:30PM",
+      "11/30/2010 05:59PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -3905,7 +4296,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_funcs.rb",
     "source": "require 'helpers'\n\n\ndef foo()\n  k = 0\n  while k < 1000\n    k += 1\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += foo()\n  end\n  j\nend\n\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -3959,6 +4351,10 @@ var graphs = [
           [
             10,
             9128.2628
+          ],
+          [
+            11,
+            9732.6358
           ]
         ]
       },
@@ -3978,6 +4374,10 @@ var graphs = [
           [
             10,
             4201.9144
+          ],
+          [
+            11,
+            4203.1518
           ]
         ]
       },
@@ -4027,6 +4427,10 @@ var graphs = [
           [
             10,
             5176.0124
+          ],
+          [
+            11,
+            5112.995
           ]
         ]
       }
@@ -4042,7 +4446,8 @@ var graphs = [
       "11/16/2010 11:43PM",
       "11/28/2010 10:40PM",
       "11/29/2010 10:22PM",
-      "11/29/2010 11:31PM"
+      "11/29/2010 11:31PM",
+      "11/30/2010 06:00PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -4055,7 +4460,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_funcs.rb",
     "source": "require 'helpers'\n\n\ndef foo()\n  k = 0\n  while k < 1000\n    k += 1\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += foo()\n  end\n  j\nend\n\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -4109,6 +4515,10 @@ var graphs = [
           [
             10,
             265.5534
+          ],
+          [
+            11,
+            277.6156
           ]
         ]
       },
@@ -4128,6 +4538,10 @@ var graphs = [
           [
             10,
             233.1332
+          ],
+          [
+            11,
+            249.7292
           ]
         ]
       },
@@ -4177,6 +4591,10 @@ var graphs = [
           [
             10,
             267.89
+          ],
+          [
+            11,
+            286.0348
           ]
         ]
       }
@@ -4192,7 +4610,8 @@ var graphs = [
       "11/16/2010 11:45PM",
       "11/28/2010 10:42PM",
       "11/29/2010 10:25PM",
-      "11/29/2010 11:33PM"
+      "11/29/2010 11:33PM",
+      "11/30/2010 06:02PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -4205,7 +4624,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_funcs_and_exit.rb",
     "source": "require 'helpers'\n\ndef foo(i)\n  if i < ITERATIONS * 0.5\n    2\n  else\n    1\n  end\nend\n\ndef calc(i)\n  k = 0\n  while k < 100\n    k += foo(i)\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += calc(i)\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n\n"
@@ -4259,6 +4679,10 @@ var graphs = [
           [
             10,
             496.2676
+          ],
+          [
+            11,
+            520.1802
           ]
         ]
       },
@@ -4278,6 +4702,10 @@ var graphs = [
           [
             10,
             425.961
+          ],
+          [
+            11,
+            433.076
           ]
         ]
       },
@@ -4327,6 +4755,10 @@ var graphs = [
           [
             10,
             433.1328
+          ],
+          [
+            11,
+            438.4032
           ]
         ]
       }
@@ -4342,7 +4774,8 @@ var graphs = [
       "11/16/2010 11:45PM",
       "11/28/2010 10:42PM",
       "11/29/2010 10:26PM",
-      "11/29/2010 11:33PM"
+      "11/29/2010 11:33PM",
+      "11/30/2010 06:02PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -4355,7 +4788,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_funcs_and_exit.rb",
     "source": "require 'helpers'\n\ndef foo(i)\n  if i < ITERATIONS * 0.5\n    2\n  else\n    1\n  end\nend\n\ndef calc(i)\n  k = 0\n  while k < 100\n    k += foo(i)\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += calc(i)\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n\n"
@@ -4385,6 +4819,10 @@ var graphs = [
           [
             4,
             250.4738
+          ],
+          [
+            5,
+            260.4664
           ]
         ]
       },
@@ -4398,6 +4836,10 @@ var graphs = [
           [
             4,
             217.4024
+          ],
+          [
+            5,
+            228.7464
           ]
         ]
       },
@@ -4423,6 +4865,10 @@ var graphs = [
           [
             4,
             251.755
+          ],
+          [
+            5,
+            271.145
           ]
         ]
       }
@@ -4432,14 +4878,16 @@ var graphs = [
       "11/16/2010 11:49PM",
       "11/28/2010 10:46PM",
       "11/29/2010 10:30PM",
-      "11/29/2010 11:36PM"
+      "11/29/2010 11:36PM",
+      "11/30/2010 06:05PM"
     ],
     "commits": [
       "63c789303dd10237fca56a15a1d3c6fe2fb3e3fb",
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_funcs_and_throw_exception.rb",
     "source": "require 'helpers'\n\ndef foo(i)\n  if i < ITERATIONS * 0.5\n    2\n  else\n    3 / 0\n  end\nend\n\ndef calc(i)\n  k = 0\n  while k < 100\n    k += foo(i)\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    begin\n      i += 1\n      j += calc(i)\n    rescue Exception => e\n    end\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n\n"
@@ -4469,6 +4917,10 @@ var graphs = [
           [
             4,
             406.3986
+          ],
+          [
+            5,
+            416.111
           ]
         ]
       },
@@ -4482,6 +4934,10 @@ var graphs = [
           [
             4,
             351.3372
+          ],
+          [
+            5,
+            363.0324
           ]
         ]
       },
@@ -4507,6 +4963,10 @@ var graphs = [
           [
             4,
             392.9048
+          ],
+          [
+            5,
+            398.9168
           ]
         ]
       }
@@ -4516,14 +4976,16 @@ var graphs = [
       "11/16/2010 11:49PM",
       "11/28/2010 10:46PM",
       "11/29/2010 10:30PM",
-      "11/29/2010 11:36PM"
+      "11/29/2010 11:36PM",
+      "11/30/2010 06:05PM"
     ],
     "commits": [
       "63c789303dd10237fca56a15a1d3c6fe2fb3e3fb",
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_funcs_and_throw_exception.rb",
     "source": "require 'helpers'\n\ndef foo(i)\n  if i < ITERATIONS * 0.5\n    2\n  else\n    3 / 0\n  end\nend\n\ndef calc(i)\n  k = 0\n  while k < 100\n    k += foo(i)\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    begin\n      i += 1\n      j += calc(i)\n    rescue Exception => e\n    end\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n\n"
@@ -4577,6 +5039,10 @@ var graphs = [
           [
             10,
             1149.835
+          ],
+          [
+            11,
+            1136.146
           ]
         ]
       },
@@ -4596,6 +5062,10 @@ var graphs = [
           [
             10,
             731.6326
+          ],
+          [
+            11,
+            739.6556
           ]
         ]
       },
@@ -4645,6 +5115,10 @@ var graphs = [
           [
             10,
             719.3916
+          ],
+          [
+            11,
+            725.6644
           ]
         ]
       }
@@ -4660,7 +5134,8 @@ var graphs = [
       "11/16/2010 11:46PM",
       "11/28/2010 10:43PM",
       "11/29/2010 10:26PM",
-      "11/29/2010 11:33PM"
+      "11/29/2010 11:33PM",
+      "11/30/2010 06:03PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -4673,7 +5148,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_funcs_with_optional_args.rb",
     "source": "require 'helpers'\n\n\ndef foo(m = 1)\n  k = 0\n  while k < 1000\n    k += m\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += foo()\n  end\n  j\nend\n\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -4727,6 +5203,10 @@ var graphs = [
           [
             10,
             9284.0806
+          ],
+          [
+            11,
+            9164.4338
           ]
         ]
       },
@@ -4746,6 +5226,10 @@ var graphs = [
           [
             10,
             5399.7194
+          ],
+          [
+            11,
+            5428.3782
           ]
         ]
       },
@@ -4795,6 +5279,10 @@ var graphs = [
           [
             10,
             5054.3748
+          ],
+          [
+            11,
+            5046.9704
           ]
         ]
       }
@@ -4810,7 +5298,8 @@ var graphs = [
       "11/16/2010 11:47PM",
       "11/28/2010 10:44PM",
       "11/29/2010 10:28PM",
-      "11/29/2010 11:35PM"
+      "11/29/2010 11:35PM",
+      "11/30/2010 06:03PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -4823,7 +5312,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_funcs_with_optional_args.rb",
     "source": "require 'helpers'\n\n\ndef foo(m = 1)\n  k = 0\n  while k < 1000\n    k += m\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += foo()\n  end\n  j\nend\n\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -4877,6 +5367,10 @@ var graphs = [
           [
             10,
             237.993
+          ],
+          [
+            11,
+            249.4074
           ]
         ]
       },
@@ -4896,6 +5390,10 @@ var graphs = [
           [
             10,
             210.3918
+          ],
+          [
+            11,
+            221.0266
           ]
         ]
       },
@@ -4945,6 +5443,10 @@ var graphs = [
           [
             10,
             257.2014
+          ],
+          [
+            11,
+            272.9026
           ]
         ]
       }
@@ -4960,7 +5462,8 @@ var graphs = [
       "11/16/2010 11:43PM",
       "11/28/2010 10:40PM",
       "11/29/2010 10:23PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -4973,7 +5476,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_funcs_with_yield.rb",
     "source": "require 'helpers'\n\n\ndef foo()\n  k = 0\n  k.times do\n    k += 1\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += foo()\n  end\n  j\nend\n\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -5027,6 +5531,10 @@ var graphs = [
           [
             10,
             311.0364
+          ],
+          [
+            11,
+            326.482
           ]
         ]
       },
@@ -5046,6 +5554,10 @@ var graphs = [
           [
             10,
             280.0594
+          ],
+          [
+            11,
+            292.1994
           ]
         ]
       },
@@ -5095,6 +5607,10 @@ var graphs = [
           [
             10,
             301.5614
+          ],
+          [
+            11,
+            321.2348
           ]
         ]
       }
@@ -5110,7 +5626,8 @@ var graphs = [
       "11/16/2010 11:43PM",
       "11/28/2010 10:40PM",
       "11/29/2010 10:23PM",
-      "11/29/2010 11:32PM"
+      "11/29/2010 11:32PM",
+      "11/30/2010 06:01PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -5123,7 +5640,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_funcs_with_yield.rb",
     "source": "require 'helpers'\n\n\ndef foo()\n  k = 0\n  k.times do\n    k += 1\n  end\n  k\nend\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += foo()\n  end\n  j\nend\n\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -5177,6 +5695,10 @@ var graphs = [
           [
             10,
             1649.824
+          ],
+          [
+            11,
+            1816.8594
           ]
         ]
       },
@@ -5196,6 +5718,10 @@ var graphs = [
           [
             10,
             980.1852
+          ],
+          [
+            11,
+            1004.5984
           ]
         ]
       },
@@ -5245,6 +5771,10 @@ var graphs = [
           [
             10,
             949.5066
+          ],
+          [
+            11,
+            933.2952
           ]
         ]
       }
@@ -5260,7 +5790,8 @@ var graphs = [
       "11/16/2010 11:40PM",
       "11/28/2010 10:34PM",
       "11/29/2010 10:17PM",
-      "11/29/2010 11:27PM"
+      "11/29/2010 11:27PM",
+      "11/30/2010 05:56PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -5273,7 +5804,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_simple.rb",
     "source": "require 'helpers'\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    k = 0\n    while k < 1000\n      j += 1\n      k += 1\n    end\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -5327,6 +5859,10 @@ var graphs = [
           [
             10,
             14419.0052
+          ],
+          [
+            11,
+            16008.6246
           ]
         ]
       },
@@ -5346,6 +5882,10 @@ var graphs = [
           [
             10,
             7839.7722
+          ],
+          [
+            11,
+            7832.6434
           ]
         ]
       },
@@ -5395,6 +5935,10 @@ var graphs = [
           [
             10,
             7214.9946
+          ],
+          [
+            11,
+            7260.8842
           ]
         ]
       }
@@ -5410,7 +5954,8 @@ var graphs = [
       "11/16/2010 11:42PM",
       "11/28/2010 10:37PM",
       "11/29/2010 10:19PM",
-      "11/29/2010 11:29PM"
+      "11/29/2010 11:29PM",
+      "11/30/2010 05:58PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -5423,7 +5968,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nest_simple.rb",
     "source": "require 'helpers'\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    k = 0\n    while k < 1000\n      j += 1\n      k += 1\n    end\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n"
@@ -5453,6 +5999,10 @@ var graphs = [
           [
             4,
             315.4762
+          ],
+          [
+            5,
+            327.307
           ]
         ]
       },
@@ -5466,6 +6016,10 @@ var graphs = [
           [
             4,
             260.512
+          ],
+          [
+            5,
+            288.332
           ]
         ]
       },
@@ -5491,6 +6045,10 @@ var graphs = [
           [
             4,
             287.2218
+          ],
+          [
+            5,
+            306.2998
           ]
         ]
       }
@@ -5500,14 +6058,16 @@ var graphs = [
       "11/16/2010 11:48PM",
       "11/28/2010 10:46PM",
       "11/29/2010 10:29PM",
-      "11/29/2010 11:36PM"
+      "11/29/2010 11:36PM",
+      "11/30/2010 06:05PM"
     ],
     "commits": [
       "63c789303dd10237fca56a15a1d3c6fe2fb3e3fb",
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nested_funcs_with_div_by_zero.rb",
     "source": "require 'helpers'\n\n\ndef foo()\n  k = 0\n  while k < 1000\n    k += 1\n    if k > 500\n      k += k / 0\n    end\n  end\n  k\nend\n\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    begin\n      j += foo()\n    rescue Exception => e\n      j += 1\n    end\n  end\n  j\nend\n\n\nwith_harness do\n  run()\nend\n"
@@ -5537,6 +6097,10 @@ var graphs = [
           [
             4,
             1075.695
+          ],
+          [
+            5,
+            1130.4592
           ]
         ]
       },
@@ -5550,6 +6114,10 @@ var graphs = [
           [
             4,
             768.8222
+          ],
+          [
+            5,
+            781.3172
           ]
         ]
       },
@@ -5575,6 +6143,10 @@ var graphs = [
           [
             4,
             750.9104
+          ],
+          [
+            5,
+            773.4646
           ]
         ]
       }
@@ -5584,14 +6156,16 @@ var graphs = [
       "11/16/2010 11:49PM",
       "11/28/2010 10:46PM",
       "11/29/2010 10:30PM",
-      "11/29/2010 11:36PM"
+      "11/29/2010 11:36PM",
+      "11/30/2010 06:05PM"
     ],
     "commits": [
       "63c789303dd10237fca56a15a1d3c6fe2fb3e3fb",
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "nested_funcs_with_div_by_zero.rb",
     "source": "require 'helpers'\n\n\ndef foo()\n  k = 0\n  while k < 1000\n    k += 1\n    if k > 500\n      k += k / 0\n    end\n  end\n  k\nend\n\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    begin\n      j += foo()\n    rescue Exception => e\n      j += 1\n    end\n  end\n  j\nend\n\n\nwith_harness do\n  run()\nend\n"
@@ -5645,6 +6219,10 @@ var graphs = [
           [
             10,
             246.549
+          ],
+          [
+            11,
+            268.9752
           ]
         ]
       },
@@ -5664,6 +6242,10 @@ var graphs = [
           [
             10,
             223.3656
+          ],
+          [
+            11,
+            235.3822
           ]
         ]
       },
@@ -5713,6 +6295,10 @@ var graphs = [
           [
             10,
             247.3708
+          ],
+          [
+            11,
+            259.8182
           ]
         ]
       }
@@ -5728,7 +6314,8 @@ var graphs = [
       "11/16/2010 11:40PM",
       "11/28/2010 10:33PM",
       "11/29/2010 10:16PM",
-      "11/29/2010 11:27PM"
+      "11/29/2010 11:27PM",
+      "11/30/2010 05:56PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -5741,7 +6328,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "sqrt.rb",
     "source": "require 'helpers'\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += Math.sqrt(4.0)\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n\n"
@@ -5795,6 +6383,10 @@ var graphs = [
           [
             10,
             410.4288
+          ],
+          [
+            11,
+            427.553
           ]
         ]
       },
@@ -5814,6 +6406,10 @@ var graphs = [
           [
             10,
             395.7322
+          ],
+          [
+            11,
+            428.1506
           ]
         ]
       },
@@ -5863,6 +6459,10 @@ var graphs = [
           [
             10,
             438.7082
+          ],
+          [
+            11,
+            435.951
           ]
         ]
       }
@@ -5878,7 +6478,8 @@ var graphs = [
       "11/16/2010 11:40PM",
       "11/28/2010 10:33PM",
       "11/29/2010 10:16PM",
-      "11/29/2010 11:27PM"
+      "11/29/2010 11:27PM",
+      "11/30/2010 05:56PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -5891,7 +6492,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "sqrt.rb",
     "source": "require 'helpers'\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += Math.sqrt(4.0)\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n\n"
@@ -5945,6 +6547,10 @@ var graphs = [
           [
             10,
             262.7792
+          ],
+          [
+            11,
+            284.4034
           ]
         ]
       },
@@ -5964,6 +6570,10 @@ var graphs = [
           [
             10,
             242.3944
+          ],
+          [
+            11,
+            257.576
           ]
         ]
       },
@@ -6013,6 +6623,10 @@ var graphs = [
           [
             10,
             262.5898
+          ],
+          [
+            11,
+            277.529
           ]
         ]
       }
@@ -6028,7 +6642,8 @@ var graphs = [
       "11/16/2010 11:40PM",
       "11/28/2010 10:33PM",
       "11/29/2010 10:16PM",
-      "11/29/2010 11:27PM"
+      "11/29/2010 11:27PM",
+      "11/30/2010 05:56PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -6041,7 +6656,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "sqrt_int.rb",
     "source": "require 'helpers'\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += Math.sqrt(4)\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n\n"
@@ -6095,6 +6711,10 @@ var graphs = [
           [
             10,
             529.1718
+          ],
+          [
+            11,
+            546.2618
           ]
         ]
       },
@@ -6114,6 +6734,10 @@ var graphs = [
           [
             10,
             499.6518
+          ],
+          [
+            11,
+            515.4756
           ]
         ]
       },
@@ -6163,6 +6787,10 @@ var graphs = [
           [
             10,
             573.1912
+          ],
+          [
+            11,
+            575.298
           ]
         ]
       }
@@ -6178,7 +6806,8 @@ var graphs = [
       "11/16/2010 11:40PM",
       "11/28/2010 10:33PM",
       "11/29/2010 10:17PM",
-      "11/29/2010 11:27PM"
+      "11/29/2010 11:27PM",
+      "11/30/2010 05:56PM"
     ],
     "commits": [
       "6d369a0e871f1a269a53cab4827bfe624595dac0",
@@ -6191,7 +6820,8 @@ var graphs = [
       "e93ac31bb7691d59fbd892e9a32d926818b39184",
       "e0e4a820f573b4ad51398e0635df59e93735f612",
       "1093750ea1ee6be3b06484760b83a9b4e43a8847",
-      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59"
+      "f7ebe7dd0447ca765b9a28ad667a5905c2a9cd59",
+      "c03ba16e9dfd9af26787d34db6238ccb60fdd6ee"
     ],
     "file": "sqrt_int.rb",
     "source": "require 'helpers'\n\ndef run()\n  j = 0\n  i = 0\n  while i < ITERATIONS\n    i += 1\n    j += Math.sqrt(4)\n  end\n  j\nend\n\nwith_harness do\n  run()\nend\n\n\n\n"
