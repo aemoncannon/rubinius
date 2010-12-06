@@ -310,6 +310,7 @@ namespace rubinius {
     }
 
 		void call_branch_trace(Value* branch_trace, Value* exit_trace_node, Value* exit_cf){
+
       Value* executor = load_field(branch_trace, 
 																	 offset::trace_executor, 
 																	 "executor");
@@ -642,7 +643,7 @@ namespace rubinius {
     void visit_send_stack(opcode which, opcode args) {
       if(cur_trace_node_->traced_send){
 				guard_class_change(stack_back(args), cur_trace_node_->target_klass);
-				emit_traced_send(which, args, false);
+				emit_traced_send(which, args);
       }
       else{
 				InlineCache* cache = reinterpret_cast<InlineCache*>(which);
@@ -695,13 +696,10 @@ namespace rubinius {
       bool block_on_stack = !has_literal_block;
 
       if(cur_trace_node_->traced_send){
-
 				if(!block_on_stack) {
 					emit_create_block(current_block_);
 				}
-
-				emit_traced_send(which, args, true);
-
+				emit_traced_send(which, args);
       }
       else{
 				set_has_side_effects();
@@ -758,6 +756,46 @@ namespace rubinius {
 				flush_ip();
 				Value* val = sig.call("rbx_yield_stack", call_args, 5, "ys", b());
 				stack_remove(count);
+				check_for_exception(val);
+				stack_push(val);
+      }
+    }
+
+
+    void visit_yield_splat(opcode count) {
+			set_has_side_effects();
+			Value* vars = vars_;
+			if(JITMethodInfo* home = info()->home_info()) {
+				vars = home->variables();
+			}
+
+			Value* block_obj = b().CreateLoad(
+				b().CreateConstGEP2_32(vars, 0, offset::vars_block),
+				"block");
+
+      if(cur_trace_node_->traced_yield){
+				CompiledMethod* cm = cur_trace_node_->target_cm.get();
+				assert(cm);
+				guard_block_change(block_obj, cm);
+				emit_traced_yield_stack(count);
+      }
+      else{
+				Signature sig(ls_, ObjType);
+				sig << VMTy;
+				sig << CallFrameTy;
+				sig << "Object";
+				sig << ls_->Int32Ty;
+				sig << ObjArrayTy;
+				Value* call_args[] = {
+					vm_,
+					call_frame_,
+					block_obj,
+					ConstantInt::get(ls_->Int32Ty, count),
+					stack_objects(count + 1)
+				};
+				flush_ip();
+				Value* val = sig.call("rbx_yield_splat", call_args, 5, "ys", b());
+				stack_remove(count + 1);
 				check_for_exception(val);
 				stack_push(val);
       }

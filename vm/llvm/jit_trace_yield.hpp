@@ -1,9 +1,13 @@
 void emit_traced_yield_stack(opcode args) {
 
-	// copy things from caller stack into args
-	setup_out_args(args);
-	// pop things off caller stack
-	stack_remove(args);
+	if(cur_trace_node_->op == InstructionSequence::insn_yield_splat){
+		setup_out_args(args);
+		stack_remove(args + 1);
+	}
+	else{
+		setup_out_args(args);
+		stack_remove(args);
+	}
 	
 	CompiledMethod* cm = cur_trace_node_->target_cm.get();
 	assert(cm);
@@ -77,8 +81,6 @@ void emit_traced_yield_stack(opcode args) {
 
 	const llvm::Type* obj_type = ls_->ptr_type("Object");
   nil_stack(info()->vmm->stack_size, constant(Qnil, obj_type));
-
-
 }
 
 
@@ -129,8 +131,8 @@ void setup_yield_scope() {
 	b().CreateStore(constant(Qnil, obj_type), get_field(info()->variables(), offset::vars_last_match));
 
 	nil_locals();
-
 }
+
 
 void initialize_yield_frame(int stack_size) {
 

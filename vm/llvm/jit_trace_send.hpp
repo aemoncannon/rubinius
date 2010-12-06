@@ -1,18 +1,14 @@
 
-void emit_traced_send(opcode which, opcode args, bool with_block){
+void emit_traced_send(opcode which, opcode args){
 
 	const llvm::Type* obj_type = ls_->ptr_type("Object");
 
-	if(with_block){
-		// copy things from caller stack into args
+	if(cur_trace_node_->op == InstructionSequence::insn_send_stack_with_block){
 		setup_out_args_with_block(args);
-		// pop things off caller stack
 		stack_remove(args + 2);
 	}
 	else{
-		// copy things from caller stack into args
 		setup_out_args(args);
-		// pop things off caller stack
 		stack_remove(args + 1);
 	}
 

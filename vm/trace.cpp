@@ -498,27 +498,25 @@ namespace rubinius {
 			}
 		}
 		case InstructionSequence::insn_yield_splat: {
-			DEBUGLN("Canceling record due to yield_splat.");
-			return TRACE_CANCEL;
-			// arg1 = (intptr_t)(*(ip_ptr + 1));
-			// numargs = 1;
-			// stck_effect = -arg1 - 1;
-			// pc_effect = 2;
+			arg1 = (intptr_t)(*(ip_ptr + 1));
+			numargs = 1;
+			stck_effect = -arg1 - 1;
+			pc_effect = 2;
 
-			// Object* t1 = call_frame->scope->block();
-			// if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
-			// 	CompiledMethod* cm = env->method();
-			// 	target_cm = cm;
-			// }
-			// else if(t1->nil_p()) {
-			// 	DEBUGLN("Canceling record due to yield to nil block.");
-			// 	return TRACE_CANCEL;
-			// } 
-			// else{
-			// 	DEBUGLN("Canceling record due to yield to non-static block.");
-			// 	return TRACE_CANCEL;
-			// }
-			// break;
+			Object* t1 = call_frame->scope->block();
+			if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
+				CompiledMethod* cm = env->method();
+				target_cm = cm;
+			}
+			else if(t1->nil_p()) {
+				DEBUGLN("Canceling record due to yield to nil block.");
+				return TRACE_CANCEL;
+			} 
+			else{
+				DEBUGLN("Canceling record due to yield to non-static block.");
+				return TRACE_CANCEL;
+			}
+			break;
 		}
 		case InstructionSequence::insn_string_append: {
 			numargs = 0;
