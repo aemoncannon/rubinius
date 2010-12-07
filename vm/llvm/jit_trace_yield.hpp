@@ -1,8 +1,8 @@
-void emit_traced_yield_stack(opcode args) {
+void emit_traced_yield(opcode args) {
 
 	if(cur_trace_node_->op == InstructionSequence::insn_yield_splat){
 		setup_out_args(args);
-		stack_remove(args + 1);
+		stack_remove(args);
 	}
 	else{
 		setup_out_args(args);

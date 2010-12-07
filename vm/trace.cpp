@@ -33,7 +33,7 @@ namespace rubinius {
     call_frame(call_frame),
 		cm(state),
 		target_cm(state),
-    target_klass(NULL),
+    target_klass(state),
     ip_ptr(ip_ptr),
     prev(NULL),
     next(NULL),
@@ -496,27 +496,30 @@ namespace rubinius {
 				DEBUGLN("Canceling record due to yield to non-static block.");
 				return TRACE_CANCEL;
 			}
+			break;
 		}
 		case InstructionSequence::insn_yield_splat: {
-			arg1 = (intptr_t)(*(ip_ptr + 1));
-			numargs = 1;
-			stck_effect = -arg1 - 1;
-			pc_effect = 2;
+			DEBUGLN("Canceling record due to yield splat.");
+			return TRACE_CANCEL;
+			// arg1 = (intptr_t)(*(ip_ptr + 1));
+			// numargs = 1;
+			// stck_effect = -arg1 - 1;
+			// pc_effect = 2;
 
-			Object* t1 = call_frame->scope->block();
-			if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
-				CompiledMethod* cm = env->method();
-				target_cm = cm;
-			}
-			else if(t1->nil_p()) {
-				DEBUGLN("Canceling record due to yield to nil block.");
-				return TRACE_CANCEL;
-			} 
-			else{
-				DEBUGLN("Canceling record due to yield to non-static block.");
-				return TRACE_CANCEL;
-			}
-			break;
+			// Object* t1 = call_frame->scope->block();
+			// if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
+			// 	CompiledMethod* cm = env->method();
+			// 	target_cm = cm;
+			// }
+			// else if(t1->nil_p()) {
+			// 	DEBUGLN("Canceling record due to yield to nil block.");
+			// 	return TRACE_CANCEL;
+			// } 
+			// else{
+			// 	DEBUGLN("Canceling record due to yield to non-static block.");
+			// 	return TRACE_CANCEL;
+			// }
+			// break;
 		}
 		case InstructionSequence::insn_string_append: {
 			numargs = 0;
@@ -711,7 +714,7 @@ namespace rubinius {
 												 sp, ip_ptr, vmm, call_frame);
 		head->active_send = active_send;
 		head->parent_send = parent_send;
-		head->target_klass = target_klass;
+		if(target_klass) head->target_klass.set(target_klass);
 		if(target_cm) head->target_cm.set(target_cm);
 		head->prev = prev;
 		head->arg1 = arg1;
@@ -757,15 +760,16 @@ namespace rubinius {
 	void Trace::store() {
 		if(is_branch()){
 			void* key;
-			if(entry->traced_send){
-				key = entry->target_klass;
-				assert(key);
-				DEBUGLN("Storing branch at class: " << key); 
-			}
-			else {
-				key = (void*)entry->pc;
-				DEBUGLN("Storing branch at pc: " << entry->pc); 
-			}
+			// TODO - will we lookup branches by class?
+			// if(entry->traced_send){
+			// 	key = entry->target_klass.get();
+			// 	assert(key);
+			// 	DEBUGLN("Storing branch at class: " << key); 
+			// }
+			// else {
+			key = (void*)entry->pc;
+			DEBUGLN("Storing branch at pc: " << entry->pc); 
+			// }
 			int offset = parent_node->branch_tbl_offset;
 			parent_node->branch_keys[offset] = key;
 			parent_node->branches[offset] = this;

@@ -2,8 +2,9 @@
 void emit_traced_send(opcode which, opcode args){
 
 	const llvm::Type* obj_type = ls_->ptr_type("Object");
+	bool with_block = cur_trace_node_->op == InstructionSequence::insn_send_stack_with_block;
 
-	if(cur_trace_node_->op == InstructionSequence::insn_send_stack_with_block){
+	if(with_block){
 		setup_out_args_with_block(args);
 		stack_remove(args + 2);
 	}

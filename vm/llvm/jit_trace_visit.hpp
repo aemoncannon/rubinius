@@ -642,7 +642,7 @@ namespace rubinius {
 #include "vm/llvm/jit_trace_send.hpp"
     void visit_send_stack(opcode which, opcode args) {
       if(cur_trace_node_->traced_send){
-				guard_class_change(stack_back(args), cur_trace_node_->target_klass);
+				guard_class_change(stack_back(args), cur_trace_node_->target_klass.get());
 				emit_traced_send(which, args);
       }
       else{
@@ -737,7 +737,7 @@ namespace rubinius {
 				CompiledMethod* cm = cur_trace_node_->target_cm.get();
 				assert(cm);
 				guard_block_change(block_obj, cm);
-				emit_traced_yield_stack(count);
+				emit_traced_yield(count);
       }
       else{
 				Signature sig(ls_, ObjType);
@@ -777,7 +777,7 @@ namespace rubinius {
 				CompiledMethod* cm = cur_trace_node_->target_cm.get();
 				assert(cm);
 				guard_block_change(block_obj, cm);
-				emit_traced_yield_stack(count);
+				emit_traced_yield(count);
       }
       else{
 				Signature sig(ls_, ObjType);
