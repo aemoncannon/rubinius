@@ -57,6 +57,7 @@ extern "C" {
 
   void rbx_show_obj(STATE, Object* obj)
   {
+		std::cout << "Dumping Object* " << obj;
     if(obj == NULL){
       std::cout << "NULL Object pointer.\n";
     }

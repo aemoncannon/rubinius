@@ -46,6 +46,7 @@ namespace rubinius {
     CallFrame* call_frame;
     TypedRoot<CompiledMethod*> cm;
     TypedRoot<CompiledMethod*> target_cm;
+    TypedRoot<CompiledMethod*> block_cm;
 		TypedRoot<Class*> target_klass;
     void** ip_ptr;
     TraceNode* prev;

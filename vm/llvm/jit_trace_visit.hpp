@@ -136,11 +136,21 @@ namespace rubinius {
       set_block(current);
 		}
 
-		void guard_block_change(Value* object, CompiledMethod* block_cm){
+		void guard_block_change(Value* object, TypedRoot<CompiledMethod*>* block_cm){
       BasicBlock* exit_stub = new_block("exit_stub");
-			Value* block_env = b().CreateBitCast(object, ls_->ptr_type("BlockEnvironment"),"block_env");
+
+			// Load current CompiledMethod from the block environment
+			Value* block_env = b().CreateBitCast(
+				object, ls_->ptr_type("BlockEnvironment"),"block_env");
 			Value* cm = load_field(block_env, offset::blockenv_method, "env.method");
-			Value* existing_cm = constant(block_cm, ls_->ptr_type("CompiledMethod"));
+			cm = b().CreateBitCast(cm, ObjType, "env.method as object");
+
+			// Load stored CompiledMethod pointer from the stable TypedRoot
+			Object** cm_addr = block_cm->object_address();
+			assert(cm_addr);
+      Value* l_addr = constant(cm_addr, ObjArrayTy);
+      Value* existing_cm = b().CreateLoad(l_addr, "existing cm");
+
       Value* cmp = b().CreateICmpEQ(cm, existing_cm, "same block");
 			verify_guard(cmp, exit_stub);
 			BasicBlock* current = current_block();
@@ -734,9 +744,7 @@ namespace rubinius {
 				"block");
 
       if(cur_trace_node_->traced_yield){
-				CompiledMethod* cm = cur_trace_node_->target_cm.get();
-				assert(cm);
-				guard_block_change(block_obj, cm);
+				guard_block_change(block_obj, &(cur_trace_node_->block_cm));
 				emit_traced_yield(count);
       }
       else{
@@ -774,9 +782,7 @@ namespace rubinius {
 				"block");
 
       if(cur_trace_node_->traced_yield){
-				CompiledMethod* cm = cur_trace_node_->target_cm.get();
-				assert(cm);
-				guard_block_change(block_obj, cm);
+				guard_block_change(block_obj, &(cur_trace_node_->block_cm));
 				emit_traced_yield(count);
       }
       else{

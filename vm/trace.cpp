@@ -33,6 +33,7 @@ namespace rubinius {
     call_frame(call_frame),
 		cm(state),
 		target_cm(state),
+		block_cm(state),
     target_klass(state),
     ip_ptr(ip_ptr),
     prev(NULL),
@@ -209,6 +210,7 @@ namespace rubinius {
 		int side_exit_pc = pc;
 		Class* target_klass = NULL;
 		CompiledMethod* target_cm = NULL;
+		CompiledMethod* block_cm = NULL;
 
 		int arg1 = 0;
 		int arg2 = 0;
@@ -486,7 +488,7 @@ namespace rubinius {
 			Object* t1 = call_frame->scope->block();
 			if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
 				CompiledMethod* cm = env->method();
-				target_cm = cm;
+				block_cm = cm;
 			}
 			else if(t1->nil_p()) {
 				DEBUGLN("Canceling record due to yield to nil block.");
@@ -509,7 +511,7 @@ namespace rubinius {
 			// Object* t1 = call_frame->scope->block();
 			// if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
 			// 	CompiledMethod* cm = env->method();
-			// 	target_cm = cm;
+			// 	block_cm = cm;
 			// }
 			// else if(t1->nil_p()) {
 			// 	DEBUGLN("Canceling record due to yield to nil block.");
@@ -716,6 +718,7 @@ namespace rubinius {
 		head->parent_send = parent_send;
 		if(target_klass) head->target_klass.set(target_klass);
 		if(target_cm) head->target_cm.set(target_cm);
+		if(block_cm) head->block_cm.set(block_cm);
 		head->prev = prev;
 		head->arg1 = arg1;
 		head->arg2 = arg2;
