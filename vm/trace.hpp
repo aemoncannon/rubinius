@@ -16,6 +16,7 @@ namespace rubinius {
   class CallFrame;
   class CompiledMethod;
   class Object;
+	class String;
   class Class;
   class StackVariables;
   class Symbol;

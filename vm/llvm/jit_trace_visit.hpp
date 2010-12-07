@@ -437,6 +437,16 @@ namespace rubinius {
       check_for_exception(ret);
     }  
 
+    void visit_passed_arg(opcode count) {
+			assert(cur_trace_node_->active_send);
+			if((int)count < cur_trace_node_->active_send->send_arg_count()){
+				stack_push(constant(Qtrue));
+			} 
+			else {
+				stack_push(constant(Qfalse));
+			}
+    }
+
 
     void visit_goto(opcode ip) {
 

@@ -183,10 +183,10 @@ namespace rubinius {
 
       void call(Trace* trace, TraceNode* node){
 
-				DEBUGLN("\n\n\nCompiling node: ");
-				DEBUGLN("sp is: " << v_.sp());
-				IF_DEBUG(node->pretty_print(VM::current_state(), std::cout));
-				DEBUGLN("\nsp is: " << v_.sp());
+				// DEBUGLN("\n\n\nCompiling node: ");
+				// DEBUGLN("sp is: " << v_.sp());
+				// IF_DEBUG(node->pretty_print(VM::current_state(), std::cout));
+				// DEBUGLN("\nsp is: " << v_.sp());
 				trace->dispatch(v_, node);
 
 				// if(v_.b().GetInsertBlock()->getTerminator() == NULL) {

@@ -73,7 +73,6 @@ namespace rubinius {
 
   int TraceNode::send_arg_count(){
     if(op == InstructionSequence::insn_send_method) return 0;
-    else if(op == InstructionSequence::insn_send_stack) return arg2;
     else return arg2;
   }
 
@@ -98,23 +97,23 @@ namespace rubinius {
 	}
 
   void TraceNode::pretty_print(STATE, std::ostream& out) {
+		std::string op_nm = InstructionSequence::get_instruction_name(op);
     if(state != NULL){
-      out << cm->name()->c_str(state) << " - " << trace_pc  <<  "(" << pc << ") " << "sp=" << sp << ": ";
+      out << trace_pc << " " << cm->name()->c_str(state) << "  " << op_nm <<  ", pc=" << pc << ", ln=" << cm->line(state, pc)  << ", sp=" << sp;
     }
     else{
-      out << "____" << " - " << trace_pc  <<  "(" << pc << ") " << "sp=" << sp << ": ";
+      out << trace_pc << "  ___" << "  " << op_nm << ", pc=" << pc << ", sp=" << sp;
     }
-    out << InstructionSequence::get_instruction_name(op);
-    out << " ";
-    if(numargs > 0) out << arg1;
-    if(numargs > 1) out << ", " << arg2;
+
+    if(numargs > 0) out << ", arg1=" << arg1;
+    if(numargs > 1) out << ", arg2=" << arg2;
     if(active_send){
-      out << " : active_send(";
+      out << ", active_send(";
       out << active_send->trace_pc;
       out << ")";
     }
     if(parent_send){
-      out << " : parent(";
+      out << ", parent_send(";
       out << parent_send->trace_pc;
       out << ")";
     }
