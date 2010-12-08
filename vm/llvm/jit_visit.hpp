@@ -611,6 +611,17 @@ namespace rubinius {
       return b().CreateCall(func, call_args, call_args+5, "simple_send");
     }
 
+    void setup_out_args_for_yield(int args) {
+      b().CreateStore(constant(Qnil), out_args_block_);
+      b().CreateStore(ConstantInt::get(ls_->Int32Ty, args),
+											out_args_total_);
+      b().CreateStore(Constant::getNullValue(ptr_type("Tuple")),
+                      out_args_container_);
+      if(args > 0) {
+        b().CreateStore(stack_objects(args), out_args_arguments_);
+      }
+    }
+
     void setup_out_args(int args) {
       b().CreateStore(stack_back(args), out_args_recv_);
       b().CreateStore(constant(Qnil), out_args_block_);
