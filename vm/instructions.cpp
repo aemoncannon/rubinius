@@ -146,6 +146,7 @@ Object* VMMethod::resumable_interpreter(STATE,
   if(synthetic){
     DEBUGLN("\nResuming at " << call_frame->ip());
 		IF_DEBUG(call_frame->dump());
+		assert(call_frame->ip() < (int)(vmm->total));
     ip_ptr = addresses + call_frame->ip();
     stack_ptr = call_frame->stk + call_frame->sp();
 		unwinds = call_frame->unwinds();
