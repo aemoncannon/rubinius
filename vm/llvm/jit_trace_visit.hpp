@@ -455,7 +455,8 @@ namespace rubinius {
       // to the next trace node. (unless the next node is
       // the anchor, in which case we do want to jump because
       // the anchor is emitted first, not last.)
-      if(cur_trace_node_->next->trace_pc == (int)ip &&
+      if(cur_trace_node_->next->call_depth == cur_trace_node_->call_depth &&
+				 cur_trace_node_->next->pc == (int)ip &&
 				 cur_trace_node_->next != trace_->anchor){
 				return;
       }
@@ -466,7 +467,7 @@ namespace rubinius {
 				return;
       }
 
-      BasicBlock* bb = block_map_[ip].block;
+      BasicBlock* bb = block_map_[cur_trace_node_->next->trace_pc].block;
       assert(bb);
       b().CreateBr(bb);
       set_block(new_block("continue"));
@@ -519,7 +520,7 @@ namespace rubinius {
       }
       else{
 				b().CreateCondBr(cmp, exit_stub, cont);
-				exit_to_pc = cur_trace_node_->interp_jump_target;
+				exit_to_pc = cur_trace_node_->arg1;
       }
       set_block(exit_stub);
       exit_trace_at_fork(exit_to_pc);

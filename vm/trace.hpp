@@ -64,7 +64,6 @@ namespace rubinius {
     int numargs;
     intptr_t arg1;
     intptr_t arg2;
-		int interp_jump_target;
 
     TraceNode(STATE, int depth, int trace_pc, opcode op, int pc, int sp, void** ip_ptr, VMMethod* vmm, CallFrame* call_frame);
 
@@ -163,7 +162,7 @@ namespace rubinius {
 
     void store();
 
-		int get_or_assign_trace_pc(int pc, CallFrame* call_frame);
+		int assign_trace_pc(int pc, CallFrame* call_frame);
 
 		int get_trace_pc(int pc, CallFrame* call_frame);
 

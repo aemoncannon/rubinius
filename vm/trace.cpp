@@ -49,8 +49,7 @@ namespace rubinius {
     side_exit_pc(-1),
 		numargs(0),
 		arg1(0),
-		arg2(0),
-		interp_jump_target(-1)
+		arg2(0)
   {
 		cm.set(call_frame->cm);
 		for(int i = 0; i < BRANCH_TBL_SIZE; i++) {
@@ -209,8 +208,7 @@ namespace rubinius {
 
 		int arg1 = 0;
 		int arg2 = 0;
-		int interp_jump_target = -1;
-		int trace_pc = get_or_assign_trace_pc(pc, call_frame);
+		int trace_pc = assign_trace_pc(pc, call_frame);
 		int numargs = 0;
 		int stck_effect = 0;
 		int pc_effect = 0;
@@ -252,21 +250,15 @@ namespace rubinius {
 				 call_frame->cm == anchor->cm.get()){
 				is_term = true;
 			}
-			interp_jump_target = arg1;
-			arg1 = get_or_assign_trace_pc(arg1, call_frame);
 			break;
 		}
 		case InstructionSequence::insn_goto_if_false: {
 			arg1 = (intptr_t)(*(ip_ptr + 1));
-			interp_jump_target = arg1;
-			arg1 = get_or_assign_trace_pc(arg1, call_frame);
 			numargs = 1;
 			break;
 		}
 		case InstructionSequence::insn_goto_if_true: {
 			arg1 = (intptr_t)(*(ip_ptr + 1));
-			interp_jump_target = arg1;
-			arg1 = get_or_assign_trace_pc(arg1, call_frame);
 			numargs = 1;
 			break;
 		}
@@ -341,8 +333,6 @@ namespace rubinius {
 		case InstructionSequence::insn_setup_unwind: {
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			arg2 = (intptr_t)(*(ip_ptr + 2));
-			interp_jump_target = arg1;
-			arg1 = get_or_assign_trace_pc(arg1, call_frame);
 			numargs = 2;
 			break;
 		}
@@ -683,12 +673,12 @@ namespace rubinius {
 		else{ // In the same callframe as last node..
 			if(prev && (prev->op == InstructionSequence::insn_goto_if_true ||
 									prev->op == InstructionSequence::insn_goto_if_false)){
-				if(pc == prev->interp_jump_target){
+				if(pc == prev->arg1){
 					prev->jump_taken = true;
 					prev->side_exit_pc = prev->pc + 2;
 				}
 				else{
-					prev->side_exit_pc = prev->interp_jump_target;
+					prev->side_exit_pc = prev->arg1;
 				}
 			}
 		}
@@ -703,7 +693,6 @@ namespace rubinius {
 		head->prev = prev;
 		head->arg1 = arg1;
 		head->arg2 = arg2;
-		head->interp_jump_target = interp_jump_target;
 		head->numargs = numargs;
 		head->side_exit_pc = side_exit_pc;
 		head->stck_effect = stck_effect;
@@ -767,17 +756,11 @@ namespace rubinius {
 		}
 	}
 
-	int Trace::get_or_assign_trace_pc(int pc, CallFrame* call_frame){
+	int Trace::assign_trace_pc(int pc, CallFrame* call_frame){
+		trace_pc_counter += 1;
 		std::map<int,int>& cf_map = trace_pc_map[call_frame];
-		std::map<int,int>::iterator found = cf_map.find(pc);
-		if(found != cf_map.end()){
-			return (*found).second;
-		}
-		else{
-			trace_pc_counter += 1;
-			cf_map[pc] = trace_pc_counter;
-			return trace_pc_counter;
-		}
+		cf_map[pc] = trace_pc_counter;
+		return trace_pc_counter;
 	}
 
 	int Trace::get_trace_pc(int pc, CallFrame* call_frame){
