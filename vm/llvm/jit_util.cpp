@@ -1002,9 +1002,9 @@ extern "C" {
 		// Bail to uncommon if we've stacked up call_frames before the exit.
 		// Or if a nested trace exited unexpectedly (we don't know _where_ it
 		// ended up)...
-		if(call_frame->is_traced_frame() 
+		if(call_frame->is_traced_frame() ){
 			 // Why is this necessary?
-			 || run_mode == Trace::RUN_MODE_NESTED || run_mode == Trace::RUN_MODE_RECORD_NESTED){
+//			 || run_mode == Trace::RUN_MODE_NESTED || run_mode == Trace::RUN_MODE_RECORD_NESTED){
 
 			VMMethod* vmm = call_frame->cm->backend_method();
 			VMMethod::uncommon_interpreter(state, vmm, call_frame);
