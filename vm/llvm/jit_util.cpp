@@ -947,6 +947,7 @@ extern "C" {
     TRACK_TIME(IN_EXIT_TIMER);
     DEBUGLN("No branch to continue on. Exiting from:");
 		IF_DEBUG(exit_node->pretty_print(state, std::cout));
+		DEBUGLN("\n");
     IF_DEBUG(call_frame->dump());
 
     DEBUGLN("Is traced frame? " << call_frame->is_traced_frame());
@@ -969,17 +970,24 @@ extern "C" {
 			DEBUGLN("Walking to call_frame: " << cf);
 			DEBUGLN("Walking to activator: " << activator);
 
+			// Ummmm this should be static..
+
  			if(activator == NULL) {
 				// Bridge gaps between traces (nested/branches)
-				if(cur_trace->parent_node != NULL){
+				while(cur_trace->parent_node != NULL){
 					activator = cur_trace->parent_node->active_send;
-					if(activator == NULL) break;
-					cur_trace = cur_trace->parent;
+					if(activator == NULL) {
+						cur_trace = cur_trace->parent;
+						continue;
+					}
+					else{
+						cur_trace = cur_trace->parent;
+						break;
+					}
 				}
-				else {
-					break;
-				}
+				if(activator == NULL) break;
 			}
+
 			assert(cf);
 			assert(activator->traced_send || activator->traced_yield);
 
