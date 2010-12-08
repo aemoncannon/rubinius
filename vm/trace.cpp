@@ -58,7 +58,7 @@ namespace rubinius {
 		trace_pc = pc + pc_base;
 		for(int i = 0; i < BRANCH_TBL_SIZE; i++) {
 			branches[i] = NULL;
-			branch_keys[i] = NULL;
+			branch_keys[i] = -1;
 		}
   }
 
@@ -99,7 +99,7 @@ namespace rubinius {
   void TraceNode::pretty_print(STATE, std::ostream& out) {
 		std::string op_nm = InstructionSequence::get_instruction_name(op);
     if(state != NULL){
-      out << trace_pc << " " << cm->name()->c_str(state) << "  " << op_nm <<  ", pc=" << pc << ", ln=" << cm->line(state, pc)  << ", sp=" << sp;
+      out << trace_pc << "(" << pc << ") " << cm->name()->c_str(state) << "  " << op_nm << ", ln=" << cm->line(state, pc)  << ", sp=" << sp;
     }
     else{
       out << trace_pc << "  ___" << "  " << op_nm << ", pc=" << pc << ", sp=" << sp;
@@ -136,10 +136,10 @@ namespace rubinius {
     executor(NULL)
     ,expected_exit_ip(-1)
     ,anchor(NULL)
-    ,head(NULL) 
-    ,entry(NULL) 
-    ,jitted_bytes(-1) 
-    ,pc_base_counter(0) 
+    ,head(NULL)
+    ,entry(NULL)
+    ,jitted_bytes(-1)
+    ,pc_base_counter(0)
     ,entry_sp(-1)
     ,parent(NULL)
     ,parent_node(NULL)
@@ -500,27 +500,27 @@ namespace rubinius {
 			break;
 		}
 		case InstructionSequence::insn_yield_splat: {
-			// DEBUGLN("Canceling record due to yield splat.");
-			// return TRACE_CANCEL;
-			arg1 = (intptr_t)(*(ip_ptr + 1));
-			numargs = 1;
-			stck_effect = -arg1 - 1;
-			pc_effect = 2;
+			DEBUGLN("Canceling record due to yield splat.");
+			return TRACE_CANCEL;
+			// arg1 = (intptr_t)(*(ip_ptr + 1));
+			// numargs = 1;
+			// stck_effect = -arg1 - 1;
+			// pc_effect = 2;
 
-			Object* t1 = call_frame->scope->block();
-			if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
-				CompiledMethod* cm = env->method();
-				block_cm = cm;
-			}
-			else if(t1->nil_p()) {
-				DEBUGLN("Canceling record due to yield to nil block.");
-				return TRACE_CANCEL;
-			} 
-			else{
-				DEBUGLN("Canceling record due to yield to non-static block.");
-				return TRACE_CANCEL;
-			}
-			break;
+			// Object* t1 = call_frame->scope->block();
+			// if(BlockEnvironment *env = try_as<BlockEnvironment>(t1)) {
+			// 	CompiledMethod* cm = env->method();
+			// 	block_cm = cm;
+			// }
+			// else if(t1->nil_p()) {
+			// 	DEBUGLN("Canceling record due to yield to nil block.");
+			// 	return TRACE_CANCEL;
+			// } 
+			// else{
+			// 	DEBUGLN("Canceling record due to yield to non-static block.");
+			// 	return TRACE_CANCEL;
+			// }
+			//break;
 		}
 		case InstructionSequence::insn_string_append: {
 			numargs = 0;
@@ -761,7 +761,7 @@ namespace rubinius {
 
 	void Trace::store() {
 		if(is_branch()){
-			void* key;
+			int key;
 			// TODO - will we lookup branches by class?
 			// if(entry->traced_send){
 			// 	key = entry->target_klass.get();
@@ -769,7 +769,7 @@ namespace rubinius {
 			// 	DEBUGLN("Storing branch at class: " << key); 
 			// }
 			// else {
-			key = (void*)entry->pc;
+			key = entry->pc;
 			DEBUGLN("Storing branch at pc: " << entry->pc); 
 			// }
 			int offset = parent_node->branch_tbl_offset;
@@ -783,6 +783,11 @@ namespace rubinius {
 			vmm->add_trace_at(this, entry->pc);
 		}
 	}
+
+	// string Trace::next_trace_pc(int pc, CallFrame* call_frame){
+	// 	trace_pc_counter++;
+	// 	return trace_pc_counter;
+	// }
 
 	string Trace::trace_name(){
 		return string("_TRACE_");

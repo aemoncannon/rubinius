@@ -37,7 +37,7 @@ namespace rubinius {
     Trace* nested_trace;
     trace_executor nested_executor;
     Trace* branches[BRANCH_TBL_SIZE];
-		void* branch_keys[BRANCH_TBL_SIZE];
+		int branch_keys[BRANCH_TBL_SIZE];
     int branch_tbl_offset;
     opcode op;
     int pc;

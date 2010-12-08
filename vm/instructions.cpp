@@ -477,15 +477,18 @@ Object* VMMethod::uncommon_interpreter(STATE,
   state->trace_exec_enabled = false;
 
   while(call_frame->is_traced_frame()){
-    IF_DEBUG(call_frame->print_backtrace(state));
+    IF_DEBUG(call_frame->dump());
 		result = resumable_interpreter(state, vmm, call_frame, true);
     TRACK_TIME(UNCOMMON_INTERP_TIMER);
     call_frame = call_frame->previous;
     vmm = call_frame->cm->backend_method();
+		DEBUGLN("Returning to...");
+    IF_DEBUG(call_frame->dump());
 		DEBUGLN("Pushing interp return value...");
 		if(result != NULL){
 			DEBUGLN("Return is: ");
 			IF_DEBUG(result->show(state));
+			assert((call_frame->sp() + 1) < vmm->stack_size);
 			call_frame->stk_push(result);
 		}
 		else{

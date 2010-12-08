@@ -945,8 +945,11 @@ extern "C" {
  		assert(exit_node);
 
     TRACK_TIME(IN_EXIT_TIMER);
-    DEBUGLN("No branch to continue on. Exiting from " << exit_node->pc << ", trace-pc = " << exit_node->trace_pc);
+    DEBUGLN("No branch to continue on. Exiting from:");
+		IF_DEBUG(exit_node->pretty_print(state, std::cout));
     IF_DEBUG(call_frame->dump());
+
+    DEBUGLN("Is traced frame? " << call_frame->is_traced_frame());
 
 		int next_pc = exit_node->exit_to_pc();
     DEBUGLN("Next pc: " << next_pc);
@@ -957,11 +960,14 @@ extern "C" {
 		call_frame->set_ip(next_pc);
  		call_frame->set_sp(exit_node->sp);
  
- 		CallFrame* cf = call_frame->previous;		
+ 		CallFrame* cf = call_frame->previous;
  		TraceNode* activator = exit_node->active_send;
 		Trace* cur_trace = exit_trace;
 
  		while(true){
+			DEBUGLN("Walking to call_frame: " << cf);
+			DEBUGLN("Walking to activator: " << activator);
+
  			if(activator == NULL) {
 				// Bridge gaps between traces (nested/branches)
 				if(cur_trace->parent_node != NULL){
@@ -975,7 +981,9 @@ extern "C" {
 			}
 			assert(cf);
 			assert(activator->traced_send || activator->traced_yield);
- 
+
+			DEBUGLN("Flushing to call_frame:");
+			IF_DEBUG(call_frame->dump());
 			cf->set_ip(activator->pc + activator->pc_effect);
 			cf->set_sp(activator->sp + activator->stck_effect);
  

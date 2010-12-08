@@ -77,10 +77,10 @@ TESTS = [
            :bench_iters => [10000, 100000]},
 
          {:name => "loop_with_changing_block", :comment => "", :iters => 100000,
-           :bench_iters => [10000, 100000]},
+           :bench_iters => []},
 
          {:name => "loop_with_changing_block_in_each_with_index", :comment => "", :iters => 100000,
-           :bench_iters => [10000, 100000]}
+           :bench_iters => []}
 
         ]
 

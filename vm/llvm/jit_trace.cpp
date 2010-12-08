@@ -140,7 +140,7 @@ namespace rubinius {
 						b().CreateAlloca(ls_->type("Arguments"), 0, "out_args");
 
 					CompiledMethod* cm = node->target_cm.get();
-					assert(cm);
+					assert(cm != Qundef);
 
 					info_->pre_allocated_call_frames[node->trace_pc] = 
 						b().CreateAlloca(obj_type,
