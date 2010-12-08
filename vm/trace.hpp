@@ -117,7 +117,6 @@ namespace rubinius {
     bool is_branch_trace;
     int length;
 		int trace_pc_counter;
-		std::map<CallFrame*, std::map<int,int> > trace_pc_map;
 
 
     static const int RUN_MODE_NORM = 0;
@@ -161,10 +160,6 @@ namespace rubinius {
     void dump_to_graph(STATE);
 
     void store();
-
-		int assign_trace_pc(int pc, CallFrame* call_frame);
-
-		int get_trace_pc(int pc, CallFrame* call_frame);
 
     CompiledMethod* entry_cm(){
       return entry->cm.get();

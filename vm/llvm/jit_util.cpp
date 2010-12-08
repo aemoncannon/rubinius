@@ -964,6 +964,7 @@ extern "C" {
  		TraceNode* activator = exit_node->active_send;
 		Trace* cur_trace = exit_trace;
 
+		int num_flushed = 0;
  		while(true){
 			DEBUGLN("Walking to call_frame: " << cf);
 			DEBUGLN("Walking to activator: " << activator);
@@ -986,6 +987,7 @@ extern "C" {
 			IF_DEBUG(call_frame->dump());
 			cf->set_ip(activator->pc + activator->pc_effect);
 			cf->set_sp(activator->sp + activator->stck_effect);
+			num_flushed++;
  
 			activator = activator->active_send;
 			cf = cf->previous;
@@ -1000,9 +1002,10 @@ extern "C" {
 		}
 
 		// Bail to uncommon if we've stacked up call_frames before the exit.
+		if(num_flushed > 0){
+
 		// Or if a nested trace exited unexpectedly (we don't know _where_ it
 		// ended up)...
-		if(call_frame->is_traced_frame() ){
 			 // Why is this necessary?
 //			 || run_mode == Trace::RUN_MODE_NESTED || run_mode == Trace::RUN_MODE_RECORD_NESTED){
 

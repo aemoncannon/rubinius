@@ -208,7 +208,7 @@ namespace rubinius {
 
 		int arg1 = 0;
 		int arg2 = 0;
-		int trace_pc = assign_trace_pc(pc, call_frame);
+		int trace_pc = ++trace_pc_counter;
 		int numargs = 0;
 		int stck_effect = 0;
 		int pc_effect = 0;
@@ -753,24 +753,6 @@ namespace rubinius {
 			DEBUGLN("Storing trace at pc: " << entry->pc); 
 			VMMethod* vmm = entry->cm.get()->backend_method();
 			vmm->add_trace_at(this, entry->pc);
-		}
-	}
-
-	int Trace::assign_trace_pc(int pc, CallFrame* call_frame){
-		trace_pc_counter += 1;
-		std::map<int,int>& cf_map = trace_pc_map[call_frame];
-		cf_map[pc] = trace_pc_counter;
-		return trace_pc_counter;
-	}
-
-	int Trace::get_trace_pc(int pc, CallFrame* call_frame){
-		std::map<int,int>& cf_map = trace_pc_map[call_frame];
-		std::map<int,int>::iterator found = cf_map.find(pc);
-		if(found != cf_map.end()){
-			return (*found).second;
-		}
-		else{
-			return -1;
 		}
 	}
 
