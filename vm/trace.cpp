@@ -20,7 +20,7 @@
 namespace rubinius {
 
 
-  TraceNode::TraceNode(STATE, int depth, int pc_base, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
+  TraceNode::TraceNode(STATE, int depth, int trace_pc, opcode op, int pc, int sp, void** const ip_ptr, VMMethod* const vmm, CallFrame* const call_frame)
     : 
     nested_trace(NULL),
     nested_executor(NULL),
@@ -42,20 +42,17 @@ namespace rubinius {
     traced_yield(false),
     active_send(NULL),
     parent_send(NULL),
-    trace_pc(0),
-    pc_base(pc_base),
+    trace_pc(trace_pc),
     call_depth(depth),
     jump_taken(false),
     exit_counter(0),
     side_exit_pc(-1),
 		numargs(0),
 		arg1(0),
-		arg2(0)
-
+		arg2(0),
+		interp_jump_target(-1)
   {
 		cm.set(call_frame->cm);
-
-		trace_pc = pc + pc_base;
 		for(int i = 0; i < BRANCH_TBL_SIZE; i++) {
 			branches[i] = NULL;
 			branch_keys[i] = -1;
@@ -139,13 +136,13 @@ namespace rubinius {
     ,head(NULL)
     ,entry(NULL)
     ,jitted_bytes(-1)
-    ,pc_base_counter(0)
     ,entry_sp(-1)
     ,parent(NULL)
     ,parent_node(NULL)
     ,is_nested_trace(false)
     ,is_branch_trace(false)
     ,length(0)
+    ,trace_pc_counter(0)
   {}
 
 
@@ -203,7 +200,6 @@ namespace rubinius {
 		TraceNode* prev = head;
 		TraceNode* active_send = NULL;
 		TraceNode* parent_send = NULL;
-		int pc_base = 0;
 		int call_depth = 0;
 
 		int side_exit_pc = pc;
@@ -213,11 +209,11 @@ namespace rubinius {
 
 		int arg1 = 0;
 		int arg2 = 0;
+		int interp_jump_target = -1;
+		int trace_pc = get_or_assign_trace_pc(pc, call_frame);
 		int numargs = 0;
 		int stck_effect = 0;
 		int pc_effect = 0;
-		bool is_jump = false;
-		bool is_handler = false;
 		bool is_term = false;
 
 		// Inherit properties from previous
@@ -225,7 +221,6 @@ namespace rubinius {
 		if(prev){
 			active_send = prev->active_send;
 			parent_send = prev->parent_send;
-			pc_base = prev->pc_base;
 			call_depth = prev->call_depth;
 		}
 
@@ -250,7 +245,6 @@ namespace rubinius {
 			break;
 		}
 		case InstructionSequence::insn_goto: {
-			is_jump = true;
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			numargs = 1;
 			if(arg1 == anchor->pc && 
@@ -258,17 +252,21 @@ namespace rubinius {
 				 call_frame->cm == anchor->cm.get()){
 				is_term = true;
 			}
+			interp_jump_target = arg1;
+			arg1 = get_or_assign_trace_pc(arg1, call_frame);
 			break;
 		}
 		case InstructionSequence::insn_goto_if_false: {
-			is_jump = true;
 			arg1 = (intptr_t)(*(ip_ptr + 1));
+			interp_jump_target = arg1;
+			arg1 = get_or_assign_trace_pc(arg1, call_frame);
 			numargs = 1;
 			break;
 		}
 		case InstructionSequence::insn_goto_if_true: {
-			is_jump = true;
 			arg1 = (intptr_t)(*(ip_ptr + 1));
+			interp_jump_target = arg1;
+			arg1 = get_or_assign_trace_pc(arg1, call_frame);
 			numargs = 1;
 			break;
 		}
@@ -341,9 +339,10 @@ namespace rubinius {
 			break;
 		}
 		case InstructionSequence::insn_setup_unwind: {
-			is_handler = true;
 			arg1 = (intptr_t)(*(ip_ptr + 1));
 			arg2 = (intptr_t)(*(ip_ptr + 2));
+			interp_jump_target = arg1;
+			arg1 = get_or_assign_trace_pc(arg1, call_frame);
 			numargs = 2;
 			break;
 		}
@@ -656,13 +655,6 @@ namespace rubinius {
 				if(prev->parent_send){
 					parent_send = prev->parent_send->active_send;
 				}
-				if(prev->active_send){
-					pc_base = prev->active_send->pc_base;
-				}
-				else{
-					pc_base_counter += prev->cm.get()->backend_method()->total;
-					pc_base = pc_base_counter;
-				}
 				call_depth -= 1;
 			}
 
@@ -673,10 +665,6 @@ namespace rubinius {
 							prev->op == InstructionSequence::insn_yield_stack ||
 							prev->op == InstructionSequence::insn_yield_splat
 							){
-
-				pc_base_counter += prev->cm.get()->backend_method()->total;
-				pc_base = pc_base_counter;
-
 				if(prev->op == InstructionSequence::insn_yield_stack ||
 					 prev->op == InstructionSequence::insn_yield_splat){
 					prev->traced_yield = true;
@@ -695,23 +683,17 @@ namespace rubinius {
 		else{ // In the same callframe as last node..
 			if(prev && (prev->op == InstructionSequence::insn_goto_if_true ||
 									prev->op == InstructionSequence::insn_goto_if_false)){
-				if(pc == prev->interp_jump_target()){
+				if(pc == prev->interp_jump_target){
 					prev->jump_taken = true;
 					prev->side_exit_pc = prev->pc + 2;
 				}
 				else{
-					prev->side_exit_pc = prev->interp_jump_target();
+					prev->side_exit_pc = prev->interp_jump_target;
 				}
 			}
 		}
 
-		// Make sure jump locations are translated
-		// to trace positions.
-		if(is_jump || is_handler){
-			arg1 += pc_base;
-		}
-
-		head = new TraceNode(state, call_depth, pc_base, op, pc, 
+		head = new TraceNode(state, call_depth, trace_pc, op, pc, 
 												 sp, ip_ptr, vmm, call_frame);
 		head->active_send = active_send;
 		head->parent_send = parent_send;
@@ -721,6 +703,7 @@ namespace rubinius {
 		head->prev = prev;
 		head->arg1 = arg1;
 		head->arg2 = arg2;
+		head->interp_jump_target = interp_jump_target;
 		head->numargs = numargs;
 		head->side_exit_pc = side_exit_pc;
 		head->stck_effect = stck_effect;
@@ -784,10 +767,29 @@ namespace rubinius {
 		}
 	}
 
-	// string Trace::next_trace_pc(int pc, CallFrame* call_frame){
-	// 	trace_pc_counter++;
-	// 	return trace_pc_counter;
-	// }
+	int Trace::get_or_assign_trace_pc(int pc, CallFrame* call_frame){
+		std::map<int,int>& cf_map = trace_pc_map[call_frame];
+		std::map<int,int>::iterator found = cf_map.find(pc);
+		if(found != cf_map.end()){
+			return (*found).second;
+		}
+		else{
+			trace_pc_counter += 1;
+			cf_map[pc] = trace_pc_counter;
+			return trace_pc_counter;
+		}
+	}
+
+	int Trace::get_trace_pc(int pc, CallFrame* call_frame){
+		std::map<int,int>& cf_map = trace_pc_map[call_frame];
+		std::map<int,int>::iterator found = cf_map.find(pc);
+		if(found != cf_map.end()){
+			return (*found).second;
+		}
+		else{
+			return -1;
+		}
+	}
 
 	string Trace::trace_name(){
 		return string("_TRACE_");

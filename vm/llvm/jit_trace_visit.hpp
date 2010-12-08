@@ -272,6 +272,7 @@ namespace rubinius {
     }
 
     void exit_trace_at_fork(int next_ip){
+			assert(next_ip > -1);
 			DEBUGLN("Emitting exit from " << cur_trace_node_->pc << " to " << next_ip);
       TRACK_TIME_ON_TRACE(IN_EXIT_TIMER);
       ensure_trace_exit_pad();
@@ -518,7 +519,7 @@ namespace rubinius {
       }
       else{
 				b().CreateCondBr(cmp, exit_stub, cont);
-				exit_to_pc = cur_trace_node_->interp_jump_target();
+				exit_to_pc = cur_trace_node_->interp_jump_target;
       }
       set_block(exit_stub);
       exit_trace_at_fork(exit_to_pc);

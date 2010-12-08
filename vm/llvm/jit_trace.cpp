@@ -558,7 +558,7 @@ namespace rubinius {
     void TraceBuilder::pass_one(BasicBlock* body) {
 
       // Pass 1, detect BasicBlock boundaries
-      TracePassOne finder(ls_, block_map_, trace->init_ip(), func, body);
+      TracePassOne finder(ls_, block_map_, trace->init_trace_pc(), func, body);
       PassOneWalker walker(finder, block_map_);
       trace->walk(walker);
 

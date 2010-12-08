@@ -57,7 +57,6 @@ namespace rubinius {
     TraceNode* active_send;
     TraceNode* parent_send;
     int trace_pc;
-    int pc_base;
     int call_depth;
     bool jump_taken;
     int exit_counter;
@@ -65,8 +64,9 @@ namespace rubinius {
     int numargs;
     intptr_t arg1;
     intptr_t arg2;
+		int interp_jump_target;
 
-    TraceNode(STATE, int depth, int pc_base, opcode op, int pc, int sp, void** ip_ptr, VMMethod* vmm, CallFrame* call_frame);
+    TraceNode(STATE, int depth, int trace_pc, opcode op, int pc, int sp, void** ip_ptr, VMMethod* vmm, CallFrame* call_frame);
 
     void pretty_print(STATE, std::ostream& out);
 
@@ -76,10 +76,6 @@ namespace rubinius {
 
     bool is_on_home_call_frame(){
       return active_send == NULL;
-    }
-
-    int interp_jump_target(){
-      return arg1 - pc_base;
     }
 
     int exit_to_pc(){
@@ -115,13 +111,14 @@ namespace rubinius {
     TraceNode* head;
     TraceNode* entry;
     size_t jitted_bytes;
-    int pc_base_counter;
     int entry_sp;
     Trace* parent;
     TraceNode* parent_node;
     bool is_nested_trace;
     bool is_branch_trace;
     int length;
+		int trace_pc_counter;
+		std::map<CallFrame*, std::map<int,int> > trace_pc_map;
 
 
     static const int RUN_MODE_NORM = 0;
@@ -166,6 +163,10 @@ namespace rubinius {
 
     void store();
 
+		int get_or_assign_trace_pc(int pc, CallFrame* call_frame);
+
+		int get_trace_pc(int pc, CallFrame* call_frame);
+
     CompiledMethod* entry_cm(){
       return entry->cm.get();
     }
@@ -182,8 +183,8 @@ namespace rubinius {
       return is_nested_trace;
     }
 
-    int init_ip(){
-      return entry->pc;
+    int init_trace_pc(){
+      return entry->trace_pc;
     }
 
     bool parent_of(Trace* trace){
